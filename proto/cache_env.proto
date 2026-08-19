@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package cache_env;
+
+option go_package = "smdp-edge-caching-framework/pkg/pb";
+
+service CacheEnvService {
+  rpc Reset (ResetRequest) returns (StateResponse);
+  rpc Step (StepRequest) returns (StepResponse);
+  rpc BatchStep (BatchStepRequest) returns (BatchStepResponse);
+}
+
+message ResetRequest {
+  int64 seed = 1;
+  double lambda = 2;
+  double eta = 3;
+}
+
+message StateResponse {
+  double mem = 1;               // Unoccupied memory proportion Mem(t)
+  repeated double d = 2;        // Popularity window vector d(t)
+  repeated double y = 3;        // File utility vector y(t)
+  repeated double z = 4;        // File size vector z(t)
+  repeated int32 b = 5;         // Binary cached indicator b(t)
+  int32 requested_file = 6;     // Requested file index f_r
+  double current_time = 7;      // Physical simulation time t
+}
+
+message StepRequest {
+  int32 action = 1;             // 0 = Do not cache, 1 = Cache
+}
+
+message StepResponse {
+  StateResponse next_state = 1;
+  double reward = 2;            // Instant reward r(t)
+  double tau = 3;               // Poisson inter-arrival delta tau
+  bool is_hit = 4;              // Whether current request was a cache hit
+  double utility_gained = 5;    // Utility gained if hit
+}
+
+message BatchStepRequest {
+  repeated int32 actions = 1;
+}
+
+message BatchStepResponse {
+  repeated StepResponse step_responses = 1;
+}
