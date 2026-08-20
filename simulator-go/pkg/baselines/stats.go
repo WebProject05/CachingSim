@@ -1,6 +1,7 @@
 package baselines
 
 // CacheStats contains the measurements collected by a baseline run.
+// Capacity and UsedCapacity are measured in MiB.
 type CacheStats struct {
 	Requests         int
 	Hits             int

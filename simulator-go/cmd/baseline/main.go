@@ -30,7 +30,7 @@ type runResult struct {
 func main() {
 	requests := flag.Int("requests", 50000, "number of requests in the experiment")
 	fileCount := flag.Int("files", 50, "number of generated files")
-	capacity := flag.Float64("capacity", 10000, "cache capacity in size units")
+	capacity := flag.Float64("capacity", 10000, "cache capacity in MiB")
 	eta := flag.Float64("eta", 1.0, "Zipf popularity exponent")
 	seed := flag.Int64("seed", 42, "random seed used for files and requests")
 	window := flag.Int("window", 0, "requests used for warm-up and final-window miss rates; 0 means 10% of the trace")
@@ -68,7 +68,7 @@ func main() {
 		fmt.Sprintf("Seed              : %d", *seed),
 		fmt.Sprintf("Requests          : %d", *requests),
 		fmt.Sprintf("Files             : %d", *fileCount),
-		fmt.Sprintf("Capacity          : %.2f", *capacity),
+		fmt.Sprintf("Capacity          : %.2f MiB", *capacity),
 		fmt.Sprintf("Zipf eta          : %.3f", cfg.ZipfEta),
 		fmt.Sprintf("Lambda source     : %.3f", cfg.LambdaSource),
 		fmt.Sprintf("Measurement window: %d", measurementWindow),
@@ -106,9 +106,9 @@ func main() {
 			fmt.Sprintf("Evictions         : %d", stats.Evictions),
 			fmt.Sprintf("Rejected          : %d", stats.RejectedRequests),
 			fmt.Sprintf("Cached files      : %d", stats.CachedFiles),
-			fmt.Sprintf("Used capacity     : %.2f / %.2f", stats.UsedCapacity, stats.Capacity),
+			fmt.Sprintf("Used capacity     : %.2f / %.2f MiB", stats.UsedCapacity, stats.Capacity),
 			fmt.Sprintf("Utilization       : %.2f%%", stats.Utilization()*100),
-			fmt.Sprintf("Free capacity     : %.2f", stats.Capacity-stats.UsedCapacity),
+			fmt.Sprintf("Free capacity     : %.2f MiB", stats.Capacity-stats.UsedCapacity),
 			fmt.Sprintf("Average ns/request: %.1f", averageNanoseconds),
 			fmt.Sprintf("Operations/sec    : %.0f", operationsPerSecond),
 			fmt.Sprintf("Warm-up miss rate : %.2f%%", result.warmupMissRate*100),
@@ -153,10 +153,10 @@ func printFileStats(files []core.FileMetadata) {
 	}
 	printBox("GENERATED FILES", []string{
 		fmt.Sprintf("Count             : %d", len(files)),
-		fmt.Sprintf("Total size        : %.2f", total),
-		fmt.Sprintf("Average size      : %.2f", total/float64(len(files))),
-		fmt.Sprintf("Minimum size      : %.2f", minimum),
-		fmt.Sprintf("Maximum size      : %.2f", maximum),
+		fmt.Sprintf("Total size        : %.2f MiB", total),
+		fmt.Sprintf("Average size      : %.2f MiB", total/float64(len(files))),
+		fmt.Sprintf("Minimum size      : %.2f MiB", minimum),
+		fmt.Sprintf("Maximum size      : %.2f MiB", maximum),
 	})
 }
 

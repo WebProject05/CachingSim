@@ -123,3 +123,14 @@ func TestSIEVEUsesReferenceBitAndEvicts(t *testing.T) {
 		t.Fatalf("SIEVE did not evict the unreferenced item: %+v", cache.Stats())
 	}
 }
+
+func TestLFUHeapStaysBoundedByCachedFiles(t *testing.T) {
+	cache := NewLFUCache(testConfig(8), testFiles(4, 4))
+	for request := 0; request < 1000; request++ {
+		cache.Access(request % 2)
+	}
+
+	if cache.evictionHeap.Len() != len(cache.cached) {
+		t.Fatalf("LFU heap grew beyond cached files: heap=%d cached=%d", cache.evictionHeap.Len(), len(cache.cached))
+	}
+}

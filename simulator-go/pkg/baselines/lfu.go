@@ -10,30 +10,48 @@ type lfuEntry struct {
 	fileID    int
 	frequency int
 	lastUsed  uint64
+	index     int
 }
 
-type lfuHeap []lfuEntry
+type lfuHeap struct {
+	entries []lfuEntry
+	index   map[int]int
+}
 
-func (h lfuHeap) Len() int { return len(h) }
+func (h lfuHeap) Len() int { return len(h.entries) }
 
 func (h lfuHeap) Less(first int, second int) bool {
-	if h[first].frequency != h[second].frequency {
-		return h[first].frequency < h[second].frequency
+	if h.entries[first].frequency != h.entries[second].frequency {
+		return h.entries[first].frequency < h.entries[second].frequency
 	}
-	if h[first].lastUsed != h[second].lastUsed {
-		return h[first].lastUsed < h[second].lastUsed
+	if h.entries[first].lastUsed != h.entries[second].lastUsed {
+		return h.entries[first].lastUsed < h.entries[second].lastUsed
 	}
-	return h[first].fileID < h[second].fileID
+	return h.entries[first].fileID < h.entries[second].fileID
 }
 
-func (h lfuHeap) Swap(first int, second int) { h[first], h[second] = h[second], h[first] }
+func (h lfuHeap) Swap(first int, second int) {
+	h.entries[first], h.entries[second] = h.entries[second], h.entries[first]
+	h.entries[first].index = first
+	h.entries[second].index = second
+	h.index[h.entries[first].fileID] = first
+	h.index[h.entries[second].fileID] = second
+}
 
-func (h *lfuHeap) Push(value interface{}) { *h = append(*h, value.(lfuEntry)) }
+func (h *lfuHeap) Push(value interface{}) {
+	entry := value.(lfuEntry)
+	entry.index = len(h.entries)
+	h.entries = append(h.entries, entry)
+	h.index[entry.fileID] = entry.index
+}
 
 func (h *lfuHeap) Pop() interface{} {
-	entries := *h
-	last := entries[len(entries)-1]
-	*h = entries[:len(entries)-1]
+	entries := h.entries
+	lastIndex := len(entries) - 1
+	last := entries[lastIndex]
+	last.index = -1
+	delete(h.index, last.fileID)
+	h.entries = entries[:len(entries)-1]
 	return last
 }
 
@@ -62,7 +80,7 @@ func NewLFUCache(cfg *config.Config, files []core.FileMetadata) *LFUCache {
 		frequencies:  make(map[int]int),
 		cached:       make(map[int]bool),
 		lastUsed:     make(map[int]uint64),
-		evictionHeap: make(lfuHeap, 0),
+		evictionHeap: lfuHeap{entries: make([]lfuEntry, 0), index: make(map[int]int)},
 	}
 }
 
@@ -83,25 +101,20 @@ func (c *LFUCache) Access(fileID int) bool {
 	c.frequencies[fileID]++
 	if c.cached[fileID] {
 		c.lastUsed[fileID] = c.accessNumber
-		heap.Push(&c.evictionHeap, lfuEntry{fileID: fileID, frequency: c.frequencies[fileID], lastUsed: c.accessNumber})
+		entryIndex := c.evictionHeap.index[fileID]
+		c.evictionHeap.entries[entryIndex].frequency = c.frequencies[fileID]
+		c.evictionHeap.entries[entryIndex].lastUsed = c.accessNumber
+		heap.Fix(&c.evictionHeap, entryIndex)
 		c.hits++
 		return true
 	}
 
 	for (c.capacity-c.usedCapacity) < fileSize && len(c.cached) > 0 {
-		lowestID := -1
-		for c.evictionHeap.Len() > 0 {
-			entry := heap.Pop(&c.evictionHeap).(lfuEntry)
-			if frequency, ok := c.frequencies[entry.fileID]; ok &&
-				c.lastUsed[entry.fileID] == entry.lastUsed && frequency == entry.frequency {
-				lowestID = entry.fileID
-				break
-			}
-		}
-
-		if lowestID < 0 {
+		if c.evictionHeap.Len() == 0 {
 			break
 		}
+		entry := heap.Pop(&c.evictionHeap).(lfuEntry)
+		lowestID := entry.fileID
 
 		delete(c.cached, lowestID)
 		delete(c.frequencies, lowestID)

@@ -8,13 +8,14 @@ import (
 
 type FileMetadata struct {
 	ID         int     // Index f (0 to F-1)
-	Size       float64 // z_f in [100, 1000]
+	Size       float64 // z_f in [100, 1000] MiB
 	Lifetime   float64 // w_l^f in [10, 30]
 	Importance float64 // i_f in [0.1, 0.9]
 	GenTime    float64 // w_g^f (timestamp when generated)
 }
 
-// GenerateFiles initializes F file types with random attributes as per Table II
+// GenerateFiles initializes F file types with random attributes as per Table II.
+// File sizes and cache capacity use MiB throughout the simulator.
 func GenerateFiles(cfg *config.Config, r *rand.Rand) []FileMetadata {
 	files := make([]FileMetadata, cfg.TotalFileTypes)
 	for i := 0; i < cfg.TotalFileTypes; i++ {

@@ -5,7 +5,7 @@ import (
 	"smdp-edge-caching-framework/pkg/core"
 )
 
-// CTD tracks freshness and availability of current request only (Zhu et al. [17])
+// CTD tracks freshness and availability of current request only
 type CTDBaseline struct {
 	cfg          *config.Config
 	files        []core.FileMetadata

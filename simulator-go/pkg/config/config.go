@@ -1,8 +1,10 @@
 package config
 
+const MemoryUnit = "MiB"
+
 type Config struct {
 	TotalFileTypes int     // F = 50
-	CacheCapacity  float64 // M = 10000
+	CacheCapacity  float64 // M = 10000 MiB
 	SlidingWindowN int     // N = 100
 	UTMax          float64 // UT_max = 1.5
 	UTMin          float64 // UT_min = 0.1
