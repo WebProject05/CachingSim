@@ -14,7 +14,7 @@ func main() {
 	seed := time.Now().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
 
-	// 1. Initialize System Components
+	// Initialize System Components
 	files := core.GenerateFiles(cfg, rng)
 	cache := core.NewCacheEngine(cfg, files)
 	generator := smdp.NewGenerator(cfg, seed)
@@ -28,22 +28,22 @@ func main() {
 	fmt.Printf("File Types: %d, Capacity: %.0f, Lambda: %.2f\n\n", cfg.TotalFileTypes, cfg.CacheCapacity, cfg.LambdaSource)
 
 	for trial := 1; trial <= totalTrials; trial++ {
-		// 1. Generate Poisson arrival interval tau and advance time
+		// Generate Poisson arrival interval tau and advance time
 		tau := generator.NextPoissonInterval(cfg.LambdaSource)
 		cache.CurrentTime += tau
 
-		// 2. Sample incoming request f_r via Zipf distribution
+		// Sample incoming request f_r via Zipf distribution
 		reqFile := generator.SampleRequestedFile()
 		cache.RecordRequest(reqFile)
 
-		// 3. Check Cache Hit
+		// Check Cache Hit
 		isHit := cache.Cached[reqFile]
 		if isHit {
 			hitCount++
 			totalUtility += files[reqFile].Utility(cache.CurrentTime, cfg)
 		}
 
-		// 4. Decision: For now, benchmark using heuristic a(t)=1 (Cache all)
+		// Decision: For now, benchmark using heuristic a(t)=1 (Cache all)
 		action := 1
 		if action == 1 && !isHit {
 			cache.EvictUntilFits(reqFile)
@@ -51,7 +51,7 @@ func main() {
 			cache.UsedCapacity += files[reqFile].Size
 		}
 
-		// 5. Compute Reward r(t)
+		// Compute Reward r(t)
 		r := cache.ComputeReward()
 		totalReward += r
 

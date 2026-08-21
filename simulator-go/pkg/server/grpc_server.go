@@ -141,20 +141,20 @@ func (s *EnvServer) MDPStep(action int32, timeQuota float64) *pb.StepResponse {
 		utilityGained = s.files[s.currentReq].Utility(s.cache.CurrentTime, s.cfg)
 	}
 
-	// 1. Execute agent action
+	// Execute agent action
 	if action == 1 && !isHit {
 		s.cache.EvictUntilFits(s.currentReq)
 		s.cache.Cached[s.currentReq] = true
 		s.cache.UsedCapacity += s.files[s.currentReq].Size
 	}
 
-	// 2. Compute instant reward r(t)
+	// Compute instant reward r(t)
 	reward := s.cache.ComputeReward()
 
-	// 3. Advance time by fixed quota (MDP) instead of Poisson tau
+	// Advance time by fixed quota (MDP) instead of Poisson tau
 	s.cache.CurrentTime += timeQuota
 
-	// 4. Sample next request
+	// Sample next request
 	s.currentReq = s.generator.SampleRequestedFile()
 	s.cache.RecordRequest(s.currentReq)
 

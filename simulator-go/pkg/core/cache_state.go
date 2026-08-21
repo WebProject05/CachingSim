@@ -52,7 +52,7 @@ func (c *CacheEngine) RecordRequest(fileID int) {
 	c.Files[fileID].GenTime = c.CurrentTime
 }
 
-// EvictUntilFits removes the file with lowest utility until new file fits (Section IV-A2)
+// EvictUntilFits removes the file with lowest utility until new file has the space to occupy in the cache
 func (c *CacheEngine) EvictUntilFits(newFileID int) {
 	if !c.validFileID(newFileID) || c.Cfg.CacheCapacity <= 0 {
 		return
@@ -83,7 +83,7 @@ func (c *CacheEngine) EvictUntilFits(newFileID int) {
 	}
 }
 
-// ComputeReward calculates instant reward r(t) using Eq. (2) and Eq. (3)
+// ComputeReward calculates instant reward r(t) "Eq(2) and Eq(3)""
 func (c *CacheEngine) ComputeReward() float64 {
 	if c.Cfg.CacheCapacity <= 0 {
 		return 0

@@ -45,7 +45,7 @@ func (f *FileMetadata) Freshness(currentTime float64) float64 {
 	return h
 }
 
-// Utility computes y_f(t) based on Eq. (1)
+// Utility computes y_f(t)
 func (f *FileMetadata) Utility(currentTime float64, cfg *config.Config) float64 {
 	h := f.Freshness(currentTime)
 	// If file has completely expired (h >= 1), utility drops to minimum
