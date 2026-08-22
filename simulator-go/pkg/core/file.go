@@ -49,6 +49,7 @@ func (f *FileMetadata) Freshness(currentTime float64) float64 {
 func (f *FileMetadata) Utility(currentTime float64, cfg *config.Config) float64 {
 	h := f.Freshness(currentTime)
 	// If file has completely expired (h >= 1), utility drops to minimum
-	val := -math.Exp(h+math.Log(cfg.Curve)) + cfg.UTMax + cfg.Curve
+	// Equivalent to -exp(h + log(curve)) + UT_max + curve, without log
+	val := -cfg.Curve*math.Exp(h) + cfg.UTMax + cfg.Curve
 	return val * f.Importance
 }

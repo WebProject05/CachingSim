@@ -1,7 +1,6 @@
 package baselines
 
 import (
-	"container/list"
 	"smdp-edge-caching-framework/pkg/config"
 	"smdp-edge-caching-framework/pkg/core"
 )
@@ -11,8 +10,12 @@ type LRUCache struct {
 	files        []core.FileMetadata
 	capacity     float64
 	usedCapacity float64
-	elements     map[int]*list.Element
-	evictionList *list.List
+	inCache      []bool
+	prev         []int
+	next         []int
+	head         int
+	tail         int
+	cachedCount  int
 	requests     int
 	hits         int
 	evictions    int
@@ -20,13 +23,23 @@ type LRUCache struct {
 }
 
 func NewLRUCache(cfg *config.Config, files []core.FileMetadata) *LRUCache {
+	n := len(files)
+	prev := make([]int, n)
+	next := make([]int, n)
+	for i := 0; i < n; i++ {
+		prev[i] = -1
+		next[i] = -1
+	}
 	return &LRUCache{
 		cfg:          cfg,
 		files:        files,
 		capacity:     cfg.CacheCapacity,
 		usedCapacity: 0.0,
-		elements:     make(map[int]*list.Element),
-		evictionList: list.New(),
+		inCache:      make([]bool, n),
+		prev:         prev,
+		next:         next,
+		head:         -1,
+		tail:         -1,
 	}
 }
 
@@ -37,36 +50,75 @@ func (c *LRUCache) Access(fileID int) bool {
 		return false
 	}
 
-	if elem, ok := c.elements[fileID]; ok {
-		c.evictionList.MoveToFront(elem)
+	if c.inCache[fileID] {
+		c.moveToFront(fileID)
 		c.hits++
-		return true // Cache Hit
+		return true
 	}
 
-	// Cache Miss -> Insert with LRU eviction
 	fileSize := c.files[fileID].Size
 	if fileSize < 0 || fileSize > c.capacity {
 		c.rejected++
 		return false
 	}
-	for (c.capacity-c.usedCapacity) < fileSize && c.evictionList.Len() > 0 {
-		backElem := c.evictionList.Back()
-		if backElem != nil {
-			evictedID := backElem.Value.(int)
-			c.evictionList.Remove(backElem)
-			delete(c.elements, evictedID)
-			c.usedCapacity -= c.files[evictedID].Size
-			c.evictions++
-		}
+	for (c.capacity-c.usedCapacity) < fileSize && c.tail >= 0 {
+		evictedID := c.tail
+		c.remove(evictedID)
+		c.usedCapacity -= c.files[evictedID].Size
+		c.evictions++
 	}
 
 	if (c.capacity - c.usedCapacity) >= fileSize {
-		elem := c.evictionList.PushFront(fileID)
-		c.elements[fileID] = elem
+		c.pushFront(fileID)
 		c.usedCapacity += fileSize
 	}
 
 	return false
+}
+
+func (c *LRUCache) pushFront(id int) {
+	c.prev[id] = -1
+	c.next[id] = c.head
+	if c.head >= 0 {
+		c.prev[c.head] = id
+	} else {
+		c.tail = id
+	}
+	c.head = id
+	c.inCache[id] = true
+	c.cachedCount++
+}
+
+func (c *LRUCache) moveToFront(id int) {
+	if c.head == id {
+		return
+	}
+	c.unlink(id)
+	c.prev[id] = -1
+	c.next[id] = c.head
+	c.prev[c.head] = id
+	c.head = id
+}
+
+func (c *LRUCache) remove(id int) {
+	c.unlink(id)
+	c.prev[id] = -1
+	c.next[id] = -1
+	c.inCache[id] = false
+	c.cachedCount--
+}
+
+func (c *LRUCache) unlink(id int) {
+	if c.prev[id] >= 0 {
+		c.next[c.prev[id]] = c.next[id]
+	} else {
+		c.head = c.next[id]
+	}
+	if c.next[id] >= 0 {
+		c.prev[c.next[id]] = c.prev[id]
+	} else {
+		c.tail = c.prev[id]
+	}
 }
 
 func (c *LRUCache) Stats() CacheStats {
@@ -76,7 +128,7 @@ func (c *LRUCache) Stats() CacheStats {
 		Misses:           c.requests - c.hits,
 		Evictions:        c.evictions,
 		RejectedRequests: c.rejected,
-		CachedFiles:      c.evictionList.Len(),
+		CachedFiles:      c.cachedCount,
 		Capacity:         c.capacity,
 		UsedCapacity:     c.usedCapacity,
 	}

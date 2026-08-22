@@ -1,25 +1,23 @@
 package baselines
 
 import (
-	"container/list"
 	"smdp-edge-caching-framework/pkg/config"
 	"smdp-edge-caching-framework/pkg/core"
 )
 
-type sieveEntry struct {
-	fileID  int
-	visited bool
-}
-
-// SIEVECache uses a circular hand and one reference bit per cached file.
 type SIEVECache struct {
 	cfg          *config.Config
 	files        []core.FileMetadata
 	capacity     float64
 	usedCapacity float64
-	elements     map[int]*list.Element
-	entries      *list.List
-	hand         *list.Element
+	inCache      []bool
+	visited      []bool
+	prev         []int
+	next         []int
+	head         int
+	tail         int
+	hand         int
+	cachedCount  int
 	requests     int
 	hits         int
 	evictions    int
@@ -27,12 +25,24 @@ type SIEVECache struct {
 }
 
 func NewSIEVECache(cfg *config.Config, files []core.FileMetadata) *SIEVECache {
+	n := len(files)
+	prev := make([]int, n)
+	next := make([]int, n)
+	for i := 0; i < n; i++ {
+		prev[i] = -1
+		next[i] = -1
+	}
 	return &SIEVECache{
 		cfg:      cfg,
 		files:    files,
 		capacity: cfg.CacheCapacity,
-		elements: make(map[int]*list.Element),
-		entries:  list.New(),
+		inCache:  make([]bool, n),
+		visited:  make([]bool, n),
+		prev:     prev,
+		next:     next,
+		head:     -1,
+		tail:     -1,
+		hand:     -1,
 	}
 }
 
@@ -43,8 +53,8 @@ func (c *SIEVECache) Access(fileID int) bool {
 		return false
 	}
 
-	if elem, ok := c.elements[fileID]; ok {
-		elem.Value.(*sieveEntry).visited = true
+	if c.inCache[fileID] {
+		c.visited[fileID] = true
 		c.hits++
 		return true
 	}
@@ -55,15 +65,14 @@ func (c *SIEVECache) Access(fileID int) bool {
 		return false
 	}
 
-	for c.capacity-c.usedCapacity < fileSize && c.entries.Len() > 0 {
+	for c.capacity-c.usedCapacity < fileSize && c.cachedCount > 0 {
 		c.evictOne()
 	}
 
 	if c.capacity-c.usedCapacity >= fileSize {
-		elem := c.entries.PushBack(&sieveEntry{fileID: fileID})
-		c.elements[fileID] = elem
-		if c.hand == nil {
-			c.hand = elem
+		c.pushBack(fileID)
+		if c.hand < 0 {
+			c.hand = fileID
 		}
 		c.usedCapacity += fileSize
 	}
@@ -71,40 +80,70 @@ func (c *SIEVECache) Access(fileID int) bool {
 	return false
 }
 
+func (c *SIEVECache) pushBack(id int) {
+	c.next[id] = -1
+	c.prev[id] = c.tail
+	if c.tail >= 0 {
+		c.next[c.tail] = id
+	} else {
+		c.head = id
+	}
+	c.tail = id
+	c.inCache[id] = true
+	c.visited[id] = false
+	c.cachedCount++
+}
+
 func (c *SIEVECache) evictOne() {
-	if c.entries.Len() == 0 {
+	if c.cachedCount == 0 {
 		return
 	}
-	if c.hand == nil {
-		c.hand = c.entries.Front()
+	if c.hand < 0 {
+		c.hand = c.head
 	}
 
 	for {
-		elem := c.hand
-		entry := elem.Value.(*sieveEntry)
-		next := elem.Next()
-		if next == nil {
-			next = c.entries.Front()
+		id := c.hand
+		next := c.next[id]
+		if next < 0 {
+			next = c.head
 		}
 		c.hand = next
 
-		if entry.visited {
-			entry.visited = false
+		if c.visited[id] {
+			c.visited[id] = false
 			continue
 		}
 
-		delete(c.elements, entry.fileID)
-		c.entries.Remove(elem)
-		c.usedCapacity -= c.files[entry.fileID].Size
+		c.remove(id)
+		c.usedCapacity -= c.files[id].Size
 		if c.usedCapacity < 0 {
 			c.usedCapacity = 0
 		}
 		c.evictions++
-		if c.entries.Len() == 0 {
-			c.hand = nil
+		if c.cachedCount == 0 {
+			c.hand = -1
 		}
 		return
 	}
+}
+
+func (c *SIEVECache) remove(id int) {
+	if c.prev[id] >= 0 {
+		c.next[c.prev[id]] = c.next[id]
+	} else {
+		c.head = c.next[id]
+	}
+	if c.next[id] >= 0 {
+		c.prev[c.next[id]] = c.prev[id]
+	} else {
+		c.tail = c.prev[id]
+	}
+	c.prev[id] = -1
+	c.next[id] = -1
+	c.inCache[id] = false
+	c.visited[id] = false
+	c.cachedCount--
 }
 
 func (c *SIEVECache) Stats() CacheStats {
@@ -114,7 +153,7 @@ func (c *SIEVECache) Stats() CacheStats {
 		Misses:           c.requests - c.hits,
 		Evictions:        c.evictions,
 		RejectedRequests: c.rejected,
-		CachedFiles:      c.entries.Len(),
+		CachedFiles:      c.cachedCount,
 		Capacity:         c.capacity,
 		UsedCapacity:     c.usedCapacity,
 	}

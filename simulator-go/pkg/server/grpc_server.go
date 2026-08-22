@@ -11,10 +11,9 @@ import (
 
 type EnvServer struct {
 	pb.UnimplementedCacheEnvServiceServer
-	cfg       *config.Config
-	files     []core.FileMetadata
-	cache     *core.CacheEngine
-	generator *smdp.Generator
+	cfg        *config.Config
+	cache      *core.CacheEngine
+	generator  *smdp.Generator
 	currentReq int
 }
 
@@ -26,7 +25,6 @@ func NewEnvServer(cfg *config.Config, seed int64) *EnvServer {
 
 	return &EnvServer{
 		cfg:        cfg,
-		files:      files,
 		cache:      cache,
 		generator:  generator,
 		currentReq: generator.SampleRequestedFile(),
@@ -47,8 +45,8 @@ func (s *EnvServer) Reset(ctx context.Context, req *pb.ResetRequest) (*pb.StateR
 	}
 
 	rng := rand.New(rand.NewSource(seed))
-	s.files = core.GenerateFiles(s.cfg, rng)
-	s.cache = core.NewCacheEngine(s.cfg, s.files)
+	files := core.GenerateFiles(s.cfg, rng)
+	s.cache = core.NewCacheEngine(s.cfg, files)
 	s.generator = smdp.NewGenerator(s.cfg, seed)
 	s.currentReq = s.generator.SampleRequestedFile()
 	s.cache.RecordRequest(s.currentReq)
@@ -58,39 +56,7 @@ func (s *EnvServer) Reset(ctx context.Context, req *pb.ResetRequest) (*pb.StateR
 }
 
 func (s *EnvServer) Step(ctx context.Context, req *pb.StepRequest) (*pb.StepResponse, error) {
-	isHit := s.cache.Cached[s.currentReq]
-	var utilityGained float64
-	if isHit {
-		utilityGained = s.files[s.currentReq].Utility(s.cache.CurrentTime, s.cfg)
-	}
-
-	// 1. Execute agent action
-	if req.Action == 1 && !isHit {
-		s.cache.EvictUntilFits(s.currentReq)
-		s.cache.Cached[s.currentReq] = true
-		s.cache.UsedCapacity += s.files[s.currentReq].Size
-	}
-
-	// 2. Compute instant reward r(t)
-	reward := s.cache.ComputeReward()
-
-	// 3. Advance SMDP Poisson time
-	tau := s.generator.NextPoissonInterval(s.cfg.LambdaSource)
-	s.cache.CurrentTime += tau
-
-	// 4. Sample next request
-	s.currentReq = s.generator.SampleRequestedFile()
-	s.cache.RecordRequest(s.currentReq)
-
-	nextState := s.cache.GetCurrentState(s.currentReq)
-
-	return &pb.StepResponse{
-		NextState:     mapStateToProto(nextState, s.cache.CurrentTime),
-		Reward:        reward,
-		Tau:           tau,
-		IsHit:         isHit,
-		UtilityGained: utilityGained,
-	}, nil
+	return s.executeStep(req.Action, s.generator.NextPoissonInterval(s.cfg.LambdaSource)), nil
 }
 
 func mapStateToProto(st *core.State, currentTime float64) *pb.StateResponse {
@@ -113,57 +79,39 @@ func mapStateToProto(st *core.State, currentTime float64) *pb.StateResponse {
 // BatchStep processes multiple actions in sequence and returns a batch of responses
 func (s *EnvServer) BatchStep(ctx context.Context, req *pb.BatchStepRequest) (*pb.BatchStepResponse, error) {
 	responses := make([]*pb.StepResponse, len(req.Actions))
-	
 	for i, action := range req.Actions {
-		// Create a single step request
-		stepReq := &pb.StepRequest{Action: action}
-		
-		// Call the existing Step function
-		stepRes, err := s.Step(ctx, stepReq)
-		if err != nil {
-			return nil, err
-		}
-		
-		responses[i] = stepRes
+		responses[i] = s.executeStep(action, s.generator.NextPoissonInterval(s.cfg.LambdaSource))
 	}
-	
-	return &pb.BatchStepResponse{
-		StepResponses: responses,
-	}, nil
+	return &pb.BatchStepResponse{StepResponses: responses}, nil
 }
 
 // MDPStep simulates a discrete-time MDP transition using a fixed time quota
 // instead of a stochastic Poisson inter-arrival time.
 func (s *EnvServer) MDPStep(action int32, timeQuota float64) *pb.StepResponse {
-	isHit := s.cache.Cached[s.currentReq]
+	return s.executeStep(action, timeQuota)
+}
+
+func (s *EnvServer) executeStep(action int32, tau float64) *pb.StepResponse {
+	isHit := s.cache.IsCached(s.currentReq)
 	var utilityGained float64
 	if isHit {
-		utilityGained = s.files[s.currentReq].Utility(s.cache.CurrentTime, s.cfg)
+		utilityGained = s.cache.Files[s.currentReq].Utility(s.cache.CurrentTime, s.cfg)
 	}
 
-	// Execute agent action
-	if action == 1 && !isHit {
+	if action == 1 && !isHit && s.cache.IsValidInsert(s.currentReq) {
 		s.cache.EvictUntilFits(s.currentReq)
-		s.cache.Cached[s.currentReq] = true
-		s.cache.UsedCapacity += s.files[s.currentReq].Size
+		s.cache.Insert(s.currentReq)
 	}
 
-	// Compute instant reward r(t)
 	reward := s.cache.ComputeReward()
-
-	// Advance time by fixed quota (MDP) instead of Poisson tau
-	s.cache.CurrentTime += timeQuota
-
-	// Sample next request
+	s.cache.CurrentTime += tau
 	s.currentReq = s.generator.SampleRequestedFile()
 	s.cache.RecordRequest(s.currentReq)
 
-	nextState := s.cache.GetCurrentState(s.currentReq)
-
 	return &pb.StepResponse{
-		NextState:     mapStateToProto(nextState, s.cache.CurrentTime),
+		NextState:     mapStateToProto(s.cache.GetCurrentState(s.currentReq), s.cache.CurrentTime),
 		Reward:        reward,
-		Tau:           timeQuota,
+		Tau:           tau,
 		IsHit:         isHit,
 		UtilityGained: utilityGained,
 	}

@@ -18,20 +18,38 @@ type State struct {
 type CacheEngine struct {
 	Cfg           *config.Config
 	Files         []FileMetadata
-	Cached        map[int]bool // b(t)
+	Cached        []bool // b(t), indexed by file ID
 	UsedCapacity  float64
-	RequestWindow []int   // Sliding window for N requests
-	CurrentTime   float64 // Continuous physical simulation time t
+	RequestWindow []int // Sliding window ring for N requests
+	CurrentTime   float64
+	sizes         []float64 // Immutable file sizes z_f
+	popularity    []float64 // Incremental d(t)
+	windowHead    int
+	windowLen     int
 }
 
 func NewCacheEngine(cfg *config.Config, files []FileMetadata) *CacheEngine {
+	n := cfg.TotalFileTypes
+	if n < len(files) {
+		n = len(files)
+	}
+	sizes := make([]float64, n)
+	for i := 0; i < len(files) && i < n; i++ {
+		sizes[i] = files[i].Size
+	}
+	windowCap := cfg.SlidingWindowN
+	if windowCap < 0 {
+		windowCap = 0
+	}
 	return &CacheEngine{
 		Cfg:           cfg,
 		Files:         files,
-		Cached:        make(map[int]bool),
+		Cached:        make([]bool, n),
 		UsedCapacity:  0.0,
-		RequestWindow: make([]int, 0, cfg.SlidingWindowN),
+		RequestWindow: make([]int, windowCap),
 		CurrentTime:   0.0,
+		sizes:         sizes,
+		popularity:    make([]float64, n),
 	}
 }
 
@@ -39,16 +57,56 @@ func (c *CacheEngine) validFileID(fileID int) bool {
 	return fileID >= 0 && fileID < len(c.Files)
 }
 
-// RecordRequest updates sliding window d(t) and refreshes file generation time
-func (c *CacheEngine) RecordRequest(fileID int) {
-	if !c.validFileID(fileID) || c.Cfg.SlidingWindowN <= 0 {
+func (c *CacheEngine) IsCached(fileID int) bool {
+	return fileID >= 0 && fileID < len(c.Cached) && c.Cached[fileID]
+}
+
+func (c *CacheEngine) IsValidInsert(fileID int) bool {
+	return c.validFileID(fileID)
+}
+
+func (c *CacheEngine) Insert(fileID int) {
+	if !c.validFileID(fileID) || fileID >= len(c.Cached) || c.Cached[fileID] {
 		return
 	}
-	if len(c.RequestWindow) >= c.Cfg.SlidingWindowN {
-		c.RequestWindow = c.RequestWindow[1:]
+	c.Cached[fileID] = true
+	c.UsedCapacity += c.Files[fileID].Size
+}
+
+func (c *CacheEngine) memRatio() float64 {
+	if c.Cfg.CacheCapacity <= 0 {
+		return 0
 	}
-	c.RequestWindow = append(c.RequestWindow, fileID)
-	// Refresh file generation timestamp upon request arrival
+	ratio := (c.Cfg.CacheCapacity - c.UsedCapacity) / c.Cfg.CacheCapacity
+	if ratio < 0.0 {
+		return 0.0
+	}
+	return ratio
+}
+
+// RecordRequest updates sliding window d(t) and refreshes file generation time
+func (c *CacheEngine) RecordRequest(fileID int) {
+	if !c.validFileID(fileID) || c.Cfg.SlidingWindowN <= 0 || len(c.RequestWindow) == 0 {
+		return
+	}
+	n := len(c.RequestWindow)
+	if c.windowLen == n {
+		old := c.RequestWindow[c.windowHead]
+		if old >= 0 && old < len(c.popularity) {
+			c.popularity[old]--
+		}
+		c.RequestWindow[c.windowHead] = fileID
+		c.windowHead++
+		if c.windowHead == n {
+			c.windowHead = 0
+		}
+	} else {
+		c.RequestWindow[c.windowLen] = fileID
+		c.windowLen++
+	}
+	if fileID < len(c.popularity) {
+		c.popularity[fileID]++
+	}
 	c.Files[fileID].GenTime = c.CurrentTime
 }
 
@@ -62,7 +120,10 @@ func (c *CacheEngine) EvictUntilFits(newFileID int) {
 		lowestID := -1
 		minUtility := math.MaxFloat64
 
-		for id := range c.Cached {
+		for id := 0; id < len(c.Cached); id++ {
+			if !c.Cached[id] || id >= len(c.Files) {
+				continue
+			}
 			u := c.Files[id].Utility(c.CurrentTime, c.Cfg)
 			if u < minUtility {
 				minUtility = u
@@ -74,8 +135,7 @@ func (c *CacheEngine) EvictUntilFits(newFileID int) {
 			break
 		}
 
-		// Evict file with lowest utility
-		delete(c.Cached, lowestID)
+		c.Cached[lowestID] = false
 		c.UsedCapacity -= c.Files[lowestID].Size
 		if c.UsedCapacity < 0 {
 			c.UsedCapacity = 0
@@ -88,27 +148,29 @@ func (c *CacheEngine) ComputeReward() float64 {
 	if c.Cfg.CacheCapacity <= 0 {
 		return 0
 	}
-	memRatio := (c.Cfg.CacheCapacity - c.UsedCapacity) / c.Cfg.CacheCapacity
-	if memRatio < 0.0 {
-		memRatio = 0.0
-	}
 
-	d := c.GetPopularityVector()
 	var worth float64
-	for id := range c.Cached {
+	for id := 0; id < len(c.Cached) && id < len(c.Files); id++ {
+		if !c.Cached[id] {
+			continue
+		}
 		u := c.Files[id].Utility(c.CurrentTime, c.Cfg)
-		worth += d[id] * u
+		if id < len(c.popularity) {
+			worth += c.popularity[id] * u
+		}
 	}
 
-	return worth - (memRatio * 100.0)
+	return worth - (c.memRatio() * 100.0)
 }
 
 func (c *CacheEngine) GetPopularityVector() []float64 {
-	d := make([]float64, c.Cfg.TotalFileTypes)
-	for _, id := range c.RequestWindow {
-		if id >= 0 && id < len(d) {
-			d[id]++
-		}
+	d := make([]float64, len(c.popularity))
+	copy(d, c.popularity)
+	if extra := c.Cfg.TotalFileTypes - len(d); extra > 0 {
+		d = append(d, make([]float64, extra)...)
+	}
+	if c.Cfg.TotalFileTypes >= 0 && c.Cfg.TotalFileTypes < len(d) {
+		d = d[:c.Cfg.TotalFileTypes]
 	}
 	return d
 }
@@ -116,31 +178,30 @@ func (c *CacheEngine) GetPopularityVector() []float64 {
 // GetCurrentState builds s(t) = {Mem(t), d(t), y(t), z(t), b(t)}
 func (c *CacheEngine) GetCurrentState(requestedFile int) *State {
 	F := c.Cfg.TotalFileTypes
-	memRatio := 0.0
-	if c.Cfg.CacheCapacity > 0 {
-		memRatio = (c.Cfg.CacheCapacity - c.UsedCapacity) / c.Cfg.CacheCapacity
-	}
-	if memRatio < 0.0 {
-		memRatio = 0.0
+	if F < 0 {
+		F = 0
 	}
 
-	d := c.GetPopularityVector()
+	d := make([]float64, F)
 	y := make([]float64, F)
 	z := make([]float64, F)
 	b := make([]int, F)
 
-	for i := 0; i < F && i < len(c.Files); i++ {
+	limit := F
+	if limit > len(c.Files) {
+		limit = len(c.Files)
+	}
+	copy(d, c.popularity)
+	copy(z, c.sizes)
+	for i := 0; i < limit; i++ {
 		y[i] = c.Files[i].Utility(c.CurrentTime, c.Cfg)
-		z[i] = c.Files[i].Size
-		if c.Cached[i] {
+		if i < len(c.Cached) && c.Cached[i] {
 			b[i] = 1
-		} else {
-			b[i] = 0
 		}
 	}
 
 	return &State{
-		Mem:           memRatio,
+		Mem:           c.memRatio(),
 		D:             d,
 		Y:             y,
 		Z:             z,

@@ -37,7 +37,7 @@ func main() {
 		cache.RecordRequest(reqFile)
 
 		// Check Cache Hit
-		isHit := cache.Cached[reqFile]
+		isHit := cache.IsCached(reqFile)
 		if isHit {
 			hitCount++
 			totalUtility += files[reqFile].Utility(cache.CurrentTime, cfg)
@@ -47,8 +47,7 @@ func main() {
 		action := 1
 		if action == 1 && !isHit {
 			cache.EvictUntilFits(reqFile)
-			cache.Cached[reqFile] = true
-			cache.UsedCapacity += files[reqFile].Size
+			cache.Insert(reqFile)
 		}
 
 		// Compute Reward r(t)

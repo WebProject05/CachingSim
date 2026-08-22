@@ -87,16 +87,11 @@ func main() {
 	for _, result := range results {
 		stats := result.stats
 		elapsedSeconds := result.elapsedSeconds
-		if elapsedSeconds < 0.000001 {
-			elapsedSeconds = 0.000001
-		}
-		averageNanoseconds := elapsedSeconds * float64(time.Second) / float64(stats.Requests)
-		operationsPerSecond := float64(stats.Requests) / elapsedSeconds
-		if math.IsNaN(averageNanoseconds) || math.IsInf(averageNanoseconds, 0) || averageNanoseconds < 1 {
-			averageNanoseconds = 1
-		}
-		if math.IsNaN(operationsPerSecond) || math.IsInf(operationsPerSecond, 0) || operationsPerSecond < 1 {
-			operationsPerSecond = 1
+		averageNanoseconds := 0.0
+		operationsPerSecond := 0.0
+		if stats.Requests > 0 && elapsedSeconds > 0 {
+			averageNanoseconds = elapsedSeconds * float64(time.Second) / float64(stats.Requests)
+			operationsPerSecond = float64(stats.Requests) / elapsedSeconds
 		}
 		printBox(result.name, []string{
 			fmt.Sprintf("Requests          : %d", stats.Requests),

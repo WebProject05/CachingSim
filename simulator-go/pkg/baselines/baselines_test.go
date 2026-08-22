@@ -31,10 +31,10 @@ func TestLRUAccessAndEviction(t *testing.T) {
 		t.Fatal("re-accessing a cached file should be a hit")
 	}
 	cache.Access(2)
-	if _, ok := cache.elements[1]; ok {
+	if cache.inCache[1] {
 		t.Fatal("least recently used file was not evicted")
 	}
-	if _, ok := cache.elements[0]; !ok {
+	if !cache.inCache[0] {
 		t.Fatal("most recently used file was evicted")
 	}
 }
@@ -116,10 +116,10 @@ func TestSIEVEUsesReferenceBitAndEvicts(t *testing.T) {
 	cache.Access(0)
 	cache.Access(2)
 
-	if cache.entries.Len() != 2 || cache.elements[0] == nil || cache.elements[2] == nil {
+	if cache.cachedCount != 2 || !cache.inCache[0] || !cache.inCache[2] {
 		t.Fatalf("SIEVE evicted a referenced item: %+v", cache.Stats())
 	}
-	if cache.elements[1] != nil || cache.Stats().Evictions != 1 {
+	if cache.inCache[1] || cache.Stats().Evictions != 1 {
 		t.Fatalf("SIEVE did not evict the unreferenced item: %+v", cache.Stats())
 	}
 }
@@ -130,7 +130,7 @@ func TestLFUHeapStaysBoundedByCachedFiles(t *testing.T) {
 		cache.Access(request % 2)
 	}
 
-	if cache.evictionHeap.Len() != len(cache.cached) {
-		t.Fatalf("LFU heap grew beyond cached files: heap=%d cached=%d", cache.evictionHeap.Len(), len(cache.cached))
+	if cache.evictionHeap.Len() != cache.cachedCount {
+		t.Fatalf("LFU heap grew beyond cached files: heap=%d cached=%d", cache.evictionHeap.Len(), cache.cachedCount)
 	}
 }
