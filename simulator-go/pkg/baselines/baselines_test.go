@@ -39,6 +39,25 @@ func TestLRUAccessAndEviction(t *testing.T) {
 	}
 }
 
+func TestFIFOEvictsOldestInsertion(t *testing.T) {
+	cache := NewFIFOCache(testConfig(8), testFiles(4, 4, 4))
+
+	cache.Access(0)
+	cache.Access(1)
+	cache.Access(0)
+	cache.Access(2)
+
+	if _, ok := cache.entries[0]; ok {
+		t.Fatal("FIFO evicted a newer insertion instead of the oldest file")
+	}
+	if _, ok := cache.entries[1]; !ok {
+		t.Fatal("FIFO did not retain the newer insertion")
+	}
+	if cache.Stats().Evictions != 1 || cache.Stats().Hits != 1 {
+		t.Fatalf("unexpected FIFO stats: %+v", cache.Stats())
+	}
+}
+
 func TestLFUFrequencyAndDeterministicTieBreak(t *testing.T) {
 	cache := NewLFUCache(testConfig(8), testFiles(4, 4, 4))
 

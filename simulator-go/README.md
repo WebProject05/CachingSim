@@ -4,11 +4,11 @@ This directory contains the Go implementation of the edge-caching simulator.
 
 ## Execution paths
 
-- `go run ./cmd/baseline` generates one request trace and compares LRU, LFU, and SIEVE on that same trace.
+- `go run ./cmd/baseline` generates one request trace and compares FIFO, LRU, LFU, and SIEVE on that same trace.
 - `go run ./cmd/server` starts the gRPC environment server used by external agents.
 - `go test ./...` runs cache, reward, and baseline tests.
 
-The simulator uses MiB for file sizes and cache capacity. Use `-seed` on the baseline command to make a run reproducible. The comparison output reports request-level hit rate, byte hit rate, cache churn, occupancy, and timing.
+The simulator uses MiB for file sizes and cache capacity. Use `-seed` on the baseline command to make a run reproducible. The comparison output reports request-level hit rate, byte hit rate, cache churn, occupancy, and timing. A compact baseline summary is appended to `logs/baseline_runs.log` on every invocation.
 
 ## Package flow
 

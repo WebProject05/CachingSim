@@ -2,6 +2,7 @@
 
 This package provides replacement-policy implementations used for repeatable comparisons:
 
+- FIFO evicts the oldest cached file, based on insertion order.
 - LRU evicts the least recently used cached file.
 - LFU evicts the least frequently used file, breaking ties by oldest use.
 - SIEVE uses a reference bit and a moving hand to find eviction candidates.

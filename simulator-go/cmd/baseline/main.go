@@ -3,8 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"math"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -13,6 +16,8 @@ import (
 	"smdp-edge-caching-framework/pkg/core"
 	"smdp-edge-caching-framework/pkg/smdp"
 )
+
+var output io.Writer = os.Stdout
 
 type cache interface {
 	Access(fileID int) bool
@@ -34,10 +39,23 @@ func main() {
 	eta := flag.Float64("eta", 1.0, "Zipf popularity exponent")
 	seed := flag.Int64("seed", 42, "random seed used for files and requests")
 	window := flag.Int("window", 0, "requests used for warm-up and final-window miss rates; 0 means 10% of the trace")
+	logPath := flag.String("log", "logs/baseline_runs.log", "append-only log file for experiment output")
 	flag.Parse()
 
+	logFile, err := openRunLog(*logPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not open run log %q: %v\n", *logPath, err)
+		return
+	}
+	defer func() {
+		_ = logFile.Close()
+	}()
+	output = os.Stdout
+
 	if *requests < 1 || *fileCount < 1 || *capacity <= 0 {
-		fmt.Println("requests and files must be positive; capacity must be greater than zero")
+		message := "requests and files must be positive; capacity must be greater than zero"
+		fmt.Fprintln(output, message)
+		writeInvalidRunLog(logFile, *logPath, *seed, *requests, *fileCount, *capacity, *eta, message)
 		return
 	}
 
@@ -64,7 +82,7 @@ func main() {
 		measurementWindow = *requests
 	}
 
-	printBox("LRU / LFU / SIEVE CACHE EXPERIMENT", []string{
+	printBox("FIFO / LRU / LFU / SIEVE CACHE EXPERIMENT", []string{
 		fmt.Sprintf("Seed              : %d", *seed),
 		fmt.Sprintf("Requests          : %d", *requests),
 		fmt.Sprintf("Files             : %d", *fileCount),
@@ -76,6 +94,7 @@ func main() {
 	printFileStats(files)
 
 	results := []runResult{
+		run("FIFO", func() cache { return baselines.NewFIFOCache(cfg, files) }, requestTrace, measurementWindow),
 		run("LRU", func() cache { return baselines.NewLRUCache(cfg, files) }, requestTrace, measurementWindow),
 		run("LFU", func() cache { return baselines.NewLFUCache(cfg, files) }, requestTrace, measurementWindow),
 		run("SIEVE", func() cache { return baselines.NewSIEVECache(cfg, files) }, requestTrace, measurementWindow),
@@ -111,6 +130,7 @@ func main() {
 			fmt.Sprintf("Miss-rate change  : %.2f points", (result.steadyMissRate-result.warmupMissRate)*100),
 		})
 	}
+	writeRunLog(logFile, *logPath, *seed, *requests, *fileCount, *capacity, cfg.ZipfEta, measurementWindow, results)
 }
 
 func printComparisonTable(results []runResult) {
@@ -118,23 +138,30 @@ func printComparisonTable(results []runResult) {
 		"Higher hit rate and byte hit rate are better.",
 		"Lower miss, rejection, eviction, and latency values are better.",
 	})
-	fmt.Println("Algorithm     Hit rate  Byte hit  Miss rate  Reject  Evict  Ops/sec  Avg ns/req")
-	fmt.Println("------------  --------  --------  ---------  ------  -----  -------  -----------")
+	border := "+------------+--------+--------+--------+--------+--------+--------+"
+	fmt.Fprintln(output, border)
+	fmt.Fprintln(output, "| Algorithm  | Hit %   | Byte %  | Miss %  | Evict % | Util %  | Ops/sec |")
+	fmt.Fprintln(output, border)
 	for _, result := range results {
 		stats := result.stats
-		operationsPerSecond, averageNanoseconds := formatTiming(result)
-		fmt.Printf("%-12s  %7.2f%%  %7.2f%%  %8.2f%%  %5.2f%%  %5.2f%%  %7s  %11s\n",
+		operationsPerSecond, _ := formatTiming(result)
+		fmt.Fprintf(output, "| %-10s | %6.2f%% | %6.2f%% | %6.2f%% | %6.2f%% | %6.2f%% | %7s |\n",
 			result.name,
 			stats.HitRate()*100,
 			stats.ByteHitRate()*100,
 			stats.MissRate()*100,
-			stats.RejectionRate()*100,
 			stats.EvictionRate()*100,
+			stats.Utilization()*100,
 			operationsPerSecond,
-			averageNanoseconds,
 		)
 	}
-	fmt.Println()
+	fmt.Fprintln(output, border)
+	fmt.Fprintln(output, "Latency: average nanoseconds per request")
+	for _, result := range results {
+		_, averageNanoseconds := formatTiming(result)
+		fmt.Fprintf(output, "  %-8s %s ns/request\n", result.name, averageNanoseconds)
+	}
+	fmt.Fprintln(output)
 }
 
 func formatTiming(result runResult) (operationsPerSecond string, averageNanoseconds string) {
@@ -143,6 +170,44 @@ func formatTiming(result runResult) (operationsPerSecond string, averageNanoseco
 	}
 	return fmt.Sprintf("%.0f", float64(result.stats.Requests)/result.elapsedSeconds),
 		fmt.Sprintf("%.1f", result.elapsedSeconds*float64(time.Second)/float64(result.stats.Requests))
+}
+
+func openRunLog(logPath string) (*os.File, error) {
+	if directory := filepath.Dir(logPath); directory != "." {
+		if err := os.MkdirAll(directory, 0755); err != nil {
+			return nil, err
+		}
+	}
+	return os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+}
+
+func writeRunLog(logFile io.Writer, logPath string, seed int64, requests, fileCount int, capacity, eta float64, measurementWindow int, results []runResult) {
+	fmt.Fprintf(logFile, "RUN START : %s\n", time.Now().Format(time.RFC3339))
+	fmt.Fprintf(logFile, "LOG FILE  : %s\n", logPath)
+	fmt.Fprintf(logFile, "CONFIG    : seed=%d requests=%d files=%d capacity=%.2f MiB eta=%.3f window=%d\n", seed, requests, fileCount, capacity, eta, measurementWindow)
+	fmt.Fprintln(logFile, "METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | avg_ns/request")
+	for _, result := range results {
+		stats := result.stats
+		_, averageNanoseconds := formatTiming(result)
+		fmt.Fprintf(logFile, "%-8s : %.2f%% | %.2f%% | %.2f%% | %.2f%% | %.2f%% | %s\n",
+			result.name,
+			stats.HitRate()*100,
+			stats.ByteHitRate()*100,
+			stats.MissRate()*100,
+			stats.EvictionRate()*100,
+			stats.Utilization()*100,
+			averageNanoseconds,
+		)
+	}
+	fmt.Fprintf(logFile, "RUN END   : %s\n\n", time.Now().Format(time.RFC3339))
+}
+
+func writeInvalidRunLog(logFile io.Writer, logPath string, seed int64, requests, fileCount int, capacity, eta float64, message string) {
+	fmt.Fprintf(logFile, "RUN START : %s\n", time.Now().Format(time.RFC3339))
+	fmt.Fprintf(logFile, "LOG FILE  : %s\n", logPath)
+	fmt.Fprintf(logFile, "CONFIG    : seed=%d requests=%d files=%d capacity=%.2f MiB eta=%.3f\n", seed, requests, fileCount, capacity, eta)
+	fmt.Fprintf(logFile, "STATUS    : invalid - %s\n", message)
+	fmt.Fprintf(logFile, "RUN END   : %s\n\n", time.Now().Format(time.RFC3339))
 }
 
 func run(name string, newCache func() cache, requestTrace []int, measurementWindow int) runResult {
@@ -195,11 +260,11 @@ func printBox(title string, lines []string) {
 		}
 	}
 	border := "+" + strings.Repeat("-", width-2) + "+"
-	fmt.Println(border)
-	fmt.Printf("| %-*s |\n", width-4, title)
-	fmt.Println(border)
+	fmt.Fprintln(output, border)
+	fmt.Fprintf(output, "| %-*s |\n", width-4, title)
+	fmt.Fprintln(output, border)
 	for _, line := range lines {
-		fmt.Printf("| %-*s |\n", width-4, line)
+		fmt.Fprintf(output, "| %-*s |\n", width-4, line)
 	}
-	fmt.Println(border)
+	fmt.Fprintln(output, border)
 }
