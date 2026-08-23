@@ -6,20 +6,24 @@ import (
 )
 
 type LRUCache struct {
-	cfg          *config.Config
-	files        []core.FileMetadata
-	capacity     float64
-	usedCapacity float64
-	inCache      []bool
-	prev         []int
-	next         []int
-	head         int
-	tail         int
-	cachedCount  int
-	requests     int
-	hits         int
-	evictions    int
-	rejected     int
+	cfg            *config.Config
+	files          []core.FileMetadata
+	capacity       float64
+	usedCapacity   float64
+	inCache        []bool
+	prev           []int
+	next           []int
+	head           int
+	tail           int
+	cachedCount    int
+	requests       int
+	hits           int
+	evictions      int
+	rejected       int
+	insertions     int
+	requestedBytes float64
+	hitBytes       float64
+	missBytes      float64
 }
 
 func NewLRUCache(cfg *config.Config, files []core.FileMetadata) *LRUCache {
@@ -49,14 +53,23 @@ func (c *LRUCache) Access(fileID int) bool {
 		c.rejected++
 		return false
 	}
+	fileSize := c.files[fileID].Size
+	if fileSize > 0 {
+		c.requestedBytes += fileSize
+	}
 
 	if c.inCache[fileID] {
 		c.moveToFront(fileID)
 		c.hits++
+		if fileSize > 0 {
+			c.hitBytes += fileSize
+		}
 		return true
 	}
 
-	fileSize := c.files[fileID].Size
+	if fileSize > 0 {
+		c.missBytes += fileSize
+	}
 	if fileSize < 0 || fileSize > c.capacity {
 		c.rejected++
 		return false
@@ -71,6 +84,7 @@ func (c *LRUCache) Access(fileID int) bool {
 	if (c.capacity - c.usedCapacity) >= fileSize {
 		c.pushFront(fileID)
 		c.usedCapacity += fileSize
+		c.insertions++
 	}
 
 	return false
@@ -128,8 +142,12 @@ func (c *LRUCache) Stats() CacheStats {
 		Misses:           c.requests - c.hits,
 		Evictions:        c.evictions,
 		RejectedRequests: c.rejected,
+		Insertions:       c.insertions,
 		CachedFiles:      c.cachedCount,
 		Capacity:         c.capacity,
 		UsedCapacity:     c.usedCapacity,
+		RequestedBytes:   c.requestedBytes,
+		HitBytes:         c.hitBytes,
+		MissBytes:        c.missBytes,
 	}
 }

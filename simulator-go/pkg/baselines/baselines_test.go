@@ -81,6 +81,12 @@ func TestBaselineStats(t *testing.T) {
 	if stats.HitRate() != 0.25 || stats.Utilization() != 1 {
 		t.Fatalf("unexpected derived stats: hit rate %.2f, utilization %.2f", stats.HitRate(), stats.Utilization())
 	}
+	if stats.Insertions != 3 || stats.RequestedBytes != 16 || stats.HitBytes != 4 || stats.MissBytes != 12 {
+		t.Fatalf("unexpected byte stats: %+v", stats)
+	}
+	if stats.MissRate() != 0.75 || stats.ByteHitRate() != 0.25 || stats.AverageRequestBytes() != 4 {
+		t.Fatalf("unexpected comparison metrics: miss rate %.2f, byte hit rate %.2f, average request %.2f", stats.MissRate(), stats.ByteHitRate(), stats.AverageRequestBytes())
+	}
 }
 
 func TestMissesDecreaseForRepeatedLocalWorkload(t *testing.T) {

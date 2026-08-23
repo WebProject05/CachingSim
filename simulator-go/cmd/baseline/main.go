@@ -81,36 +81,68 @@ func main() {
 		run("SIEVE", func() cache { return baselines.NewSIEVECache(cfg, files) }, requestTrace, measurementWindow),
 	}
 
-	fmt.Println("+------------------------------------------------------------+")
-	fmt.Println("| RESULTS                                                    |")
-	fmt.Println("+------------------------------------------------------------+")
+	printComparisonTable(results)
 	for _, result := range results {
 		stats := result.stats
-		elapsedSeconds := result.elapsedSeconds
-		averageNanoseconds := 0.0
-		operationsPerSecond := 0.0
-		if stats.Requests > 0 && elapsedSeconds > 0 {
-			averageNanoseconds = elapsedSeconds * float64(time.Second) / float64(stats.Requests)
-			operationsPerSecond = float64(stats.Requests) / elapsedSeconds
-		}
+		operationsPerSecond, averageNanoseconds := formatTiming(result)
 		printBox(result.name, []string{
 			fmt.Sprintf("Requests          : %d", stats.Requests),
 			fmt.Sprintf("Hits              : %d", stats.Hits),
 			fmt.Sprintf("Misses            : %d", stats.Misses),
 			fmt.Sprintf("Hit rate          : %.2f%%", stats.HitRate()*100),
+			fmt.Sprintf("Miss rate         : %.2f%%", stats.MissRate()*100),
+			fmt.Sprintf("Byte hit rate     : %.2f%%", stats.ByteHitRate()*100),
 			fmt.Sprintf("Evictions         : %d", stats.Evictions),
-			fmt.Sprintf("Rejected          : %d", stats.RejectedRequests),
+			fmt.Sprintf("Eviction rate     : %.2f%%", stats.EvictionRate()*100),
+			fmt.Sprintf("Rejected          : %d (%.2f%%)", stats.RejectedRequests, stats.RejectionRate()*100),
+			fmt.Sprintf("Insertions        : %d", stats.Insertions),
 			fmt.Sprintf("Cached files      : %d", stats.CachedFiles),
 			fmt.Sprintf("Used capacity     : %.2f / %.2f MiB", stats.UsedCapacity, stats.Capacity),
 			fmt.Sprintf("Utilization       : %.2f%%", stats.Utilization()*100),
 			fmt.Sprintf("Free capacity     : %.2f MiB", stats.Capacity-stats.UsedCapacity),
-			fmt.Sprintf("Average ns/request: %.1f", averageNanoseconds),
-			fmt.Sprintf("Operations/sec    : %.0f", operationsPerSecond),
+			fmt.Sprintf("Requested bytes   : %.2f MiB", stats.RequestedBytes),
+			fmt.Sprintf("Hit bytes         : %.2f MiB", stats.HitBytes),
+			fmt.Sprintf("Miss bytes        : %.2f MiB", stats.MissBytes),
+			fmt.Sprintf("Average request   : %.2f MiB", stats.AverageRequestBytes()),
+			fmt.Sprintf("Average ns/request: %s", averageNanoseconds),
+			fmt.Sprintf("Operations/sec    : %s", operationsPerSecond),
 			fmt.Sprintf("Warm-up miss rate : %.2f%%", result.warmupMissRate*100),
 			fmt.Sprintf("Final miss rate   : %.2f%%", result.steadyMissRate*100),
 			fmt.Sprintf("Miss-rate change  : %.2f points", (result.steadyMissRate-result.warmupMissRate)*100),
 		})
 	}
+}
+
+func printComparisonTable(results []runResult) {
+	printBox("ALGORITHM COMPARISON", []string{
+		"Higher hit rate and byte hit rate are better.",
+		"Lower miss, rejection, eviction, and latency values are better.",
+	})
+	fmt.Println("Algorithm     Hit rate  Byte hit  Miss rate  Reject  Evict  Ops/sec  Avg ns/req")
+	fmt.Println("------------  --------  --------  ---------  ------  -----  -------  -----------")
+	for _, result := range results {
+		stats := result.stats
+		operationsPerSecond, averageNanoseconds := formatTiming(result)
+		fmt.Printf("%-12s  %7.2f%%  %7.2f%%  %8.2f%%  %5.2f%%  %5.2f%%  %7s  %11s\n",
+			result.name,
+			stats.HitRate()*100,
+			stats.ByteHitRate()*100,
+			stats.MissRate()*100,
+			stats.RejectionRate()*100,
+			stats.EvictionRate()*100,
+			operationsPerSecond,
+			averageNanoseconds,
+		)
+	}
+	fmt.Println()
+}
+
+func formatTiming(result runResult) (operationsPerSecond string, averageNanoseconds string) {
+	if result.stats.Requests == 0 || result.elapsedSeconds <= 0 {
+		return "n/a", "n/a"
+	}
+	return fmt.Sprintf("%.0f", float64(result.stats.Requests)/result.elapsedSeconds),
+		fmt.Sprintf("%.1f", result.elapsedSeconds*float64(time.Second)/float64(result.stats.Requests))
 }
 
 func run(name string, newCache func() cache, requestTrace []int, measurementWindow int) runResult {

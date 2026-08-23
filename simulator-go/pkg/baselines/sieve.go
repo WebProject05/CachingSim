@@ -6,22 +6,26 @@ import (
 )
 
 type SIEVECache struct {
-	cfg          *config.Config
-	files        []core.FileMetadata
-	capacity     float64
-	usedCapacity float64
-	inCache      []bool
-	visited      []bool
-	prev         []int
-	next         []int
-	head         int
-	tail         int
-	hand         int
-	cachedCount  int
-	requests     int
-	hits         int
-	evictions    int
-	rejected     int
+	cfg            *config.Config
+	files          []core.FileMetadata
+	capacity       float64
+	usedCapacity   float64
+	inCache        []bool
+	visited        []bool
+	prev           []int
+	next           []int
+	head           int
+	tail           int
+	hand           int
+	cachedCount    int
+	requests       int
+	hits           int
+	evictions      int
+	rejected       int
+	insertions     int
+	requestedBytes float64
+	hitBytes       float64
+	missBytes      float64
 }
 
 func NewSIEVECache(cfg *config.Config, files []core.FileMetadata) *SIEVECache {
@@ -52,14 +56,23 @@ func (c *SIEVECache) Access(fileID int) bool {
 		c.rejected++
 		return false
 	}
+	fileSize := c.files[fileID].Size
+	if fileSize > 0 {
+		c.requestedBytes += fileSize
+	}
 
 	if c.inCache[fileID] {
 		c.visited[fileID] = true
+		if fileSize > 0 {
+			c.missBytes += fileSize
+		}
 		c.hits++
+		if fileSize > 0 {
+			c.hitBytes += fileSize
+		}
 		return true
 	}
 
-	fileSize := c.files[fileID].Size
 	if fileSize < 0 || fileSize > c.capacity {
 		c.rejected++
 		return false
@@ -75,6 +88,7 @@ func (c *SIEVECache) Access(fileID int) bool {
 			c.hand = fileID
 		}
 		c.usedCapacity += fileSize
+		c.insertions++
 	}
 
 	return false
@@ -153,8 +167,12 @@ func (c *SIEVECache) Stats() CacheStats {
 		Misses:           c.requests - c.hits,
 		Evictions:        c.evictions,
 		RejectedRequests: c.rejected,
+		Insertions:       c.insertions,
 		CachedFiles:      c.cachedCount,
 		Capacity:         c.capacity,
 		UsedCapacity:     c.usedCapacity,
+		RequestedBytes:   c.requestedBytes,
+		HitBytes:         c.hitBytes,
+		MissBytes:        c.missBytes,
 	}
 }

@@ -96,20 +96,24 @@ func (h *lfuHeap) fix(i int) {
 func (h *lfuHeap) Len() int { return len(h.entries) }
 
 type LFUCache struct {
-	cfg          *config.Config
-	files        []core.FileMetadata
-	capacity     float64
-	usedCapacity float64
-	frequencies  []int
-	cached       []bool
-	lastUsed     []uint64
-	evictionHeap lfuHeap
-	accessNumber uint64
-	cachedCount  int
-	requests     int
-	hits         int
-	evictions    int
-	rejected     int
+	cfg            *config.Config
+	files          []core.FileMetadata
+	capacity       float64
+	usedCapacity   float64
+	frequencies    []int
+	cached         []bool
+	lastUsed       []uint64
+	evictionHeap   lfuHeap
+	accessNumber   uint64
+	cachedCount    int
+	requests       int
+	hits           int
+	evictions      int
+	rejected       int
+	insertions     int
+	requestedBytes float64
+	hitBytes       float64
+	missBytes      float64
 }
 
 func NewLFUCache(cfg *config.Config, files []core.FileMetadata) *LFUCache {
@@ -138,6 +142,9 @@ func (c *LFUCache) Access(fileID int) bool {
 	}
 
 	fileSize := c.files[fileID].Size
+	if fileSize > 0 {
+		c.requestedBytes += fileSize
+	}
 	if fileSize < 0 || fileSize > c.capacity {
 		c.rejected++
 		return false
@@ -152,9 +159,14 @@ func (c *LFUCache) Access(fileID int) bool {
 		c.evictionHeap.entries[entryIndex].lastUsed = c.accessNumber
 		c.evictionHeap.fix(entryIndex)
 		c.hits++
+		if fileSize > 0 {
+			c.hitBytes += fileSize
+		}
 		return true
 	}
-
+	if fileSize > 0 {
+		c.missBytes += fileSize
+	}
 	for (c.capacity-c.usedCapacity) < fileSize && c.cachedCount > 0 {
 		if c.evictionHeap.Len() == 0 {
 			break
@@ -176,6 +188,7 @@ func (c *LFUCache) Access(fileID int) bool {
 		c.evictionHeap.push(lfuEntry{fileID: fileID, frequency: c.frequencies[fileID], lastUsed: c.accessNumber})
 		c.usedCapacity += fileSize
 		c.cachedCount++
+		c.insertions++
 	}
 
 	return false
@@ -188,8 +201,12 @@ func (c *LFUCache) Stats() CacheStats {
 		Misses:           c.requests - c.hits,
 		Evictions:        c.evictions,
 		RejectedRequests: c.rejected,
+		Insertions:       c.insertions,
 		CachedFiles:      c.cachedCount,
 		Capacity:         c.capacity,
 		UsedCapacity:     c.usedCapacity,
+		RequestedBytes:   c.requestedBytes,
+		HitBytes:         c.hitBytes,
+		MissBytes:        c.missBytes,
 	}
 }
