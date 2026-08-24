@@ -20,16 +20,18 @@ import (
 var output io.Writer = os.Stdout
 
 type cache interface {
-	Access(fileID int) bool
+	Access(int) bool
 	Stats() baselines.CacheStats
 }
-
 type runResult struct {
-	name           string
-	stats          baselines.CacheStats
-	elapsedSeconds float64
-	warmupMissRate float64
-	steadyMissRate float64
+	name                                                         string
+	stats                                                        baselines.CacheStats
+	elapsedSeconds, warmupMissRate, steadyMissRate, totalUtility float64
+	cumulativeHits                                               []float64
+}
+type requestEvent struct {
+	fileID int
+	time   float64
 }
 
 func main() {
@@ -38,39 +40,39 @@ func main() {
 	capacity := flag.Float64("capacity", 10000, "cache capacity in MiB")
 	eta := flag.Float64("eta", 1.0, "Zipf popularity exponent")
 	seed := flag.Int64("seed", 42, "random seed used for files and requests")
-	window := flag.Int("window", 0, "requests used for warm-up and final-window miss rates; 0 means 10% of the trace")
-	logPath := flag.String("log", "logs/baseline_runs.log", "append-only log file for experiment output")
+	window := flag.Int("window", 0, "warm-up and final-window size; 0 means 10% of the trace")
+	logPath := flag.String("log", "logs/baseline_runs.log", "append-only log file")
+	graphsPath := flag.String("graphs", "graphs", "directory replaced with graph output")
+	graphInterval := flag.Int("graph-interval", 100, "trials between convergence graph points")
+	cacheSizes := flag.String("cache-sizes", "1000,5000,10000,20000,50000", "cache sizes in MiB")
+	requestRates := flag.String("request-rates", "0.05,0.1,0.2,0.5,1.0", "lambda request rates")
+	zipfEtas := flag.String("zipf-etas", "0.2,0.5,1.0,1.5,2.0", "Zipf eta values")
+	fileLifetimes := flag.String("file-lifetimes", "10,15,20,25,30", "popular-file lifetime values")
+	fileSizes := flag.String("file-sizes", "100,300,500,700,900", "popular-file sizes in MiB")
 	flag.Parse()
-
-	logFile, err := openRunLog(*logPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "could not open run log %q: %v\n", *logPath, err)
+	if err := prepareGraphsDirectory(*graphsPath); err != nil {
+		fmt.Fprintf(os.Stderr, "could not prepare graph directory: %v\n", err)
 		return
 	}
-	defer func() {
-		_ = logFile.Close()
-	}()
-	output = os.Stdout
-
+	logFile, err := openRunLog(*logPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not open run log: %v\n", err)
+		return
+	}
+	defer logFile.Close()
 	if *requests < 1 || *fileCount < 1 || *capacity <= 0 {
 		message := "requests and files must be positive; capacity must be greater than zero"
 		fmt.Fprintln(output, message)
 		writeInvalidRunLog(logFile, *logPath, *seed, *requests, *fileCount, *capacity, *eta, message)
 		return
 	}
-
-	cfg := config.DefaultConfig()
-	cfg.TotalFileTypes = *fileCount
-	cfg.CacheCapacity = *capacity
-	cfg.ZipfEta = *eta
-
-	files := core.GenerateFiles(cfg, rand.New(rand.NewSource(*seed)))
-	generator := smdp.NewGenerator(cfg, *seed)
-	requestTrace := make([]int, *requests)
-	for index := range requestTrace {
-		requestTrace[index] = generator.SampleRequestedFile()
+	if *graphInterval < 1 {
+		*graphInterval = 1
 	}
-
+	cfg := config.DefaultConfig()
+	cfg.TotalFileTypes, cfg.CacheCapacity, cfg.ZipfEta = *fileCount, *capacity, *eta
+	files := core.GenerateFiles(cfg, rand.New(rand.NewSource(*seed)))
+	events := generateRequestEvents(cfg, *seed, *requests)
 	measurementWindow := *window
 	if measurementWindow <= 0 {
 		measurementWindow = *requests / 10
@@ -81,177 +83,110 @@ func main() {
 	if measurementWindow > *requests {
 		measurementWindow = *requests
 	}
-
-	printBox("FIFO / LRU / LFU / SIEVE CACHE EXPERIMENT", []string{
-		fmt.Sprintf("Seed              : %d", *seed),
-		fmt.Sprintf("Requests          : %d", *requests),
-		fmt.Sprintf("Files             : %d", *fileCount),
-		fmt.Sprintf("Capacity          : %.2f MiB", *capacity),
-		fmt.Sprintf("Zipf eta          : %.3f", cfg.ZipfEta),
-		fmt.Sprintf("Lambda source     : %.3f", cfg.LambdaSource),
-		fmt.Sprintf("Measurement window: %d", measurementWindow),
-	})
+	printBox("FIFO / LRU / LFU / SIEVE CACHE EXPERIMENT", []string{fmt.Sprintf("Seed              : %d", *seed), fmt.Sprintf("Requests          : %d", *requests), fmt.Sprintf("Files             : %d", *fileCount), fmt.Sprintf("Capacity          : %.2f MiB", *capacity), fmt.Sprintf("Zipf eta          : %.3f", cfg.ZipfEta), fmt.Sprintf("Lambda source     : %.3f", cfg.LambdaSource), fmt.Sprintf("Measurement window: %d", measurementWindow)})
 	printFileStats(files)
-
-	results := []runResult{
-		run("FIFO", func() cache { return baselines.NewFIFOCache(cfg, files) }, requestTrace, measurementWindow),
-		run("LRU", func() cache { return baselines.NewLRUCache(cfg, files) }, requestTrace, measurementWindow),
-		run("LFU", func() cache { return baselines.NewLFUCache(cfg, files) }, requestTrace, measurementWindow),
-		run("SIEVE", func() cache { return baselines.NewSIEVECache(cfg, files) }, requestTrace, measurementWindow),
-	}
-
+	results := runAll(cfg, files, events, measurementWindow, *graphInterval)
 	printComparisonTable(results)
 	for _, result := range results {
-		stats := result.stats
-		operationsPerSecond, averageNanoseconds := formatTiming(result)
-		printBox(result.name, []string{
-			fmt.Sprintf("Requests          : %d", stats.Requests),
-			fmt.Sprintf("Hits              : %d", stats.Hits),
-			fmt.Sprintf("Misses            : %d", stats.Misses),
-			fmt.Sprintf("Hit rate          : %.2f%%", stats.HitRate()*100),
-			fmt.Sprintf("Miss rate         : %.2f%%", stats.MissRate()*100),
-			fmt.Sprintf("Byte hit rate     : %.2f%%", stats.ByteHitRate()*100),
-			fmt.Sprintf("Evictions         : %d", stats.Evictions),
-			fmt.Sprintf("Eviction rate     : %.2f%%", stats.EvictionRate()*100),
-			fmt.Sprintf("Rejected          : %d (%.2f%%)", stats.RejectedRequests, stats.RejectionRate()*100),
-			fmt.Sprintf("Insertions        : %d", stats.Insertions),
-			fmt.Sprintf("Cached files      : %d", stats.CachedFiles),
-			fmt.Sprintf("Used capacity     : %.2f / %.2f MiB", stats.UsedCapacity, stats.Capacity),
-			fmt.Sprintf("Utilization       : %.2f%%", stats.Utilization()*100),
-			fmt.Sprintf("Free capacity     : %.2f MiB", stats.Capacity-stats.UsedCapacity),
-			fmt.Sprintf("Requested bytes   : %.2f MiB", stats.RequestedBytes),
-			fmt.Sprintf("Hit bytes         : %.2f MiB", stats.HitBytes),
-			fmt.Sprintf("Miss bytes        : %.2f MiB", stats.MissBytes),
-			fmt.Sprintf("Average request   : %.2f MiB", stats.AverageRequestBytes()),
-			fmt.Sprintf("Average ns/request: %s", averageNanoseconds),
-			fmt.Sprintf("Operations/sec    : %s", operationsPerSecond),
-			fmt.Sprintf("Warm-up miss rate : %.2f%%", result.warmupMissRate*100),
-			fmt.Sprintf("Final miss rate   : %.2f%%", result.steadyMissRate*100),
-			fmt.Sprintf("Miss-rate change  : %.2f points", (result.steadyMissRate-result.warmupMissRate)*100),
-		})
+		printResult(result)
+	}
+	if err := writeGraphs(*graphsPath, *seed, *requests, *fileCount, *capacity, cfg.ZipfEta, *graphInterval, *cacheSizes, *requestRates, *zipfEtas, *fileLifetimes, *fileSizes, cfg, files, events, results); err != nil {
+		fmt.Fprintf(os.Stderr, "could not write graphs: %v\n", err)
+		return
 	}
 	writeRunLog(logFile, *logPath, *seed, *requests, *fileCount, *capacity, cfg.ZipfEta, measurementWindow, results)
 }
 
+func generateRequestEvents(cfg *config.Config, seed int64, requests int) []requestEvent {
+	generator := smdp.NewGenerator(cfg, seed)
+	events := make([]requestEvent, requests)
+	currentTime := 0.0
+	for index := range events {
+		currentTime += generator.NextPoissonInterval(cfg.LambdaSource)
+		events[index] = requestEvent{generator.SampleRequestedFile(), currentTime}
+	}
+	return events
+}
+func runAll(cfg *config.Config, files []core.FileMetadata, events []requestEvent, window, interval int) []runResult {
+	return []runResult{run("FIFO", func() cache { return baselines.NewFIFOCache(cfg, files) }, events, files, cfg, window, interval), run("LRU", func() cache { return baselines.NewLRUCache(cfg, files) }, events, files, cfg, window, interval), run("LFU", func() cache { return baselines.NewLFUCache(cfg, files) }, events, files, cfg, window, interval), run("SIEVE", func() cache { return baselines.NewSIEVECache(cfg, files) }, events, files, cfg, window, interval)}
+}
+func run(name string, newCache func() cache, events []requestEvent, files []core.FileMetadata, cfg *config.Config, window, interval int) runResult {
+	c := newCache()
+	warmup, steady, hits := 0, 0, 0
+	utility := 0.0
+	cumulative := make([]float64, 0, (len(events)+interval-1)/interval)
+	start := time.Now()
+	for index, event := range events {
+		if c.Access(event.fileID) {
+			hits++
+			if event.fileID >= 0 && event.fileID < len(files) {
+				utility += files[event.fileID].Utility(event.time, cfg)
+			}
+		} else {
+			if index < window {
+				warmup++
+			}
+			if index >= len(events)-window {
+				steady++
+			}
+		}
+		if (index+1)%interval == 0 || index == len(events)-1 {
+			cumulative = append(cumulative, float64(hits)/float64(index+1)*100)
+		}
+	}
+	return runResult{name, c.Stats(), time.Since(start).Seconds(), float64(warmup) / float64(window), float64(steady) / float64(window), utility, cumulative}
+}
+func formatTiming(result runResult) (string, string) {
+	if result.stats.Requests == 0 || result.elapsedSeconds <= 0 {
+		return "n/a", "n/a"
+	}
+	return fmt.Sprintf("%.0f", float64(result.stats.Requests)/result.elapsedSeconds), fmt.Sprintf("%.1f", result.elapsedSeconds*float64(time.Second)/float64(result.stats.Requests))
+}
+func printResult(result runResult) {
+	s := result.stats
+	ops, latency := formatTiming(result)
+	printBox(result.name, []string{fmt.Sprintf("Requests          : %d", s.Requests), fmt.Sprintf("Hits              : %d", s.Hits), fmt.Sprintf("Misses            : %d", s.Misses), fmt.Sprintf("Hit rate          : %.2f%%", s.HitRate()*100), fmt.Sprintf("Byte hit rate     : %.2f%%", s.ByteHitRate()*100), fmt.Sprintf("Evictions         : %d", s.Evictions), fmt.Sprintf("Utilization       : %.2f%%", s.Utilization()*100), fmt.Sprintf("Total utility     : %.4f", result.totalUtility), fmt.Sprintf("Average ns/request: %s", latency), fmt.Sprintf("Operations/sec    : %s", ops), fmt.Sprintf("Warm-up miss rate : %.2f%%", result.warmupMissRate*100), fmt.Sprintf("Final miss rate   : %.2f%%", result.steadyMissRate*100)})
+}
 func printComparisonTable(results []runResult) {
-	printBox("ALGORITHM COMPARISON", []string{
-		"Higher hit rate and byte hit rate are better.",
-		"Lower miss, rejection, eviction, and latency values are better.",
-	})
+	printBox("ALGORITHM COMPARISON", []string{"Higher hit rate and byte hit rate are better.", "Lower miss, rejection, eviction, and latency values are better."})
 	border := "+------------+--------+--------+--------+--------+--------+--------+"
 	fmt.Fprintln(output, border)
 	fmt.Fprintln(output, "| Algorithm  | Hit %   | Byte %  | Miss %  | Evict % | Util %  | Ops/sec |")
 	fmt.Fprintln(output, border)
-	for _, result := range results {
-		stats := result.stats
-		operationsPerSecond, _ := formatTiming(result)
-		fmt.Fprintf(output, "| %-10s | %6.2f%% | %6.2f%% | %6.2f%% | %6.2f%% | %6.2f%% | %7s |\n",
-			result.name,
-			stats.HitRate()*100,
-			stats.ByteHitRate()*100,
-			stats.MissRate()*100,
-			stats.EvictionRate()*100,
-			stats.Utilization()*100,
-			operationsPerSecond,
-		)
+	for _, r := range results {
+		ops, _ := formatTiming(r)
+		s := r.stats
+		fmt.Fprintf(output, "| %-10s | %6.2f%% | %6.2f%% | %6.2f%% | %6.2f%% | %6.2f%% | %7s |\n", r.name, s.HitRate()*100, s.ByteHitRate()*100, s.MissRate()*100, s.EvictionRate()*100, s.Utilization()*100, ops)
 	}
 	fmt.Fprintln(output, border)
-	fmt.Fprintln(output, "Latency: average nanoseconds per request")
-	for _, result := range results {
-		_, averageNanoseconds := formatTiming(result)
-		fmt.Fprintf(output, "  %-8s %s ns/request\n", result.name, averageNanoseconds)
-	}
-	fmt.Fprintln(output)
 }
-
-func formatTiming(result runResult) (operationsPerSecond string, averageNanoseconds string) {
-	if result.stats.Requests == 0 || result.elapsedSeconds <= 0 {
-		return "n/a", "n/a"
-	}
-	return fmt.Sprintf("%.0f", float64(result.stats.Requests)/result.elapsedSeconds),
-		fmt.Sprintf("%.1f", result.elapsedSeconds*float64(time.Second)/float64(result.stats.Requests))
-}
-
-func openRunLog(logPath string) (*os.File, error) {
-	if directory := filepath.Dir(logPath); directory != "." {
+func openRunLog(path string) (*os.File, error) {
+	if directory := filepath.Dir(path); directory != "." {
 		if err := os.MkdirAll(directory, 0755); err != nil {
 			return nil, err
 		}
 	}
-	return os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	return os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 }
-
-func writeRunLog(logFile io.Writer, logPath string, seed int64, requests, fileCount int, capacity, eta float64, measurementWindow int, results []runResult) {
-	fmt.Fprintf(logFile, "RUN START : %s\n", time.Now().Format(time.RFC3339))
-	fmt.Fprintf(logFile, "LOG FILE  : %s\n", logPath)
-	fmt.Fprintf(logFile, "CONFIG    : seed=%d requests=%d files=%d capacity=%.2f MiB eta=%.3f window=%d\n", seed, requests, fileCount, capacity, eta, measurementWindow)
-	fmt.Fprintln(logFile, "METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | avg_ns/request")
-	for _, result := range results {
-		stats := result.stats
-		_, averageNanoseconds := formatTiming(result)
-		fmt.Fprintf(logFile, "%-8s : %.2f%% | %.2f%% | %.2f%% | %.2f%% | %.2f%% | %s\n",
-			result.name,
-			stats.HitRate()*100,
-			stats.ByteHitRate()*100,
-			stats.MissRate()*100,
-			stats.EvictionRate()*100,
-			stats.Utilization()*100,
-			averageNanoseconds,
-		)
+func writeRunLog(w io.Writer, path string, seed int64, requests, files int, capacity, eta float64, window int, results []runResult) {
+	fmt.Fprintf(w, "RUN START : %s\nLOG FILE  : %s\nCONFIG    : seed=%d requests=%d files=%d capacity=%.2f MiB eta=%.3f window=%d\n", time.Now().Format(time.RFC3339), path, seed, requests, files, capacity, eta, window)
+	for _, r := range results {
+		fmt.Fprintf(w, "%-8s : %.2f%% | %.2f%% | %.2f%%\n", r.name, r.stats.HitRate()*100, r.stats.ByteHitRate()*100, r.stats.MissRate()*100)
 	}
-	fmt.Fprintf(logFile, "RUN END   : %s\n\n", time.Now().Format(time.RFC3339))
+	fmt.Fprintf(w, "RUN END   : %s\n\n", time.Now().Format(time.RFC3339))
 }
-
-func writeInvalidRunLog(logFile io.Writer, logPath string, seed int64, requests, fileCount int, capacity, eta float64, message string) {
-	fmt.Fprintf(logFile, "RUN START : %s\n", time.Now().Format(time.RFC3339))
-	fmt.Fprintf(logFile, "LOG FILE  : %s\n", logPath)
-	fmt.Fprintf(logFile, "CONFIG    : seed=%d requests=%d files=%d capacity=%.2f MiB eta=%.3f\n", seed, requests, fileCount, capacity, eta)
-	fmt.Fprintf(logFile, "STATUS    : invalid - %s\n", message)
-	fmt.Fprintf(logFile, "RUN END   : %s\n\n", time.Now().Format(time.RFC3339))
+func writeInvalidRunLog(w io.Writer, path string, seed int64, requests, files int, capacity, eta float64, message string) {
+	fmt.Fprintf(w, "RUN START : %s\nLOG FILE  : %s\nCONFIG    : seed=%d requests=%d files=%d capacity=%.2f MiB eta=%.3f\nSTATUS    : invalid - %s\nRUN END   : %s\n\n", time.Now().Format(time.RFC3339), path, seed, requests, files, capacity, eta, message, time.Now().Format(time.RFC3339))
 }
-
-func run(name string, newCache func() cache, requestTrace []int, measurementWindow int) runResult {
-	cache := newCache()
-	warmupMisses := 0
-	steadyMisses := 0
-	start := time.Now()
-	for index, fileID := range requestTrace {
-		if !cache.Access(fileID) {
-			if index < measurementWindow {
-				warmupMisses++
-			}
-			if index >= len(requestTrace)-measurementWindow {
-				steadyMisses++
-			}
-		}
-	}
-	return runResult{
-		name:           name,
-		stats:          cache.Stats(),
-		elapsedSeconds: time.Since(start).Seconds(),
-		warmupMissRate: float64(warmupMisses) / float64(measurementWindow),
-		steadyMissRate: float64(steadyMisses) / float64(measurementWindow),
-	}
-}
-
 func printFileStats(files []core.FileMetadata) {
-	minimum := math.Inf(1)
-	maximum := math.Inf(-1)
-	total := 0.0
+	minimum, maximum, total := math.Inf(1), math.Inf(-1), 0.0
 	for _, file := range files {
 		minimum = math.Min(minimum, file.Size)
 		maximum = math.Max(maximum, file.Size)
 		total += file.Size
 	}
-	printBox("GENERATED FILES", []string{
-		fmt.Sprintf("Count             : %d", len(files)),
-		fmt.Sprintf("Total size        : %.2f MiB", total),
-		fmt.Sprintf("Average size      : %.2f MiB", total/float64(len(files))),
-		fmt.Sprintf("Minimum size      : %.2f MiB", minimum),
-		fmt.Sprintf("Maximum size      : %.2f MiB", maximum),
-	})
+	printBox("GENERATED FILES", []string{fmt.Sprintf("Count             : %d", len(files)), fmt.Sprintf("Total size        : %.2f MiB", total), fmt.Sprintf("Average size      : %.2f MiB", total/float64(len(files))), fmt.Sprintf("Minimum size      : %.2f MiB", minimum), fmt.Sprintf("Maximum size      : %.2f MiB", maximum)})
 }
-
 func printBox(title string, lines []string) {
 	width := len(title) + 4
 	for _, line := range lines {
