@@ -27,7 +27,7 @@ type runResult struct {
 	name                                                         string
 	stats                                                        baselines.CacheStats
 	elapsedSeconds, warmupMissRate, steadyMissRate, totalUtility float64
-	cumulativeHits                                               []float64
+	cumulativeTrials, cumulativeHits                             []float64
 }
 type requestEvent struct {
 	fileID int
@@ -115,6 +115,7 @@ func run(name string, newCache func() cache, events []requestEvent, files []core
 	warmup, steady, hits := 0, 0, 0
 	utility := 0.0
 	cumulative := make([]float64, 0, (len(events)+interval-1)/interval)
+	cumulativeTrials := make([]float64, 0, cap(cumulative))
 	start := time.Now()
 	for index, event := range events {
 		if c.Access(event.fileID) {
@@ -131,10 +132,11 @@ func run(name string, newCache func() cache, events []requestEvent, files []core
 			}
 		}
 		if (index+1)%interval == 0 || index == len(events)-1 {
+			cumulativeTrials = append(cumulativeTrials, float64(index+1))
 			cumulative = append(cumulative, float64(hits)/float64(index+1)*100)
 		}
 	}
-	return runResult{name, c.Stats(), time.Since(start).Seconds(), float64(warmup) / float64(window), float64(steady) / float64(window), utility, cumulative}
+	return runResult{name, c.Stats(), time.Since(start).Seconds(), float64(warmup) / float64(window), float64(steady) / float64(window), utility, cumulativeTrials, cumulative}
 }
 func formatTiming(result runResult) (string, string) {
 	if result.stats.Requests == 0 || result.elapsedSeconds <= 0 {
@@ -169,9 +171,20 @@ func openRunLog(path string) (*os.File, error) {
 	return os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 }
 func writeRunLog(w io.Writer, path string, seed int64, requests, files int, capacity, eta float64, window int, results []runResult) {
-	fmt.Fprintf(w, "RUN START : %s\nLOG FILE  : %s\nCONFIG    : seed=%d requests=%d files=%d capacity=%.2f MiB eta=%.3f window=%d\n", time.Now().Format(time.RFC3339), path, seed, requests, files, capacity, eta, window)
+	fmt.Fprintf(w, "RUN START : %s\n", time.Now().Format(time.RFC3339))
+	fmt.Fprintf(w, "LOG FILE  : %s\n", path)
+	fmt.Fprintf(w, "CONFIG    : seed=%d requests=%d files=%d capacity=%.2f MiB eta=%.3f window=%d\n", seed, requests, files, capacity, eta, window)
+	fmt.Fprintln(w, "METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | avg_ns/request")
 	for _, r := range results {
-		fmt.Fprintf(w, "%-8s : %.2f%% | %.2f%% | %.2f%%\n", r.name, r.stats.HitRate()*100, r.stats.ByteHitRate()*100, r.stats.MissRate()*100)
+		_, latency := formatTiming(r)
+		fmt.Fprintf(w, "%-8s : %.2f%% | %.2f%% | %.2f%% | %.2f%% | %.2f%% | %s\n",
+			r.name,
+			r.stats.HitRate()*100,
+			r.stats.ByteHitRate()*100,
+			r.stats.MissRate()*100,
+			r.stats.EvictionRate()*100,
+			r.stats.Utilization()*100,
+			latency)
 	}
 	fmt.Fprintf(w, "RUN END   : %s\n\n", time.Now().Format(time.RFC3339))
 }

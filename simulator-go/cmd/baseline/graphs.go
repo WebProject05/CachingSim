@@ -111,13 +111,32 @@ func parseValues(text string) []float64 {
 func convergenceSeries(results []runResult, interval int) []lineSeries {
 	series := make([]lineSeries, len(results))
 	for i, result := range results {
-		x := make([]float64, len(result.cumulativeHits))
-		for j := range x {
-			x[j] = float64((j + 1) * interval)
+		x := result.cumulativeTrials
+		if len(x) == 0 {
+			x = make([]float64, len(result.cumulativeHits))
+			for j := range x {
+				x[j] = float64((j + 1) * interval)
+			}
 		}
-		series[i] = lineSeries{result.name, x, result.cumulativeHits}
+		x, y := downsampleSeries(x, result.cumulativeHits, 250)
+		series[i] = lineSeries{result.name, x, y}
 	}
 	return series
+}
+
+func downsampleSeries(x, y []float64, limit int) ([]float64, []float64) {
+	if len(x) <= limit {
+		return x, y
+	}
+	step := float64(len(x)-1) / float64(limit-1)
+	downsampledX := make([]float64, 0, limit)
+	downsampledY := make([]float64, 0, limit)
+	for index := 0; index < limit; index++ {
+		position := int(math.Round(float64(index) * step))
+		downsampledX = append(downsampledX, x[position])
+		downsampledY = append(downsampledY, y[position])
+	}
+	return downsampledX, downsampledY
 }
 func mostPopularFile(events []requestEvent) int {
 	counts := make(map[int]int)

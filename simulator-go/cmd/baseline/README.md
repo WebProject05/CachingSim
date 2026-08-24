@@ -2,7 +2,7 @@
 
 `main.go` creates deterministic files and one Zipf request trace, then replays that identical trace through FIFO, LRU, LFU, and SIEVE. This keeps algorithm comparisons fair.
 
-Useful flags include `-requests`, `-files`, `-capacity`, `-eta`, `-seed`, `-window`, `-log`, and `-graphs`. Every invocation appends a compact record to `logs/baseline_runs.log`: shared configuration plus six comparison metrics per algorithm. The terminal still shows the complete report. Parent directories are created automatically; use `-log path/to/other.log` to select another file.
+Useful flags include `-requests`, `-files`, `-capacity`, `-eta`, `-seed`, `-window`, `-log`, and `-graphs`. Every invocation appends a compact record to `logs/baseline_runs.log`: shared configuration plus the six metrics listed in the `METRICS` line for each algorithm. The terminal still shows the complete report. Parent directories are created automatically; use `-log path/to/other.log` to select another file.
 
 Each run replaces the `graphs` directory (or the path passed to `-graphs`) and writes:
 
