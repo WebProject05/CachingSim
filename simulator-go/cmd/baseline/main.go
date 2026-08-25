@@ -28,7 +28,7 @@ type runResult struct {
 	name                                                         string
 	stats                                                        baselines.CacheStats
 	elapsedSeconds, warmupMissRate, steadyMissRate, totalUtility float64
-	cumulativeTrials, cumulativeHits                             []float64
+	cumulativeTrials, cumulativeMisses                           []float64
 }
 type requestEvent struct {
 	fileID int
@@ -110,11 +110,9 @@ func generateRequestEvents(cfg *config.Config, seed int64, requests int) []reque
 	return events
 }
 
-
 func runAll(cfg *config.Config, files []core.FileMetadata, events []requestEvent, window, interval int) []runResult {
 	return runAllWithConcurrency(cfg, files, events, window, interval, false)
 }
-
 
 func runAllWithConcurrency(cfg *config.Config, files []core.FileMetadata, events []requestEvent, window, interval int, concurrent bool) []runResult {
 	algorithms := []struct {
@@ -149,7 +147,6 @@ func runAllWithConcurrency(cfg *config.Config, files []core.FileMetadata, events
 	return results
 }
 
-
 func run(name string, newCache func() cache, events []requestEvent, files []core.FileMetadata, cfg *config.Config, window, interval int) runResult {
 	c := newCache()
 	warmup, steady, hits := 0, 0, 0
@@ -173,12 +170,11 @@ func run(name string, newCache func() cache, events []requestEvent, files []core
 		}
 		if (index+1)%interval == 0 || index == len(events)-1 {
 			cumulativeTrials = append(cumulativeTrials, float64(index+1))
-			cumulative = append(cumulative, float64(hits)/float64(index+1)*100)
+			cumulative = append(cumulative, 100-float64(hits)/float64(index+1)*100)
 		}
 	}
 	return runResult{name, c.Stats(), time.Since(start).Seconds(), float64(warmup) / float64(window), float64(steady) / float64(window), utility, cumulativeTrials, cumulative}
 }
-
 
 func formatTiming(result runResult) (string, string) {
 	if result.stats.Requests == 0 || result.elapsedSeconds <= 0 {
@@ -187,13 +183,11 @@ func formatTiming(result runResult) (string, string) {
 	return fmt.Sprintf("%.0f", float64(result.stats.Requests)/result.elapsedSeconds), fmt.Sprintf("%.1f", result.elapsedSeconds*float64(time.Second)/float64(result.stats.Requests))
 }
 
-
 func printResult(result runResult) {
 	s := result.stats
 	ops, latency := formatTiming(result)
 	printBox(result.name, []string{fmt.Sprintf("Requests          : %d", s.Requests), fmt.Sprintf("Hits              : %d", s.Hits), fmt.Sprintf("Misses            : %d", s.Misses), fmt.Sprintf("Hit rate          : %.2f%%", s.HitRate()*100), fmt.Sprintf("Byte hit rate     : %.2f%%", s.ByteHitRate()*100), fmt.Sprintf("Evictions         : %d", s.Evictions), fmt.Sprintf("Utilization       : %.2f%%", s.Utilization()*100), fmt.Sprintf("Total utility     : %.4f", result.totalUtility), fmt.Sprintf("Average ns/request: %s", latency), fmt.Sprintf("Operations/sec    : %s", ops), fmt.Sprintf("Warm-up miss rate : %.2f%%", result.warmupMissRate*100), fmt.Sprintf("Final miss rate   : %.2f%%", result.steadyMissRate*100)})
 }
-
 
 func printComparisonTable(results []runResult) {
 	printBox("ALGORITHM COMPARISON", []string{"Higher hit rate and byte hit rate are better.", "Lower miss, rejection, eviction, and latency values are better."})
@@ -209,7 +203,6 @@ func printComparisonTable(results []runResult) {
 	fmt.Fprintln(output, border)
 }
 
-
 func openRunLog(path string) (*os.File, error) {
 	if directory := filepath.Dir(path); directory != "." {
 		if err := os.MkdirAll(directory, 0755); err != nil {
@@ -218,7 +211,6 @@ func openRunLog(path string) (*os.File, error) {
 	}
 	return os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 }
-
 
 func writeRunLog(w io.Writer, path string, seed int64, requests, files int, capacity, eta float64, window int, concurrent bool, results []runResult) {
 	fmt.Fprintf(w, "RUN START : %s\n", time.Now().Format(time.RFC3339))
@@ -239,11 +231,9 @@ func writeRunLog(w io.Writer, path string, seed int64, requests, files int, capa
 	fmt.Fprintf(w, "RUN END   : %s\n\n", time.Now().Format(time.RFC3339))
 }
 
-
 func writeInvalidRunLog(w io.Writer, path string, seed int64, requests, files int, capacity, eta float64, message string) {
 	fmt.Fprintf(w, "RUN START : %s\nLOG FILE  : %s\nCONFIG    : seed=%d requests=%d files=%d capacity=%.2f MiB eta=%.3f\nSTATUS    : invalid - %s\nRUN END   : %s\n\n", time.Now().Format(time.RFC3339), path, seed, requests, files, capacity, eta, message, time.Now().Format(time.RFC3339))
 }
-
 
 func printFileStats(files []core.FileMetadata) {
 	minimum, maximum, total := math.Inf(1), math.Inf(-1), 0.0
@@ -254,7 +244,6 @@ func printFileStats(files []core.FileMetadata) {
 	}
 	printBox("GENERATED FILES", []string{fmt.Sprintf("Count             : %d", len(files)), fmt.Sprintf("Total size        : %.2f MiB", total), fmt.Sprintf("Average size      : %.2f MiB", total/float64(len(files))), fmt.Sprintf("Minimum size      : %.2f MiB", minimum), fmt.Sprintf("Maximum size      : %.2f MiB", maximum)})
 }
-
 
 func printBox(title string, lines []string) {
 	width := len(title) + 4

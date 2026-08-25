@@ -34,30 +34,30 @@ func writeGraphs(path string, seed int64, requests, fileCount int, capacity, eta
 	if err := writeResultsCSV(path, seed, requests, fileCount, capacity, eta, results); err != nil {
 		return err
 	}
-	if err := writeLineChart(filepath.Join(path, "cumulative_hit_rate.svg"), "Hit-rate convergence", "Trial", "Cumulative hit rate (%)", convergenceSeries(results, interval)); err != nil {
+	if err := writeLineChart(filepath.Join(path, "cumulative_miss_rate.svg"), "Miss-rate convergence", "Trial", "Cumulative miss rate (%)", convergenceSeries(results, interval)); err != nil {
 		return err
 	}
 	popularFile := mostPopularFile(events)
 	base := []sweepSpec{
-		{"hit_rate_vs_cache_size.svg", "Hit rate vs cache size", "Cache size (MiB)", "Hit rate (%)", parseValues(cacheSizeText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
+		{"miss_rate_vs_cache_size.svg", "Miss ratio vs cache size", "Cache size (MiB)", "Miss ratio (%)", parseValues(cacheSizeText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 			n := *c
 			n.CacheCapacity = v
 			return f, &n
 		}},
-		{"hit_rate_vs_request_rate.svg", "Hit rate vs request rate", "Request rate lambda", "Hit rate (%)", parseValues(rateText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
+		{"miss_rate_vs_request_rate.svg", "Miss ratio vs request rate", "Request rate lambda", "Miss ratio (%)", parseValues(rateText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 			n := *c
 			n.LambdaSource = v
 			return f, &n
 		}},
-		{"hit_rate_vs_zipf_eta.svg", "Hit rate vs popularity skewness", "Zipf eta", "Hit rate (%)", parseValues(etaText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
+		{"miss_rate_vs_zipf_eta.svg", "Miss ratio vs popularity skewness", "Zipf eta", "Miss ratio (%)", parseValues(etaText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 			n := *c
 			n.ZipfEta = v
 			return f, &n
 		}},
-		{"hit_rate_vs_file_lifetime.svg", "Hit rate vs popular-file lifetime", "File lifetime", "Hit rate (%)", parseValues(lifetimeText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
+		{"miss_rate_vs_file_lifetime.svg", "Miss ratio vs popular-file lifetime", "File lifetime", "Miss ratio (%)", parseValues(lifetimeText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 			return modifyPopularFile(f, v, false, popularFile), c
 		}},
-		{"hit_rate_vs_file_size.svg", "Hit rate vs popular-file size", "File size (MiB)", "Hit rate (%)", parseValues(sizeText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
+		{"miss_rate_vs_file_size.svg", "Miss ratio vs popular-file size", "File size (MiB)", "Miss ratio (%)", parseValues(sizeText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 			return modifyPopularFile(f, v, true, popularFile), c
 		}},
 		{"total_utility_vs_cache_size.svg", "Total utility vs cache size", "Cache size (MiB)", "Total utility", parseValues(cacheSizeText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
@@ -80,7 +80,7 @@ func writeGraphs(path string, seed int64, requests, fileCount int, capacity, eta
 				if spec.file == "total_utility_vs_cache_size.svg" {
 					series[i].y[point] = result.totalUtility
 				} else {
-					series[i].y[point] = result.stats.HitRate() * 100
+					series[i].y[point] = result.stats.MissRate() * 100
 				}
 			}
 		}
@@ -113,12 +113,12 @@ func convergenceSeries(results []runResult, interval int) []lineSeries {
 	for i, result := range results {
 		x := result.cumulativeTrials
 		if len(x) == 0 {
-			x = make([]float64, len(result.cumulativeHits))
+			x = make([]float64, len(result.cumulativeMisses))
 			for j := range x {
 				x[j] = float64((j + 1) * interval)
 			}
 		}
-		x, y := downsampleSeries(x, result.cumulativeHits, 250)
+		x, y := downsampleSeries(x, result.cumulativeMisses, 250)
 		series[i] = lineSeries{result.name, x, y}
 	}
 	return series

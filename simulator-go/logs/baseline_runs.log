@@ -128,3 +128,63 @@ LFU      : 99.67% | 99.59% | 0.33% | 0.33% | 99.79% | 41.9
 SIEVE    : 99.69% | 99.63% | 0.31% | 0.31% | 99.39% | 31.9
 RUN END   : 2026-08-25T10:45:53+05:30
 
+RUN START : 2026-08-26T00:33:13+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=10000000 files=1000 capacity=100000.00 MiB eta=1.100 window=1000000 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | avg_ns/request
+FIFO     : 71.10% | 69.97% | 28.90% | 28.90% | 99.90% | 154.0
+LRU      : 75.88% | 75.06% | 24.12% | 24.12% | 99.69% | 53.0
+LFU      : 80.83% | 80.26% | 19.17% | 19.17% | 99.80% | 93.1
+SIEVE    : 81.84% | 81.12% | 18.15% | 18.15% | 99.83% | 74.8
+RUN END   : 2026-08-26T00:33:13+05:30
+
+RUN START : 2026-08-26T00:34:13+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=7 requests=200 files=10 capacity=1000.00 MiB eta=1.000 window=20 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | avg_ns/request
+FIFO     : 17.00% | 20.01% | 83.00% | 82.50% | 92.04% | n/a
+LRU      : 17.00% | 20.01% | 83.00% | 82.50% | 92.04% | n/a
+LFU      : 17.00% | 20.01% | 83.00% | 82.50% | 92.04% | n/a
+SIEVE    : 17.00% | 20.01% | 83.00% | 82.50% | 92.04% | n/a
+RUN END   : 2026-08-26T00:34:13+05:30
+
+RUN START : 2026-08-26T00:38:39+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=10000000 files=1000 capacity=100000.00 MiB eta=1.100 window=1000000 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | avg_ns/request
+FIFO     : 71.10% | 69.97% | 28.90% | 28.90% | 99.90% | 147.3
+LRU      : 75.88% | 75.06% | 24.12% | 24.12% | 99.69% | 51.4
+LFU      : 80.83% | 80.26% | 19.17% | 19.17% | 99.80% | 81.3
+SIEVE    : 81.84% | 81.12% | 18.15% | 18.15% | 99.83% | 39.0
+RUN END   : 2026-08-26T00:38:39+05:30
+
+RUN START : 2026-08-26T00:43:46+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=10000000 files=1000 capacity=100000.00 MiB eta=1.100 window=1000000 concurrent=true
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | avg_ns/request
+FIFO     : 71.10% | 69.97% | 28.90% | 28.90% | 99.90% | 91.3
+LRU      : 75.88% | 75.06% | 24.12% | 24.12% | 99.69% | 38.0
+LFU      : 80.83% | 80.26% | 19.17% | 19.17% | 99.80% | 64.2
+SIEVE    : 81.84% | 81.12% | 18.15% | 18.15% | 99.83% | 33.9
+RUN END   : 2026-08-26T00:43:46+05:30
+
+RUN START : 2026-08-26T00:46:30+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=7 requests=200 files=10 capacity=1000.00 MiB eta=1.000 window=20 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | avg_ns/request
+FIFO     : 17.00% | 20.01% | 83.00% | 82.50% | 92.04% | n/a
+LRU      : 17.00% | 20.01% | 83.00% | 82.50% | 92.04% | n/a
+LFU      : 17.00% | 20.01% | 83.00% | 82.50% | 92.04% | n/a
+SIEVE    : 17.00% | 20.01% | 83.00% | 82.50% | 92.04% | n/a
+RUN END   : 2026-08-26T00:46:30+05:30
+
+RUN START : 2026-08-26T00:48:23+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=10000000 files=1000 capacity=100000.00 MiB eta=1.100 window=1000000 concurrent=true
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | avg_ns/request
+FIFO     : 71.10% | 69.97% | 28.90% | 28.90% | 99.90% | 71.0
+LRU      : 75.88% | 75.06% | 24.12% | 24.12% | 99.69% | 27.7
+LFU      : 80.83% | 80.26% | 19.17% | 19.17% | 99.80% | 50.4
+SIEVE    : 81.84% | 81.12% | 18.15% | 18.15% | 99.83% | 23.3
+RUN END   : 2026-08-26T00:48:23+05:30
+
