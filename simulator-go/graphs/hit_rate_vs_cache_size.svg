@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700">
 <style>text{font-family:Segoe UI,Arial,sans-serif;fill:#243447}.title{font-size:25px;font-weight:600}.label{font-size:15px}.legend{font-size:14px;font-weight:600}.grid{stroke:#d9e2ec}.axis{stroke:#718096}.line{fill:none;stroke-width:3}.point{stroke:#f7fafc;stroke-width:2}</style>
-<rect width="100%" height="100%" fill="#f7fafc"/><text x="100" y="42" class="title">Hit count vs cache size</text><text x="600" y="630" class="label" text-anchor="middle">Cache size (MiB)</text><text x="20" y="320" class="label" transform="rotate(-90 20 320)">Hit count</text>
+<rect width="100%" height="100%" fill="#f7fafc"/><text x="100" y="42" class="title">Hit rate vs cache size</text><text x="600" y="630" class="label" text-anchor="middle">Cache size (MiB)</text><text x="20" y="320" class="label" transform="rotate(-90 20 320)">Hit rate (%)</text>
 <line x1="100" y1="560" x2="1100" y2="560" class="grid"/><text x="90" y="565" class="label" text-anchor="end">0.00</text>
-<line x1="100" y1="464" x2="1100" y2="464" class="grid"/><text x="90" y="469" class="label" text-anchor="end">1506522.77</text>
-<line x1="100" y1="368" x2="1100" y2="368" class="grid"/><text x="90" y="373" class="label" text-anchor="end">3013045.54</text>
-<line x1="100" y1="272" x2="1100" y2="272" class="grid"/><text x="90" y="277" class="label" text-anchor="end">4519568.31</text>
-<line x1="100" y1="176" x2="1100" y2="176" class="grid"/><text x="90" y="181" class="label" text-anchor="end">6026091.08</text>
-<line x1="100" y1="80" x2="1100" y2="80" class="grid"/><text x="90" y="85" class="label" text-anchor="end">7532613.85</text>
+<line x1="100" y1="464" x2="1100" y2="464" class="grid"/><text x="90" y="469" class="label" text-anchor="end">15.07</text>
+<line x1="100" y1="368" x2="1100" y2="368" class="grid"/><text x="90" y="373" class="label" text-anchor="end">30.13</text>
+<line x1="100" y1="272" x2="1100" y2="272" class="grid"/><text x="90" y="277" class="label" text-anchor="end">45.20</text>
+<line x1="100" y1="176" x2="1100" y2="176" class="grid"/><text x="90" y="181" class="label" text-anchor="end">60.26</text>
+<line x1="100" y1="80" x2="1100" y2="80" class="grid"/><text x="90" y="85" class="label" text-anchor="end">75.33</text>
 <line x1="145.5" y1="80" x2="145.5" y2="560" class="grid"/><text x="145.5" y="585" class="label" text-anchor="middle">1e+03</text>
 <line x1="219.7" y1="80" x2="219.7" y2="560" class="grid"/><text x="219.7" y="585" class="label" text-anchor="middle">5e+03</text>
 <line x1="312.4" y1="80" x2="312.4" y2="560" class="grid"/><text x="312.4" y="585" class="label" text-anchor="middle">1e+04</text>

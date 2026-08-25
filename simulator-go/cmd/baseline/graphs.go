@@ -39,25 +39,25 @@ func writeGraphs(path string, seed int64, requests, fileCount int, capacity, eta
 	}
 	popularFile := mostPopularFile(events)
 	base := []sweepSpec{
-		{"hit_count_vs_cache_size.svg", "Hit count vs cache size", "Cache size (MiB)", "Hit count", parseValues(cacheSizeText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
+		{"hit_rate_vs_cache_size.svg", "Hit rate vs cache size", "Cache size (MiB)", "Hit rate (%)", parseValues(cacheSizeText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 			n := *c
 			n.CacheCapacity = v
 			return f, &n
 		}},
-		{"hit_count_vs_request_rate.svg", "Hit count vs request rate", "Request rate lambda", "Hit count", parseValues(rateText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
+		{"hit_rate_vs_request_rate.svg", "Hit rate vs request rate", "Request rate lambda", "Hit rate (%)", parseValues(rateText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 			n := *c
 			n.LambdaSource = v
 			return f, &n
 		}},
-		{"hit_count_vs_zipf_eta.svg", "Hit count vs popularity skewness", "Zipf eta", "Hit count", parseValues(etaText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
+		{"hit_rate_vs_zipf_eta.svg", "Hit rate vs popularity skewness", "Zipf eta", "Hit rate (%)", parseValues(etaText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 			n := *c
 			n.ZipfEta = v
 			return f, &n
 		}},
-		{"hit_count_vs_file_lifetime.svg", "Hit count vs popular-file lifetime", "File lifetime", "Hit count", parseValues(lifetimeText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
+		{"hit_rate_vs_file_lifetime.svg", "Hit rate vs popular-file lifetime", "File lifetime", "Hit rate (%)", parseValues(lifetimeText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 			return modifyPopularFile(f, v, false, popularFile), c
 		}},
-		{"hit_count_vs_file_size.svg", "Hit count vs popular-file size", "File size (MiB)", "Hit count", parseValues(sizeText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
+		{"hit_rate_vs_file_size.svg", "Hit rate vs popular-file size", "File size (MiB)", "Hit rate (%)", parseValues(sizeText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 			return modifyPopularFile(f, v, true, popularFile), c
 		}},
 		{"total_utility_vs_cache_size.svg", "Total utility vs cache size", "Cache size (MiB)", "Total utility", parseValues(cacheSizeText), func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
@@ -80,7 +80,7 @@ func writeGraphs(path string, seed int64, requests, fileCount int, capacity, eta
 				if spec.file == "total_utility_vs_cache_size.svg" {
 					series[i].y[point] = result.totalUtility
 				} else {
-					series[i].y[point] = float64(result.stats.Hits)
+					series[i].y[point] = result.stats.HitRate() * 100
 				}
 			}
 		}

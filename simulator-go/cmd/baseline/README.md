@@ -8,11 +8,11 @@ Each run replaces the `graphs` directory (or the path passed to `-graphs`) and w
 
 - `results.csv`: one row per algorithm with hit count, hit rates, utility, and run parameters.
 - `cumulative_hit_rate.svg`: trial versus cumulative hit rate, one line per algorithm.
-- `hit_count_vs_cache_size.svg`: cache size versus hit count.
-- `hit_count_vs_request_rate.svg`: lambda request rate versus hit count.
-- `hit_count_vs_zipf_eta.svg`: Zipf eta versus hit count.
-- `hit_count_vs_file_lifetime.svg`: most popular file lifetime versus hit count.
-- `hit_count_vs_file_size.svg`: most popular file size versus hit count.
+- `hit_rate_vs_cache_size.svg`: cache size versus hit rate percentage.
+- `hit_rate_vs_request_rate.svg`: lambda request rate versus hit rate percentage.
+- `hit_rate_vs_zipf_eta.svg`: Zipf eta versus hit rate percentage.
+- `hit_rate_vs_file_lifetime.svg`: most popular file lifetime versus hit rate percentage.
+- `hit_rate_vs_file_size.svg`: most popular file size versus hit rate percentage.
 - `total_utility_vs_cache_size.svg`: cache size versus total utility.
 - `sweep_parameters.csv`: the parameter values used for each sweep.
 
