@@ -68,3 +68,43 @@ LFU      : 47.27% | 44.69% | 52.73% | 52.71% | 92.44% | 72.6
 SIEVE    : 45.86% | 43.65% | 54.14% | 54.12% | 99.39% | 24.9
 RUN END   : 2026-08-25T00:19:03+05:30
 
+RUN START : 2026-08-25T10:27:16+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=100000 files=500 capacity=10000.00 MiB eta=1.000 window=10000 concurrent=true
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | avg_ns/request
+FIFO     : 29.40% | 27.09% | 70.60% | 70.58% | 96.06% | 323.7
+LRU      : 34.17% | 31.24% | 65.83% | 65.81% | 97.12% | 60.7
+LFU      : 47.27% | 44.69% | 52.73% | 52.71% | 92.44% | 192.0
+SIEVE    : 45.86% | 43.65% | 54.14% | 54.12% | 99.39% | 81.6
+RUN END   : 2026-08-25T10:27:16+05:30
+
+RUN START : 2026-08-25T10:29:06+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=10000000 files=500 capacity=10000.00 MiB eta=1.000 window=1000000 concurrent=true
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | avg_ns/request
+FIFO     : 29.65% | 27.34% | 70.35% | 70.35% | 98.25% | 165.3
+LRU      : 34.38% | 31.45% | 65.62% | 65.62% | 99.60% | 50.0
+LFU      : 47.47% | 44.82% | 52.53% | 52.52% | 99.29% | 105.5
+SIEVE    : 45.99% | 43.54% | 54.01% | 54.01% | 98.81% | 49.3
+RUN END   : 2026-08-25T10:29:06+05:30
+
+RUN START : 2026-08-25T10:31:40+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=10000000 files=500 capacity=10000.00 MiB eta=1.000 window=1000000 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | avg_ns/request
+FIFO     : 29.65% | 27.34% | 70.35% | 70.35% | 98.25% | 190.9
+LRU      : 34.38% | 31.45% | 65.62% | 65.62% | 99.60% | 34.6
+LFU      : 47.47% | 44.82% | 52.53% | 52.52% | 99.29% | 85.1
+SIEVE    : 45.99% | 43.54% | 54.01% | 54.01% | 98.81% | 47.5
+RUN END   : 2026-08-25T10:31:40+05:30
+
+RUN START : 2026-08-25T10:34:31+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=10000000 files=1000 capacity=100000.00 MiB eta=1.000 window=1000000 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | avg_ns/request
+FIFO     : 62.56% | 61.59% | 37.44% | 37.43% | 99.64% | 123.9
+LRU      : 67.75% | 67.05% | 32.25% | 32.24% | 99.88% | 36.3
+LFU      : 73.63% | 72.99% | 26.37% | 26.36% | 99.94% | 71.4
+SIEVE    : 75.30% | 74.66% | 24.70% | 24.70% | 99.96% | 30.2
+RUN END   : 2026-08-25T10:34:31+05:30
+

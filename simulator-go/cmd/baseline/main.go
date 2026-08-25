@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"smdp-edge-caching-framework/pkg/baselines"
@@ -44,6 +45,7 @@ func main() {
 	logPath := flag.String("log", "logs/baseline_runs.log", "append-only log file")
 	graphsPath := flag.String("graphs", "graphs", "directory replaced with graph output")
 	graphInterval := flag.Int("graph-interval", 100, "trials between convergence graph points")
+	concurrent := flag.Bool("concurrent", false, "run cache algorithms concurrently; default is sequential")
 	cacheSizes := flag.String("cache-sizes", "1000,5000,10000,20000,50000", "cache sizes in MiB")
 	requestRates := flag.String("request-rates", "0.05,0.1,0.2,0.5,1.0", "lambda request rates")
 	zipfEtas := flag.String("zipf-etas", "0.2,0.5,1.0,1.5,2.0", "Zipf eta values")
@@ -85,16 +87,16 @@ func main() {
 	}
 	printBox("FIFO / LRU / LFU / SIEVE CACHE EXPERIMENT", []string{fmt.Sprintf("Seed              : %d", *seed), fmt.Sprintf("Requests          : %d", *requests), fmt.Sprintf("Files             : %d", *fileCount), fmt.Sprintf("Capacity          : %.2f MiB", *capacity), fmt.Sprintf("Zipf eta          : %.3f", cfg.ZipfEta), fmt.Sprintf("Lambda source     : %.3f", cfg.LambdaSource), fmt.Sprintf("Measurement window: %d", measurementWindow)})
 	printFileStats(files)
-	results := runAll(cfg, files, events, measurementWindow, *graphInterval)
+	results := runAllWithConcurrency(cfg, files, events, measurementWindow, *graphInterval, *concurrent)
 	printComparisonTable(results)
 	for _, result := range results {
 		printResult(result)
 	}
-	if err := writeGraphs(*graphsPath, *seed, *requests, *fileCount, *capacity, cfg.ZipfEta, *graphInterval, *cacheSizes, *requestRates, *zipfEtas, *fileLifetimes, *fileSizes, cfg, files, events, results); err != nil {
+	if err := writeGraphs(*graphsPath, *seed, *requests, *fileCount, *capacity, cfg.ZipfEta, *graphInterval, *cacheSizes, *requestRates, *zipfEtas, *fileLifetimes, *fileSizes, cfg, files, events, results, *concurrent); err != nil {
 		fmt.Fprintf(os.Stderr, "could not write graphs: %v\n", err)
 		return
 	}
-	writeRunLog(logFile, *logPath, *seed, *requests, *fileCount, *capacity, cfg.ZipfEta, measurementWindow, results)
+	writeRunLog(logFile, *logPath, *seed, *requests, *fileCount, *capacity, cfg.ZipfEta, measurementWindow, *concurrent, results)
 }
 
 func generateRequestEvents(cfg *config.Config, seed int64, requests int) []requestEvent {
@@ -108,7 +110,39 @@ func generateRequestEvents(cfg *config.Config, seed int64, requests int) []reque
 	return events
 }
 func runAll(cfg *config.Config, files []core.FileMetadata, events []requestEvent, window, interval int) []runResult {
-	return []runResult{run("FIFO", func() cache { return baselines.NewFIFOCache(cfg, files) }, events, files, cfg, window, interval), run("LRU", func() cache { return baselines.NewLRUCache(cfg, files) }, events, files, cfg, window, interval), run("LFU", func() cache { return baselines.NewLFUCache(cfg, files) }, events, files, cfg, window, interval), run("SIEVE", func() cache { return baselines.NewSIEVECache(cfg, files) }, events, files, cfg, window, interval)}
+	return runAllWithConcurrency(cfg, files, events, window, interval, false)
+}
+func runAllWithConcurrency(cfg *config.Config, files []core.FileMetadata, events []requestEvent, window, interval int, concurrent bool) []runResult {
+	algorithms := []struct {
+		name     string
+		newCache func() cache
+	}{
+		{"FIFO", func() cache { return baselines.NewFIFOCache(cfg, files) }},
+		{"LRU", func() cache { return baselines.NewLRUCache(cfg, files) }},
+		{"LFU", func() cache { return baselines.NewLFUCache(cfg, files) }},
+		{"SIEVE", func() cache { return baselines.NewSIEVECache(cfg, files) }},
+	}
+	results := make([]runResult, len(algorithms))
+	if !concurrent {
+		for index, algorithm := range algorithms {
+			results[index] = run(algorithm.name, algorithm.newCache, events, files, cfg, window, interval)
+		}
+		return results
+	}
+
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(len(algorithms))
+	for index, algorithm := range algorithms {
+		go func(index int, algorithm struct {
+			name     string
+			newCache func() cache
+		}) {
+			defer waitGroup.Done()
+			results[index] = run(algorithm.name, algorithm.newCache, events, files, cfg, window, interval)
+		}(index, algorithm)
+	}
+	waitGroup.Wait()
+	return results
 }
 func run(name string, newCache func() cache, events []requestEvent, files []core.FileMetadata, cfg *config.Config, window, interval int) runResult {
 	c := newCache()
@@ -170,10 +204,10 @@ func openRunLog(path string) (*os.File, error) {
 	}
 	return os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 }
-func writeRunLog(w io.Writer, path string, seed int64, requests, files int, capacity, eta float64, window int, results []runResult) {
+func writeRunLog(w io.Writer, path string, seed int64, requests, files int, capacity, eta float64, window int, concurrent bool, results []runResult) {
 	fmt.Fprintf(w, "RUN START : %s\n", time.Now().Format(time.RFC3339))
 	fmt.Fprintf(w, "LOG FILE  : %s\n", path)
-	fmt.Fprintf(w, "CONFIG    : seed=%d requests=%d files=%d capacity=%.2f MiB eta=%.3f window=%d\n", seed, requests, files, capacity, eta, window)
+	fmt.Fprintf(w, "CONFIG    : seed=%d requests=%d files=%d capacity=%.2f MiB eta=%.3f window=%d concurrent=%t\n", seed, requests, files, capacity, eta, window, concurrent)
 	fmt.Fprintln(w, "METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | avg_ns/request")
 	for _, r := range results {
 		_, latency := formatTiming(r)

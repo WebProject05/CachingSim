@@ -30,7 +30,7 @@ func prepareGraphsDirectory(path string) error {
 	return os.MkdirAll(path, 0755)
 }
 
-func writeGraphs(path string, seed int64, requests, fileCount int, capacity, eta float64, interval int, cacheSizeText, rateText, etaText, lifetimeText, sizeText string, cfg *config.Config, files []core.FileMetadata, events []requestEvent, results []runResult) error {
+func writeGraphs(path string, seed int64, requests, fileCount int, capacity, eta float64, interval int, cacheSizeText, rateText, etaText, lifetimeText, sizeText string, cfg *config.Config, files []core.FileMetadata, events []requestEvent, results []runResult, concurrent bool) error {
 	if err := writeResultsCSV(path, seed, requests, fileCount, capacity, eta, results); err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func writeGraphs(path string, seed int64, requests, fileCount int, capacity, eta
 			var pointFiles []core.FileMetadata
 			pointFiles, pointCfg := spec.configure(cfg, files, value)
 			events := generateRequestEvents(pointCfg, seed, requests)
-			pointResults := runAll(pointCfg, pointFiles, events, maxWindow(requests), interval)
+			pointResults := runAllWithConcurrency(pointCfg, pointFiles, events, maxWindow(requests), interval, concurrent)
 			for i, result := range pointResults {
 				if spec.file == "total_utility_vs_cache_size.svg" {
 					series[i].y[point] = result.totalUtility
