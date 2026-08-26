@@ -2,9 +2,9 @@
 
 `main.go` creates deterministic files and one Zipf request trace, then replays that identical trace through FIFO, LRU, LFU, and SIEVE. This keeps algorithm comparisons fair.
 
-Useful flags include `-requests`, `-files`, `-capacity`, `-eta`, `-seed`, `-window`, `-log`, and `-graphs`. Every invocation appends a compact record to `logs/baseline_runs.log`: shared configuration plus the six metrics listed in the `METRICS` line for each algorithm. The terminal still shows the complete report. Parent directories are created automatically; use `-log path/to/other.log` to select another file.
+Useful flags include `-requests`, `-files`, `-capacity`, `-eta`, `-seed`, `-window`, `-log`, and `-graphs`. Graph generation is disabled by default; pass `-g` to replace the graph directory and generate charts. Every invocation appends a compact record to `logs/baseline_runs.log`: shared configuration plus the six metrics listed in the `METRICS` line for each algorithm. The terminal still shows the complete report. Parent directories are created automatically; use `-log path/to/other.log` to select another file.
 
-Each run replaces the `graphs` directory (or the path passed to `-graphs`) and writes:
+When `-g` is enabled, the run replaces the `graphs` directory (or the path passed to `-graphs`) and writes:
 
 - `results.csv`: one row per algorithm with hit count, hit rates, utility, and run parameters.
 - `cumulative_miss_rate.svg`: trial versus cumulative miss rate, one line per algorithm. Lower and flatter lines indicate better performance and stabilization.
@@ -27,13 +27,19 @@ The first report is a compact comparison table. Detailed sections include hit an
 Example:
 
 ```text
-go run ./cmd/baseline -requests 50000 -seed 42 -graphs graphs
+go run ./cmd/baseline -requests 50000 -seed 42
+```
+
+Generate graphs:
+
+```text
+go run ./cmd/baseline -requests 50000 -seed 42 -g -graphs graphs
 ```
 
 Opt-in concurrent example:
 
 ```text
-go run ./cmd/baseline -requests 50000 -seed 42 -concurrent=true -graphs graphs-concurrent
+go run ./cmd/baseline -requests 50000 -seed 42 -concurrent=true -g -graphs graphs-concurrent
 ```
 
 Keep each flag as a separate argument. In particular, write `-seed 42 -concurrent` with a space; `-seed 42-concurrent` is invalid because the seed must be an integer. Since `concurrent` is a boolean flag, both `-concurrent` and `-concurrent=true` enable it.

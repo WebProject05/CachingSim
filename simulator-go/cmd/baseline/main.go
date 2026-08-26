@@ -44,6 +44,7 @@ func main() {
 	window := flag.Int("window", 0, "warm-up and final-window size; 0 means 10% of the trace")
 	logPath := flag.String("log", "logs/baseline_runs.log", "append-only log file")
 	graphsPath := flag.String("graphs", "graphs", "directory replaced with graph output")
+	generateGraphs := flag.Bool("g", false, "generate graphs after the experiment")
 	graphInterval := flag.Int("graph-interval", 100, "trials between convergence graph points")
 	concurrent := flag.Bool("concurrent", false, "run cache algorithms concurrently; default is sequential")
 	cacheSizes := flag.String("cache-sizes", "1000,5000,10000,20000,50000", "cache sizes in MiB")
@@ -52,9 +53,11 @@ func main() {
 	fileLifetimes := flag.String("file-lifetimes", "10,15,20,25,30", "popular-file lifetime values")
 	fileSizes := flag.String("file-sizes", "100,300,500,700,900", "popular-file sizes in MiB")
 	flag.Parse()
-	if err := prepareGraphsDirectory(*graphsPath); err != nil {
-		fmt.Fprintf(os.Stderr, "could not prepare graph directory: %v\n", err)
-		return
+	if *generateGraphs {
+		if err := prepareGraphsDirectory(*graphsPath); err != nil {
+			fmt.Fprintf(os.Stderr, "could not prepare graph directory: %v\n", err)
+			return
+		}
 	}
 	logFile, err := openRunLog(*logPath)
 	if err != nil {
@@ -92,9 +95,11 @@ func main() {
 	for _, result := range results {
 		printResult(result)
 	}
-	if err := writeGraphs(*graphsPath, *seed, *requests, *fileCount, *capacity, cfg.ZipfEta, *graphInterval, *cacheSizes, *requestRates, *zipfEtas, *fileLifetimes, *fileSizes, cfg, files, events, results, *concurrent); err != nil {
-		fmt.Fprintf(os.Stderr, "could not write graphs: %v\n", err)
-		return
+	if *generateGraphs {
+		if err := writeGraphs(*graphsPath, *seed, *requests, *fileCount, *capacity, cfg.ZipfEta, *graphInterval, *cacheSizes, *requestRates, *zipfEtas, *fileLifetimes, *fileSizes, cfg, files, events, results, *concurrent); err != nil {
+			fmt.Fprintf(os.Stderr, "could not write graphs: %v\n", err)
+			return
+		}
 	}
 	writeRunLog(logFile, *logPath, *seed, *requests, *fileCount, *capacity, cfg.ZipfEta, measurementWindow, *concurrent, results)
 }

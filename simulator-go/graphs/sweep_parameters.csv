@@ -1,7 +1,0 @@
-chart,x_values
-miss_rate_vs_cache_size.svg,1000|5000|10000|20000|50000
-miss_rate_vs_request_rate.svg,0.05|0.1|0.2|0.5|1
-miss_rate_vs_zipf_eta.svg,0.2|0.5|1|1.5|2
-miss_rate_vs_file_lifetime.svg,10|15|20|25|30
-miss_rate_vs_file_size.svg,100|300|500|700|900
-total_utility_vs_cache_size.svg,1000|5000|10000|20000|50000
