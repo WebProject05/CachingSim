@@ -198,3 +198,13 @@ LFU      : 83.66% | 83.25% | 16.34% | 16.33% | 99.91% | 54.1
 SIEVE    : 85.10% | 84.74% | 14.90% | 14.90% | 99.93% | 26.7
 RUN END   : 2026-08-26T23:44:26+05:30
 
+RUN START : 2026-08-27T16:24:52+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=10000000 files=1000 capacity=100000.00 MiB eta=1.050 window=1000000 concurrent=true
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | avg_ns/request
+FIFO     : 66.93% | 65.87% | 33.07% | 33.07% | 99.64% | 128.9
+LRU      : 71.95% | 71.18% | 28.05% | 28.05% | 99.66% | 56.0
+LFU      : 77.10% | 76.26% | 22.90% | 22.90% | 99.87% | 96.2
+SIEVE    : 78.67% | 78.01% | 21.33% | 21.32% | 99.10% | 52.6
+RUN END   : 2026-08-27T16:24:52+05:30
+
