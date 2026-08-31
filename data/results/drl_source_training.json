@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-08-31T15:35:21.723040Z",
+  "metadata": {
+    "seed": 42,
+    "total_files": 50,
+    "cache_capacity_mib": 10000.0,
+    "sliding_window_n": 100,
+    "lambda_source": 0.2,
+    "zipf_eta": 1.0,
+    "gamma": 0.99,
+    "learning_rate": 0.0005,
+    "batch_size": 64,
+    "replay_capacity": 5000
+  },
+  "evaluation_metrics": {
+    "requests": 100,
+    "hits": 59,
+    "hit_rate": 59.0,
+    "total_utility": 46.56517787729442,
+    "total_reward": -633.8152560857185,
+    "avg_reward": -6.338152560857185
+  },
+  "training_trajectory": [
+    {
+      "step": 100,
+      "avg_reward": -12.622361071964844
+    }
+  ]
+}

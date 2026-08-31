@@ -1,0 +1,38 @@
+{
+  "timestamp": "2026-08-31T15:35:21.723040Z",
+  "metadata": {
+    "lambda_source": 0.2,
+    "lambda_target": 0.3,
+    "target_buffer_cap": 10000,
+    "alpha": 0.4,
+    "beta_start": 0.6,
+    "beta_end": 1.0,
+    "n_step": 3
+  },
+  "trajectories": {
+    "PROPOSED": [
+      {
+        "step": 100,
+        "avg_reward": -10.966693928892807
+      }
+    ],
+    "DQFD": [
+      {
+        "step": 100,
+        "avg_reward": -19.32535185213176
+      }
+    ],
+    "LFS": [
+      {
+        "step": 100,
+        "avg_reward": -10.564695169134737
+      }
+    ],
+    "DPR": [
+      {
+        "step": 100,
+        "avg_reward": 18.84543026070465
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "timestamp": "2026-08-31T15:35:21.723040Z",
+  "experiment": "SMDP Edge Caching RL and Transfer Learning",
+  "parameters": {
+    "total_files": 50,
+    "cache_capacity_mib": 10000.0,
+    "lambda_source": 0.2,
+    "lambda_target": 0.3,
+    "zipf_eta": 1.0
+  },
+  "source_evaluation": {
+    "requests": 100,
+    "hits": 59,
+    "hit_rate": 59.0,
+    "total_utility": 46.56517787729442,
+    "total_reward": -633.8152560857185,
+    "avg_reward": -6.338152560857185
+  },
+  "transfer_learning_final_rewards": {
+    "PROPOSED": -10.966693928892807,
+    "DQFD": -19.32535185213176,
+    "LFS": -10.564695169134737,
+    "DPR": 18.84543026070465
+  }
+}

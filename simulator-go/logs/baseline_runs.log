@@ -208,3 +208,39 @@ LFU      : 77.10% | 76.26% | 22.90% | 22.90% | 99.87% | 96.2
 SIEVE    : 78.67% | 78.01% | 21.33% | 21.32% | 99.10% | 52.6
 RUN END   : 2026-08-27T16:24:52+05:30
 
+RUN START : 2026-08-31T20:42:25+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=1000 files=50 capacity=10000.00 MiB eta=1.000 window=100 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 59.20% | 56.65% | 40.80% | 39.10% | 91.82% | 30.76 | n/a
+LRU        : 64.70% | 61.27% | 35.30% | 33.60% | 93.67% | 33.36 | n/a
+LFU        : 73.20% | 69.32% | 26.80% | 24.90% | 94.51% | 37.71 | 598.6
+SIEVE      : 70.80% | 66.87% | 29.20% | 27.40% | 96.17% | 36.40 | n/a
+CTD        : 35.50% | 34.11% | 64.50% | 62.60% | 98.83% | 18.75 | n/a
+SMDP-DDQL  : 52.90% | 49.42% | 47.10% | 45.10% | 95.19% | 31.57 | 552.5
+RUN END   : 2026-08-31T20:42:25+05:30
+
+RUN START : 2026-08-31T20:43:38+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=5000 files=50 capacity=10000.00 MiB eta=1.000 window=500 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 60.74% | 58.50% | 39.26% | 38.90% | 97.34% | 154.10 | 218.6
+LRU        : 66.30% | 63.78% | 33.70% | 33.32% | 99.96% | 167.10 | 67.4
+LFU        : 74.10% | 70.44% | 25.90% | 25.50% | 97.82% | 188.33 | n/a
+SIEVE      : 70.82% | 68.94% | 29.18% | 28.80% | 99.68% | 178.38 | 189.8
+CTD        : 36.60% | 34.70% | 63.40% | 63.04% | 98.50% | 94.17 | 336.3
+SMDP-DDQL  : 53.40% | 50.20% | 46.60% | 46.20% | 92.48% | 158.40 | 556.1
+RUN END   : 2026-08-31T20:43:38+05:30
+
+RUN START : 2026-08-31T21:05:47+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=5000 files=50 capacity=10000.00 MiB eta=1.000 window=500 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 60.74% | 58.50% | 39.26% | 38.90% | 97.34% | 154.10 | 189.3
+LRU        : 66.30% | 63.78% | 33.70% | 33.32% | 99.96% | 167.10 | n/a
+LFU        : 74.10% | 70.44% | 25.90% | 25.50% | 97.82% | 188.33 | 150.0
+SIEVE      : 70.82% | 68.94% | 29.18% | 28.80% | 99.68% | 178.38 | 135.3
+CTD        : 36.60% | 34.70% | 63.40% | 63.04% | 98.50% | 94.17 | 411.3
+SMDP-DDQL  : 53.40% | 50.20% | 46.60% | 46.20% | 92.48% | 158.40 | 525.9
+RUN END   : 2026-08-31T21:05:47+05:30
+

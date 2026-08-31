@@ -5,6 +5,9 @@ import (
 	"smdp-edge-caching-framework/pkg/core"
 )
 
+// SIEVECache implements the SIEVE cache eviction algorithm.
+// SIEVE maintains an eviction hand pointing to cache entries and uses a visited bit
+// to give accessed entries a second chance, evicting the first unvisited item found.
 type SIEVECache struct {
 	cfg            *config.Config
 	files          []core.FileMetadata
@@ -28,6 +31,7 @@ type SIEVECache struct {
 	missBytes      float64
 }
 
+// NewSIEVECache constructs a new SIEVECache.
 func NewSIEVECache(cfg *config.Config, files []core.FileMetadata) *SIEVECache {
 	n := len(files)
 	prev := make([]int, n)
@@ -37,19 +41,21 @@ func NewSIEVECache(cfg *config.Config, files []core.FileMetadata) *SIEVECache {
 		next[i] = -1
 	}
 	return &SIEVECache{
-		cfg:      cfg,
-		files:    files,
-		capacity: cfg.CacheCapacity,
-		inCache:  make([]bool, n),
-		visited:  make([]bool, n),
-		prev:     prev,
-		next:     next,
-		head:     -1,
-		tail:     -1,
-		hand:     -1,
+		cfg:          cfg,
+		files:        files,
+		capacity:     cfg.CacheCapacity,
+		usedCapacity: 0.0,
+		inCache:      make([]bool, n),
+		visited:      make([]bool, n),
+		prev:         prev,
+		next:         next,
+		head:         -1,
+		tail:         -1,
+		hand:         -1,
 	}
 }
 
+// Access simulates a request for fileID. Returns true on cache hit, false on miss.
 func (c *SIEVECache) Access(fileID int) bool {
 	c.requests++
 	if fileID < 0 || fileID >= len(c.files) {
@@ -63,14 +69,15 @@ func (c *SIEVECache) Access(fileID int) bool {
 
 	if c.inCache[fileID] {
 		c.visited[fileID] = true
-		if fileSize > 0 {
-			c.missBytes += fileSize
-		}
 		c.hits++
 		if fileSize > 0 {
 			c.hitBytes += fileSize
 		}
 		return true
+	}
+
+	if fileSize > 0 {
+		c.missBytes += fileSize
 	}
 
 	if fileSize < 0 || fileSize > c.capacity {
@@ -160,6 +167,7 @@ func (c *SIEVECache) remove(id int) {
 	c.cachedCount--
 }
 
+// Stats returns the performance metrics collected by the SIEVE cache.
 func (c *SIEVECache) Stats() CacheStats {
 	return CacheStats{
 		Requests:         c.requests,

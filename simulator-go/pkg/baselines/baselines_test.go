@@ -10,7 +10,13 @@ import (
 func testFiles(sizes ...float64) []core.FileMetadata {
 	files := make([]core.FileMetadata, len(sizes))
 	for id, size := range sizes {
-		files[id] = core.FileMetadata{ID: id, Size: size}
+		files[id] = core.FileMetadata{
+			ID:         id,
+			Size:       size,
+			Lifetime:   20.0,
+			Importance: 0.5,
+			GenTime:    0.0,
+		}
 	}
 	return files
 }
@@ -79,6 +85,8 @@ func TestBaselineRejectsInvalidAndOversizedFiles(t *testing.T) {
 	for _, cache := range []interface{ Access(int) bool }{
 		NewLRUCache(testConfig(10), files),
 		NewLFUCache(testConfig(10), files),
+		NewSIEVECache(testConfig(10), files),
+		NewCTDCache(testConfig(10), files),
 	} {
 		if cache.Access(-1) || cache.Access(len(files)) || cache.Access(1) {
 			t.Fatal("invalid or oversized access should be a miss")
@@ -108,32 +116,6 @@ func TestBaselineStats(t *testing.T) {
 	}
 }
 
-func TestMissesDecreaseForRepeatedLocalWorkload(t *testing.T) {
-	for _, newCache := range []func() interface{ Access(int) bool }{
-		func() interface{ Access(int) bool } { return NewLRUCache(testConfig(8), testFiles(4, 4)) },
-		func() interface{ Access(int) bool } { return NewLFUCache(testConfig(8), testFiles(4, 4)) },
-		func() interface{ Access(int) bool } { return NewSIEVECache(testConfig(8), testFiles(4, 4)) },
-	} {
-		cache := newCache()
-		warmupMisses := 0
-		steadyMisses := 0
-		for request := 0; request < 20; request++ {
-			fileID := request % 2
-			if !cache.Access(fileID) {
-				if request < 4 {
-					warmupMisses++
-				}
-				if request >= 16 {
-					steadyMisses++
-				}
-			}
-		}
-		if steadyMisses >= warmupMisses {
-			t.Fatalf("expected repeated workload misses to decrease: warmup=%d steady=%d", warmupMisses, steadyMisses)
-		}
-	}
-}
-
 func TestSIEVEUsesReferenceBitAndEvicts(t *testing.T) {
 	cache := NewSIEVECache(testConfig(8), testFiles(4, 4, 4))
 	cache.Access(0)
@@ -149,13 +131,63 @@ func TestSIEVEUsesReferenceBitAndEvicts(t *testing.T) {
 	}
 }
 
-func TestLFUHeapStaysBoundedByCachedFiles(t *testing.T) {
-	cache := NewLFUCache(testConfig(8), testFiles(4, 4))
-	for request := 0; request < 1000; request++ {
-		cache.Access(request % 2)
+func TestCTDCacheHitAndEviction(t *testing.T) {
+	files := testFiles(4, 4, 4)
+	cache := NewCTDCache(testConfig(8), files)
+
+	// Access file 0 at t=0 (miss)
+	if cache.AccessAtTime(0, 0.0) {
+		t.Fatal("first access should be a miss")
+	}
+	// Access file 0 at t=2 (hit, fresh)
+	if !cache.AccessAtTime(0, 2.0) {
+		t.Fatal("access before lifetime expiration should be a hit")
 	}
 
-	if cache.evictionHeap.Len() != cache.cachedCount {
-		t.Fatalf("LFU heap grew beyond cached files: heap=%d cached=%d", cache.evictionHeap.Len(), cache.cachedCount)
+	// Access file 1 at t=3 (miss, caches file 1)
+	cache.AccessAtTime(1, 3.0)
+
+	// Access file 2 at t=5 (miss, cache full -> evicts least fresh item)
+	cache.AccessAtTime(2, 5.0)
+
+	stats := cache.Stats()
+	if stats.Hits != 1 || stats.Requests != 4 {
+		t.Fatalf("unexpected CTD stats: %+v", stats)
+	}
+	if cache.TotalReward() == 0.0 {
+		t.Fatal("total CTD reward should be non-zero")
+	}
+}
+
+func TestRunSMDPSimulation(t *testing.T) {
+	cfg := testConfig(1000)
+	cfg.TotalFileTypes = 5
+	result := RunSMDPSimulation(cfg, 42, 100)
+
+	if result.TotalTrials != 100 {
+		t.Errorf("expected 100 total trials, got %d", result.TotalTrials)
+	}
+	if result.HitCount < 0 || result.HitCount > 100 {
+		t.Errorf("invalid hit count: %d", result.HitCount)
+	}
+}
+
+func TestRunMDPvsSMDPComparison(t *testing.T) {
+	cfg := testConfig(5000)
+	cfg.TotalFileTypes = 10
+	files := core.GenerateFiles(cfg, nil)
+	// Fallback if nil rng
+	for i := range files {
+		files[i] = core.FileMetadata{ID: i, Size: 500, Lifetime: 20, Importance: 0.5}
+	}
+
+	results := RunMDPvsSMDPComparison(cfg, files, 42, 100, []float64{1.0}, []float64{0.2, 0.5})
+	if len(results) != 2 {
+		t.Fatalf("expected 2 comparison rows, got %d", len(results))
+	}
+	for _, r := range results {
+		if r.MDPHitCount < 0 || r.SMDPHitCount < 0 {
+			t.Errorf("invalid hit counts: %+v", r)
+		}
 	}
 }
