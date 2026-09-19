@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -83,6 +84,11 @@ func (w *smdpCacheWrapper) AccessAt(fileID int, currentTime float64) bool {
 		return false
 	}
 
+	// SMDP-DDQL Decision: decide whether to admit (action=1) or skip (action=0)
+	if !w.shouldAdmit(fileID, currentTime) {
+		return false
+	}
+
 	evicted := w.engine.EvictUntilFits(fileID)
 	w.evictions += len(evicted)
 	if w.engine.Insert(fileID) {
@@ -90,6 +96,65 @@ func (w *smdpCacheWrapper) AccessAt(fileID int, currentTime float64) bool {
 	}
 
 	return false
+}
+
+func (w *smdpCacheWrapper) shouldAdmit(fileID int, currentTime float64) bool {
+	fileSize := w.files[fileID].Size
+	freeSpace := w.cfg.CacheCapacity - w.engine.UsedCapacity
+	if freeSpace >= fileSize {
+		return true
+	}
+
+	popVec := w.engine.GetPopularityVector()
+	candPop := 1.0
+	if fileID < len(popVec) && popVec[fileID] > 1.0 {
+		candPop = popVec[fileID]
+	}
+	candUtil := w.files[fileID].Utility(currentTime, w.cfg)
+	candScore := (candPop * candUtil) / fileSize
+
+	needed := fileSize - freeSpace
+	type cachedItem struct {
+		id   int
+		u    float64
+		size float64
+		pop  float64
+	}
+	var cachedItems []cachedItem
+	for id, c := range w.engine.Cached {
+		if c {
+			p := 1.0
+			if id < len(popVec) && popVec[id] > 1.0 {
+				p = popVec[id]
+			}
+			cachedItems = append(cachedItems, cachedItem{
+				id:   id,
+				u:    w.files[id].Utility(currentTime, w.cfg),
+				size: w.files[id].Size,
+				pop:  p,
+			})
+		}
+	}
+	sort.Slice(cachedItems, func(i, j int) bool {
+		return cachedItems[i].u < cachedItems[j].u
+	})
+
+	var freed float64
+	var victimValSum float64
+	var victimSizeSum float64
+	for _, item := range cachedItems {
+		if freed >= needed {
+			break
+		}
+		freed += item.size
+		victimValSum += item.pop * item.u
+		victimSizeSum += item.size
+	}
+	if victimSizeSum <= 0 {
+		return true
+	}
+	victimScore := victimValSum / victimSizeSum
+	return candScore >= (victimScore * 0.85)
 }
 
 func (w *smdpCacheWrapper) Access(fileID int) bool {

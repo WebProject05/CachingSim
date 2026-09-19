@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-31T15:35:21.723040Z",
+  "timestamp": "2026-09-19T08:29:03.806795Z",
   "experiment": "SMDP Edge Caching RL and Transfer Learning",
   "parameters": {
     "total_files": 50,
@@ -9,17 +9,17 @@
     "zipf_eta": 1.0
   },
   "source_evaluation": {
-    "requests": 100,
-    "hits": 59,
-    "hit_rate": 59.0,
-    "total_utility": 46.56517787729442,
-    "total_reward": -633.8152560857185,
-    "avg_reward": -6.338152560857185
+    "requests": 1000,
+    "hits": 593,
+    "hit_rate": 59.3,
+    "total_utility": 506.50295462009836,
+    "total_reward": 14913.015400112889,
+    "avg_reward": 14.913015400112888
   },
   "transfer_learning_final_rewards": {
-    "PROPOSED": -10.966693928892807,
-    "DQFD": -19.32535185213176,
-    "LFS": -10.564695169134737,
+    "PROPOSED": 24.85417126017293,
+    "DQFD": 24.756966386953977,
+    "LFS": 23.729091474958743,
     "DPR": 18.84543026070465
   }
 }

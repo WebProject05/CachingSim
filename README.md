@@ -10,6 +10,8 @@ An end-to-end implementation of the research paper:
 
 The framework is structured into a high-performance **Go simulation engine** and an **agentic Python Deep Reinforcement Learning (DRL) & Transfer Learning (TL) system**, communicating seamlessly over **gRPC Protocol Buffers**.
 
+> 💡 **For a deep dive into the complete data transformation lifecycle, schemas, and mathematical pipelines, refer to [DATA_FLOW.md](DATA_FLOW.md).**
+
 ```
 smdp-edge-caching-framework/
 ├── proto/                         # Protocol Buffer definitions
@@ -111,6 +113,8 @@ When the cache lacks capacity for a new file $f_r$, it iteratively finds and rem
 
 ### Workflow 1: Running the Automated Full Experiment Pipeline
 Run the all-in-one automation batch script:
+### Workflow 1: 1-Click Automated Full Research Pipeline
+Run the all-in-one automation batch script from the repository root:
 ```bat
 scripts\run_full_experiment.bat
 ```
@@ -122,6 +126,17 @@ This automatically:
 5. Runs the transfer learning comparison on the target domain ($\lambda_T = 0.3$) across PROPOSED, DQFD, DPR, and LFS.
 6. Saves model checkpoints to `agent-python/checkpoints/` and detailed JSON metrics & plots to `data/results/`.
 7. Stops the background server cleanly.
+This single command automatically executes the entire research methodology end-to-end:
+1. **Builds Simulator Binaries**: Compiles `bin\server.exe` and `bin\baseline.exe`.
+2. **Runs Go Baseline Suite & Sweeps**: Benchmarks FIFO, LRU, LFU, SIEVE, CTD, and SMDP-DDQL, and computes Table III (discrete MDP vs continuous SMDP hit rates), saving data to `data/results/`.
+3. **Starts Live SMDP Server**: Boots the Go gRPC environment on port `50051`.
+4. **Trains & Evaluates Python DDQL Agent**:
+   - Trains the 2-layer MLP Q-network on the source domain ($\lambda_S = 0.2$).
+   - Evaluates converged policy on 1,000 test requests.
+   - Executes transfer learning on target domain ($\lambda_T = 0.3$) across PROPOSED TL, DQfD, DPR, and LFS.
+   - Saves model checkpoints (`agent-python\checkpoints\`) and JSON metrics (`data\results\*.json`).
+5. **Shuts Down Server**: Terminates the background Go engine cleanly.
+6. **Renders All Research Paper Figures**: Runs `scripts\generate_paper_graphs.py` to generate all 25 figures (PNG 300 DPI + SVG) into `graphs\`, `simulator-go\graphs\`, and `data\results\graphs\`.
 
 ---
 
