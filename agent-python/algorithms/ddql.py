@@ -319,6 +319,50 @@ class DDQLAgent:
             'reward_history': avg_reward_history,
         }
 
+    def run_dpr_target_domain(
+        self,
+        env: GrpcEnvClient,
+        total_steps: int = 6000,
+        verbose: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Executes Direct Policy Reuse (DPR) in target domain (lambda_T = 0.3).
+        Reuses the trained source policy greedily without gradient updates (epsilon = 0).
+        Steps through total_steps in the environment, recording running reward and logging progress every 1000 steps.
+        """
+        state, _ = env.reset(seed=self.cfg.seed + 100, lambda_rate=self.cfg.lambda_target, eta=self.cfg.zipf_eta)
+        self.running_reward_sum = 0.0
+        self.running_reward_count = 0
+        self.epsilon = 0.0
+
+        hits = 0
+        total_utility = 0.0
+        avg_reward_history = []
+
+        for step in range(1, total_steps + 1):
+            action = self.select_action(state, evaluate=True)
+            next_state, reward, tau, is_hit, utility = env.step(action)
+
+            if is_hit:
+                hits += 1
+                total_utility += utility
+
+            self.update_running_reward(reward)
+            state = next_state
+
+            if step % 100 == 0:
+                avg_reward_history.append((step, self.avg_reward))
+                if verbose and step % 1000 == 0:
+                    print(f"[Target Domain: DPR] Step [{step:5d}/{total_steps:5d}] | Hit Rate: {hits/step*100:5.2f}% | "
+                          f"Avg Reward: {self.avg_reward:6.2f}")
+
+        return {
+            'hit_rate': hits / total_steps * 100.0,
+            'total_utility': total_utility,
+            'avg_reward': self.avg_reward,
+            'reward_history': avg_reward_history,
+        }
+
     def evaluate(
         self,
         env: GrpcEnvClient,

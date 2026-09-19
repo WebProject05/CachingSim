@@ -66,10 +66,13 @@ def run_transfer_learning_comparison(
 
         if method == "dpr":
             # Copy source weights and evaluate without further training
+            # Copy source weights and execute DPR across target_steps without backpropagation
             agent.online_net.load_state_dict(source_agent.online_net.state_dict())
             agent.target_net.load_state_dict(source_agent.target_net.state_dict())
             eval_res = agent.evaluate(env, eval_requests=1000, lambda_rate=cfg.lambda_target, eta=cfg.zipf_eta)
             tl_results["DPR"] = [(step, eval_res['avg_reward']) for step in range(100, target_steps + 1, 100)]
+            target_res = agent.run_dpr_target_domain(env, total_steps=target_steps, verbose=True)
+            tl_results["DPR"] = target_res['reward_history']
         else:
             agent.prepare_transfer_learning(mode=method)
             target_res = agent.train_target_domain(env, total_steps=target_steps, verbose=True)

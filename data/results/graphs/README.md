@@ -1,6 +1,8 @@
 # Research Paper Figures & Experimental Analysis Guide
+# Experimental Figures & Performance Analysis Guide
 
 This documentation provides an in-depth explanation of all figures generated for the research paper:
+This documentation provides an in-depth explanation of all figures generated across the SMDP edge caching system:
 
 > **"Edge Caching Based on Deep Reinforcement Learning and Transfer Learning"**  
 > *Farnaz Niknia, Ping Wang, Zixu Wang, Aakash Agarwal, and Adib S. Rezaei (IEEE / arXiv:2402.14576v2, 2024)*

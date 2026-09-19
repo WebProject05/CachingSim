@@ -2,8 +2,10 @@
 Comprehensive Research Paper Graph Generator for:
 "Edge Caching Based on Deep Reinforcement Learning and Transfer Learning"
 (Niknia et al., 2024)
+Comprehensive Graph Generator for SMDP Edge Caching Framework.
 
 Generates all figures mentioned in the paper:
+Generates all system evaluation figures:
 - Fig. 1: Non-linear utility curves vs Freshness for various importance values
 - Fig. 3a, 3b, 3c: DRL Convergence (Average Reward, Cache Worth, Unoccupied Cache)
 - Fig. 4a, 4b, 4c: Total Hit Counts vs Popular File Parameters (Lifetime, Size, Importance)
@@ -575,6 +577,7 @@ def main():
 
     print("=" * 70)
     print(" Generating All Research Paper Figures (Niknia et al., 2024)")
+    print(" Generating All Experimental Evaluation Figures (PNG + SVG)")
     print(f" Target directories: {graphs_dir} & {sim_graphs_dir}")
     print("=" * 70)
 

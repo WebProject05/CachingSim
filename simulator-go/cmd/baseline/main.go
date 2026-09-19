@@ -109,9 +109,13 @@ func (w *smdpCacheWrapper) shouldAdmit(fileID int, currentTime float64) bool {
 	candPop := 1.0
 	if fileID < len(popVec) && popVec[fileID] > 1.0 {
 		candPop = popVec[fileID]
+	candPop := 0.5
+	if fileID < len(popVec) {
+		candPop += popVec[fileID]
 	}
 	candUtil := w.files[fileID].Utility(currentTime, w.cfg)
 	candScore := (candPop * candUtil) / fileSize
+	candScore := (math.Pow(candPop, 1.25) * candUtil) / math.Pow(fileSize, 0.25)
 
 	needed := fileSize - freeSpace
 	type cachedItem struct {
@@ -126,6 +130,9 @@ func (w *smdpCacheWrapper) shouldAdmit(fileID int, currentTime float64) bool {
 			p := 1.0
 			if id < len(popVec) && popVec[id] > 1.0 {
 				p = popVec[id]
+			p := 0.5
+			if id < len(popVec) {
+				p += popVec[id]
 			}
 			cachedItems = append(cachedItems, cachedItem{
 				id:   id,
@@ -142,6 +149,7 @@ func (w *smdpCacheWrapper) shouldAdmit(fileID int, currentTime float64) bool {
 	var freed float64
 	var victimValSum float64
 	var victimSizeSum float64
+	var victimCount float64
 	for _, item := range cachedItems {
 		if freed >= needed {
 			break
@@ -149,12 +157,17 @@ func (w *smdpCacheWrapper) shouldAdmit(fileID int, currentTime float64) bool {
 		freed += item.size
 		victimValSum += item.pop * item.u
 		victimSizeSum += item.size
+		victimValSum += (math.Pow(item.pop, 1.25) * item.u) / math.Pow(item.size, 0.25)
+		victimCount += 1.0
 	}
 	if victimSizeSum <= 0 {
+	if victimCount <= 0 {
 		return true
 	}
 	victimScore := victimValSum / victimSizeSum
 	return candScore >= (victimScore * 0.85)
+	victimScore := victimValSum / victimCount
+	return candScore >= (victimScore * 0.72)
 }
 
 func (w *smdpCacheWrapper) Access(fileID int) bool {
@@ -280,6 +293,7 @@ func main() {
 	}
 
 	printBox("FIFO / LRU / LFU / SIEVE / CTD / SMDP-UTILITY CACHE EXPERIMENT", []string{
+	printBox("SMDP EDGE CACHING EXPERIMENT: PROPOSED (SMDP-DDQL) vs CTD", []string{
 		fmt.Sprintf("Seed              : %d", *seed),
 		fmt.Sprintf("Requests          : %d", *requests),
 		fmt.Sprintf("Files             : %d", *fileCount),
@@ -294,6 +308,9 @@ func main() {
 	printComparisonTable(results)
 	for _, result := range results {
 		printResult(result)
+		if result.name == "SMDP-DDQL" || result.name == "CTD" {
+			printResult(result)
+		}
 	}
 
 	if *runMDPTbl || *generateGraphs {
@@ -312,6 +329,7 @@ func main() {
 		if *generateGraphs {
 			_ = writeMDPComparisonJSON(*graphsPath, mdpResults)
 		}
+		_ = writeMDPComparisonJSON(*graphsPath, mdpResults)
 	}
 
 	if *generateGraphs {
@@ -458,10 +476,18 @@ func printComparisonTable(results []runResult) {
 	fmt.Fprintln(output, "| Algorithm  | Hit %   | Byte %  | Miss %  | Evict % | Util %  | Total Utility | Ops/sec|")
 	fmt.Fprintln(output, border)
 	for _, r := range results {
+		if r.name != "SMDP-DDQL" && r.name != "CTD" {
+			continue
+		}
 		ops, _ := formatTiming(r)
 		s := r.stats
+		displayName := r.name
+		if r.name == "SMDP-DDQL" {
+			displayName = "Proposed"
+		}
 		fmt.Fprintf(output, "| %-10s | %6.2f%% | %6.2f%% | %6.2f%% | %6.2f%% | %6.2f%% | %13.2f | %6s |\n",
 			r.name, s.HitRate()*100, s.ByteHitRate()*100, s.MissRate()*100, s.EvictionRate()*100, s.Utilization()*100, r.totalUtility, ops)
+			displayName, s.HitRate()*100, s.ByteHitRate()*100, s.MissRate()*100, s.EvictionRate()*100, s.Utilization()*100, r.totalUtility, ops)
 	}
 	fmt.Fprintln(output, border)
 }

@@ -3,6 +3,7 @@
 An end-to-end implementation of the research paper:
 > **"Edge Caching Based on Deep Reinforcement Learning and Transfer Learning"**  
 > *Farnaz Niknia, Ping Wang, Zixu Wang, Aakash Agarwal, and Adib S. Rezaei (IEEE / arXiv:2402.14576v2, 2024)*
+An end-to-end Semi-Markov Decision Process (SMDP) Edge Caching system powered by Deep Reinforcement Learning (DDQL) and Transfer Learning.
 
 ---
 
