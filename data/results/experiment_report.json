@@ -1,0 +1,765 @@
+{
+  "metadata": {
+    "report_generated_at": "2026-10-23 07:33:41 UTC",
+    "environment": "SMDP Edge Caching (Go Simulation Engine + Python PyTorch DDQL)",
+    "evaluated_algorithms": [
+      "Proposed (SMDP-DDQL)",
+      "CTD (Continuous Time Delay Baseline)",
+      "Proposed TL (Transfer Learning with Eq. 6 Priority & Demonstrations)",
+      "DQfD (Standard Deep Q-learning from Demonstrations, Eq. 5 Priority)",
+      "LFS (Learning From Scratch)",
+      "DPR (Direct Policy Reuse)"
+    ],
+    "excluded_classical_baselines": [
+      "FIFO",
+      "LIFO",
+      "LRU",
+      "LFU",
+      "SIEVE"
+    ],
+    "system_configuration": {
+      "total_file_types": 50,
+      "cache_capacity_mib": 10000.0,
+      "zipf_popularity_eta": 1.0,
+      "lambda_source": 0.2,
+      "lambda_target": 0.3,
+      "gamma_continuous": "gamma^tau (0.99^tau)",
+      "neural_network": "2-Layer MLP (16-16, ReLU)",
+      "per_buffer_capacity": 5000,
+      "target_buffer_capacity": 10000,
+      "n_step_horizon": 3
+    }
+  },
+  "caching_performance": {
+    "CTD": {
+      "requests": 5000,
+      "hits": 793,
+      "misses": 4207,
+      "hit_rate_pct": 15.86,
+      "byte_hit_rate_pct": 15.09,
+      "miss_rate_pct": 84.14,
+      "evictions": 3235,
+      "eviction_rate_pct": 64.7,
+      "cached_files": 18,
+      "used_capacity_mib": 9849.92,
+      "utilization_pct": 98.5,
+      "total_utility": 40.0823,
+      "warmup_miss_rate_pct": 87.2,
+      "final_miss_rate_pct": 84.8
+    },
+    "Proposed (SMDP-DDQL)": {
+      "requests": 5000,
+      "hits": 616,
+      "misses": 4384,
+      "hit_rate_pct": 12.32,
+      "byte_hit_rate_pct": 10.25,
+      "miss_rate_pct": 87.68,
+      "evictions": 211,
+      "eviction_rate_pct": 4.22,
+      "cached_files": 23,
+      "used_capacity_mib": 9816.48,
+      "utilization_pct": 98.16,
+      "total_utility": 34.4326,
+      "warmup_miss_rate_pct": 90.2,
+      "final_miss_rate_pct": 88.8
+    }
+  },
+  "relative_improvements": {
+    "hit_rate_absolute_gain_pct": -3.54,
+    "hit_rate_relative_improvement_pct": -22.32,
+    "total_utility_gain_pct": -14.1,
+    "eviction_reduction_pct": 93.48
+  },
+  "source_domain_drl": {
+    "training_steps": 5000,
+    "final_training_average_reward": 10.7081,
+    "policy_evaluation_1000_requests": {
+      "requests": 1000,
+      "hits": 216,
+      "hit_rate_pct": 21.6,
+      "total_utility": 97.98,
+      "total_reward": 11739.36,
+      "average_reward_per_step": 11.7394
+    }
+  },
+  "target_domain_transfer_learning": {
+    "PROPOSED": {
+      "initial_reward_step_100": -27.3126,
+      "midpoint_reward": 16.2437,
+      "final_asymptotic_reward": 17.3024,
+      "peak_reward": 17.3024,
+      "recorded_steps": 6000
+    },
+    "DQFD": {
+      "initial_reward_step_100": -32.2625,
+      "midpoint_reward": 16.3441,
+      "final_asymptotic_reward": 17.4183,
+      "peak_reward": 17.4183,
+      "recorded_steps": 6000
+    },
+    "LFS": {
+      "initial_reward_step_100": -42.1843,
+      "midpoint_reward": 15.978,
+      "final_asymptotic_reward": 17.2081,
+      "peak_reward": 17.2081,
+      "recorded_steps": 6000
+    },
+    "DPR": {
+      "initial_reward_step_100": -5.4446,
+      "midpoint_reward": 18.4176,
+      "final_asymptotic_reward": 18.5593,
+      "peak_reward": 18.5673,
+      "recorded_steps": 6000
+    },
+    "DQFD_OVERWRITE": {
+      "initial_reward_step_100": -18.3096,
+      "midpoint_reward": 16.6042,
+      "final_asymptotic_reward": 17.5367,
+      "peak_reward": 17.5367,
+      "recorded_steps": 6000
+    },
+    "DQFD_NEW_PRIO": {
+      "initial_reward_step_100": -20.7332,
+      "midpoint_reward": 16.3835,
+      "final_asymptotic_reward": 17.3366,
+      "peak_reward": 17.3366,
+      "recorded_steps": 6000
+    }
+  },
+  "parameter_sensitivity_sweeps": [
+    {
+      "chart_file": "hit_count_vs_cache_size.svg",
+      "title": "Total hit count vs cache size (Fig. 6c)",
+      "x_parameter": "Cache size (MiB)",
+      "y_metric": "Total hit count",
+      "x_values": [
+        5000,
+        7500,
+        10000,
+        12500,
+        15000
+      ],
+      "series": [
+        {
+          "algorithm": "CTD",
+          "values": [
+            793,
+            793,
+            793,
+            793,
+            793
+          ]
+        },
+        {
+          "algorithm": "Proposed (SMDP-DDQL)",
+          "values": [
+            509,
+            522,
+            616,
+            686,
+            718
+          ]
+        }
+      ]
+    },
+    {
+      "chart_file": "total_utility_vs_cache_size.svg",
+      "title": "Total utility vs cache size (Fig. 7c)",
+      "x_parameter": "Cache size (MiB)",
+      "y_metric": "Total utility",
+      "x_values": [
+        5000,
+        7500,
+        10000,
+        12500,
+        15000
+      ],
+      "series": [
+        {
+          "algorithm": "CTD",
+          "values": [
+            40.08,
+            40.08,
+            40.08,
+            40.08,
+            40.08
+          ]
+        },
+        {
+          "algorithm": "Proposed (SMDP-DDQL)",
+          "values": [
+            29.54,
+            30.43,
+            34.43,
+            37.06,
+            38.18
+          ]
+        }
+      ]
+    },
+    {
+      "chart_file": "hit_count_vs_request_rate.svg",
+      "title": "Total hit count vs request rate (Fig. 6b)",
+      "x_parameter": "Request rate lambda",
+      "y_metric": "Total hit count",
+      "x_values": [
+        0.5,
+        1.5,
+        2.5,
+        3.5,
+        4.5,
+        5.5,
+        6.5
+      ],
+      "series": [
+        {
+          "algorithm": "CTD",
+          "values": [
+            1442,
+            2475,
+            2843,
+            2928,
+            2935,
+            2935,
+            2935
+          ]
+        },
+        {
+          "algorithm": "Proposed (SMDP-DDQL)",
+          "values": [
+            1210,
+            2107,
+            2695,
+            2882,
+            3033,
+            3054,
+            3161
+          ]
+        }
+      ]
+    },
+    {
+      "chart_file": "total_utility_vs_request_rate.svg",
+      "title": "Total utility vs request rate (Fig. 7b)",
+      "x_parameter": "Request rate lambda",
+      "y_metric": "Total utility",
+      "x_values": [
+        0.5,
+        1.5,
+        2.5,
+        3.5,
+        4.5,
+        5.5,
+        6.5
+      ],
+      "series": [
+        {
+          "algorithm": "CTD",
+          "values": [
+            73.2,
+            128.22,
+            150.83,
+            158.95,
+            162.87,
+            166.0,
+            168.77
+          ]
+        },
+        {
+          "algorithm": "Proposed (SMDP-DDQL)",
+          "values": [
+            65.77,
+            116.1,
+            148.51,
+            163.81,
+            175.18,
+            183.32,
+            192.9
+          ]
+        }
+      ]
+    },
+    {
+      "chart_file": "hit_count_vs_zipf_eta.svg",
+      "title": "Total hit count vs popularity skewness (Fig. 6a)",
+      "x_parameter": "Zipf eta",
+      "y_metric": "Total hit count",
+      "x_values": [
+        0.2,
+        0.4,
+        0.6,
+        0.8,
+        1
+      ],
+      "series": [
+        {
+          "algorithm": "CTD",
+          "values": [
+            374,
+            388,
+            436,
+            611,
+            793
+          ]
+        },
+        {
+          "algorithm": "Proposed (SMDP-DDQL)",
+          "values": [
+            249,
+            238,
+            278,
+            418,
+            616
+          ]
+        }
+      ]
+    },
+    {
+      "chart_file": "total_utility_vs_zipf_eta.svg",
+      "title": "Total utility vs popularity skewness (Fig. 7a)",
+      "x_parameter": "Zipf eta",
+      "y_metric": "Total utility",
+      "x_values": [
+        0.2,
+        0.4,
+        0.6,
+        0.8,
+        1
+      ],
+      "series": [
+        {
+          "algorithm": "CTD",
+          "values": [
+            19.42,
+            19.46,
+            21.94,
+            30.86,
+            40.08
+          ]
+        },
+        {
+          "algorithm": "Proposed (SMDP-DDQL)",
+          "values": [
+            15.01,
+            14.33,
+            16.46,
+            24.19,
+            34.43
+          ]
+        }
+      ]
+    },
+    {
+      "chart_file": "hit_count_vs_file_lifetime.svg",
+      "title": "Total hit count vs popular-file lifetime (Fig. 4a)",
+      "x_parameter": "Popular file lifetime",
+      "y_metric": "Total hit count",
+      "x_values": [
+        10,
+        15,
+        20,
+        25,
+        30
+      ],
+      "series": [
+        {
+          "algorithm": "CTD",
+          "values": [
+            826,
+            934,
+            1011,
+            1068,
+            1117
+          ]
+        },
+        {
+          "algorithm": "Proposed (SMDP-DDQL)",
+          "values": [
+            724,
+            832,
+            909,
+            966,
+            1015
+          ]
+        }
+      ]
+    },
+    {
+      "chart_file": "total_utility_vs_file_lifetime.svg",
+      "title": "Total utility vs popular-file lifetime (Fig. 5a)",
+      "x_parameter": "Popular file lifetime",
+      "y_metric": "Total utility",
+      "x_values": [
+        10,
+        15,
+        20,
+        25,
+        30
+      ],
+      "series": [
+        {
+          "algorithm": "CTD",
+          "values": [
+            41.55,
+            47.14,
+            51.07,
+            53.96,
+            56.44
+          ]
+        },
+        {
+          "algorithm": "Proposed (SMDP-DDQL)",
+          "values": [
+            36.45,
+            42.04,
+            45.97,
+            48.86,
+            51.34
+          ]
+        }
+      ]
+    },
+    {
+      "chart_file": "hit_count_vs_file_size.svg",
+      "title": "Total hit count vs popular-file size (Fig. 4b)",
+      "x_parameter": "Popular file size (MiB)",
+      "y_metric": "Total hit count",
+      "x_values": [
+        100,
+        200,
+        500,
+        700,
+        1000
+      ],
+      "series": [
+        {
+          "algorithm": "CTD",
+          "values": [
+            1011,
+            1011,
+            1011,
+            1011,
+            1011
+          ]
+        },
+        {
+          "algorithm": "Proposed (SMDP-DDQL)",
+          "values": [
+            914,
+            914,
+            909,
+            905,
+            906
+          ]
+        }
+      ]
+    },
+    {
+      "chart_file": "total_utility_vs_file_size.svg",
+      "title": "Total utility vs popular-file size (Fig. 5b)",
+      "x_parameter": "Popular file size (MiB)",
+      "y_metric": "Total utility",
+      "x_values": [
+        100,
+        200,
+        500,
+        700,
+        1000
+      ],
+      "series": [
+        {
+          "algorithm": "CTD",
+          "values": [
+            51.07,
+            51.07,
+            51.07,
+            51.07,
+            51.07
+          ]
+        },
+        {
+          "algorithm": "Proposed (SMDP-DDQL)",
+          "values": [
+            46.22,
+            46.22,
+            45.97,
+            45.77,
+            45.82
+          ]
+        }
+      ]
+    },
+    {
+      "chart_file": "hit_count_vs_file_importance.svg",
+      "title": "Total hit count vs popular-file importance (Fig. 4c)",
+      "x_parameter": "Popular file importance",
+      "y_metric": "Total hit count",
+      "x_values": [
+        0.1,
+        0.3,
+        0.5,
+        0.7,
+        0.9
+      ],
+      "series": [
+        {
+          "algorithm": "CTD",
+          "values": [
+            1011,
+            1011,
+            1011,
+            1011,
+            1011
+          ]
+        },
+        {
+          "algorithm": "Proposed (SMDP-DDQL)",
+          "values": [
+            583,
+            902,
+            909,
+            1008,
+            1008
+          ]
+        }
+      ]
+    },
+    {
+      "chart_file": "total_utility_vs_file_importance.svg",
+      "title": "Total utility vs popular-file importance (Fig. 5c)",
+      "x_parameter": "Popular file importance",
+      "y_metric": "Total utility",
+      "x_values": [
+        0.1,
+        0.3,
+        0.5,
+        0.7,
+        0.9
+      ],
+      "series": [
+        {
+          "algorithm": "CTD",
+          "values": [
+            28.97,
+            40.02,
+            51.07,
+            62.11,
+            73.16
+          ]
+        },
+        {
+          "algorithm": "Proposed (SMDP-DDQL)",
+          "values": [
+            21.81,
+            34.57,
+            45.97,
+            61.96,
+            73.01
+          ]
+        }
+      ]
+    }
+  ],
+  "figures_catalog": [
+    {
+      "figure": "Fig. 1",
+      "file": "fig1_utility_curves",
+      "description": "Non-linear utility curve y_f(t) vs freshness h^f(t) across importance levels",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig1_utility_curves.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig1_utility_curves.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 3(a)",
+      "file": "fig3a_average_rewards",
+      "description": "Comparison of average rewards during DRL convergence (Proposed vs CTD)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig3a_average_rewards.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig3a_average_rewards.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 3(b)",
+      "file": "fig3b_cache_worth",
+      "description": "Average worth of cached files W(t) over trials",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig3b_cache_worth.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig3b_cache_worth.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 3(c)",
+      "file": "fig3c_unoccupied_cache",
+      "description": "Average unoccupied cache proportion Mem(t) over trials",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig3c_unoccupied_cache.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig3c_unoccupied_cache.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 3",
+      "file": "fig3_combined_performance",
+      "description": "3-Panel overview of DRL performance (Reward, Worth, Unoccupied Cache)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig3_combined_performance.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig3_combined_performance.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 4(a)",
+      "file": "fig4a_hit_count_vs_lifetime",
+      "description": "Total hit count vs popular-file lifetime (Proposed vs CTD)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig4a_hit_count_vs_lifetime.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig4a_hit_count_vs_lifetime.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 4(b)",
+      "file": "fig4b_hit_count_vs_size",
+      "description": "Total hit count vs popular-file size (Proposed vs CTD)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig4b_hit_count_vs_size.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig4b_hit_count_vs_size.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 4(c)",
+      "file": "fig4c_hit_count_vs_importance",
+      "description": "Total hit count vs popular-file importance (Proposed vs CTD)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig4c_hit_count_vs_importance.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig4c_hit_count_vs_importance.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 4",
+      "file": "fig4_combined_hit_counts",
+      "description": "3-Panel hit count under varying popular-file features",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig4_combined_hit_counts.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig4_combined_hit_counts.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 5(a)",
+      "file": "fig5a_total_utility_vs_lifetime",
+      "description": "Total utility vs popular-file lifetime (Proposed vs CTD)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig5a_total_utility_vs_lifetime.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig5a_total_utility_vs_lifetime.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 5(b)",
+      "file": "fig5b_total_utility_vs_size",
+      "description": "Total utility vs popular-file size (Proposed vs CTD)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig5b_total_utility_vs_size.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig5b_total_utility_vs_size.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 5(c)",
+      "file": "fig5c_total_utility_vs_importance",
+      "description": "Total utility vs popular-file importance (Proposed vs CTD)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig5c_total_utility_vs_importance.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig5c_total_utility_vs_importance.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 5",
+      "file": "fig5_combined_utilities",
+      "description": "3-Panel total utility under varying popular-file features",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig5_combined_utilities.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig5_combined_utilities.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 6(a)",
+      "file": "fig6a_hit_count_vs_zipf_eta",
+      "description": "Total hit count vs Zipf skewness eta (Proposed vs CTD)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig6a_hit_count_vs_zipf_eta.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig6a_hit_count_vs_zipf_eta.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 6(b)",
+      "file": "fig6b_hit_count_vs_request_rate",
+      "description": "Total hit count vs request arrival rate lambda (Proposed vs CTD)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig6b_hit_count_vs_request_rate.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig6b_hit_count_vs_request_rate.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 6(c)",
+      "file": "fig6c_hit_count_vs_cache_size",
+      "description": "Total hit count vs cache capacity M (Proposed vs CTD)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig6c_hit_count_vs_cache_size.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig6c_hit_count_vs_cache_size.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 6",
+      "file": "fig6_combined_hit_counts",
+      "description": "3-Panel hit count under varying system parameters",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig6_combined_hit_counts.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig6_combined_hit_counts.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 7(a)",
+      "file": "fig7a_total_utility_vs_zipf_eta",
+      "description": "Total utility vs Zipf skewness eta (Proposed vs CTD)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig7a_total_utility_vs_zipf_eta.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig7a_total_utility_vs_zipf_eta.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 7(b)",
+      "file": "fig7b_total_utility_vs_request_rate",
+      "description": "Total utility vs request arrival rate lambda (Proposed vs CTD)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig7b_total_utility_vs_request_rate.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig7b_total_utility_vs_request_rate.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 7(c)",
+      "file": "fig7c_total_utility_vs_cache_size",
+      "description": "Total utility vs cache capacity M (Proposed vs CTD)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig7c_total_utility_vs_cache_size.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig7c_total_utility_vs_cache_size.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 7",
+      "file": "fig7_combined_utilities",
+      "description": "3-Panel total utility under varying system parameters",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig7_combined_utilities.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig7_combined_utilities.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 8(a)",
+      "file": "fig8a_target_domain_convergence",
+      "description": "Target domain transfer learning convergence (Proposed TL vs DQfD vs LFS vs DPR)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig8a_target_domain_convergence.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig8a_target_domain_convergence.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 8(b)",
+      "file": "fig8b_impact_of_overwriting",
+      "description": "Impact of overwriting demonstration data (With vs Without overwriting)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig8b_impact_of_overwriting.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig8b_impact_of_overwriting.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 8(c)",
+      "file": "fig8c_impact_of_priorities",
+      "description": "Impact of assigning priorities with proposed Eq. (6) vs standard Eq. (5)",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig8c_impact_of_priorities.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig8c_impact_of_priorities.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 8",
+      "file": "fig8_combined_transfer_learning",
+      "description": "3-Panel overview of transfer learning performance in target domain",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig8_combined_transfer_learning.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig8_combined_transfer_learning.svg",
+      "exists": true
+    }
+  ]
+}

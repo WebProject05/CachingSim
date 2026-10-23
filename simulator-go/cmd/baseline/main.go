@@ -68,7 +68,7 @@ func (w *smdpCacheWrapper) AccessAt(fileID int, currentTime float64) bool {
 	w.engine.CurrentTime = currentTime
 	w.engine.RecordRequest(fileID)
 
-	if w.engine.IsCached(fileID) {
+	if w.engine.CheckHit(fileID, currentTime) {
 		w.hits++
 		if fileSize > 0 {
 			w.hitBytes += fileSize
@@ -106,15 +106,11 @@ func (w *smdpCacheWrapper) shouldAdmit(fileID int, currentTime float64) bool {
 	}
 
 	popVec := w.engine.GetPopularityVector()
-	candPop := 1.0
-	if fileID < len(popVec) && popVec[fileID] > 1.0 {
-		candPop = popVec[fileID]
 	candPop := 0.5
 	if fileID < len(popVec) {
 		candPop += popVec[fileID]
 	}
 	candUtil := w.files[fileID].Utility(currentTime, w.cfg)
-	candScore := (candPop * candUtil) / fileSize
 	candScore := (math.Pow(candPop, 1.25) * candUtil) / math.Pow(fileSize, 0.25)
 
 	needed := fileSize - freeSpace
@@ -127,9 +123,6 @@ func (w *smdpCacheWrapper) shouldAdmit(fileID int, currentTime float64) bool {
 	var cachedItems []cachedItem
 	for id, c := range w.engine.Cached {
 		if c {
-			p := 1.0
-			if id < len(popVec) && popVec[id] > 1.0 {
-				p = popVec[id]
 			p := 0.5
 			if id < len(popVec) {
 				p += popVec[id]
@@ -148,24 +141,18 @@ func (w *smdpCacheWrapper) shouldAdmit(fileID int, currentTime float64) bool {
 
 	var freed float64
 	var victimValSum float64
-	var victimSizeSum float64
 	var victimCount float64
 	for _, item := range cachedItems {
 		if freed >= needed {
 			break
 		}
 		freed += item.size
-		victimValSum += item.pop * item.u
-		victimSizeSum += item.size
 		victimValSum += (math.Pow(item.pop, 1.25) * item.u) / math.Pow(item.size, 0.25)
 		victimCount += 1.0
 	}
-	if victimSizeSum <= 0 {
 	if victimCount <= 0 {
 		return true
 	}
-	victimScore := victimValSum / victimSizeSum
-	return candScore >= (victimScore * 0.85)
 	victimScore := victimValSum / victimCount
 	return candScore >= (victimScore * 0.72)
 }
@@ -244,11 +231,11 @@ func main() {
 	generateGraphs := flag.Bool("g", false, "generate graphs after the experiment")
 	graphInterval := flag.Int("graph-interval", 100, "trials between convergence graph points")
 	concurrent := flag.Bool("concurrent", false, "run cache algorithms concurrently; default is sequential")
-	cacheSizes := flag.String("cache-sizes", "1000,5000,10000,20000,50000", "cache sizes in MiB")
-	requestRates := flag.String("request-rates", "0.05,0.1,0.2,0.5,1.0", "lambda request rates")
-	zipfEtas := flag.String("zipf-etas", "0.2,0.5,1.0,1.5,2.0", "Zipf eta values")
+	cacheSizes := flag.String("cache-sizes", "5000,7500,10000,12500,15000", "cache sizes in MiB")
+	requestRates := flag.String("request-rates", "0.5,1.5,2.5,3.5,4.5,5.5,6.5", "lambda request rates")
+	zipfEtas := flag.String("zipf-etas", "0.0,0.2,0.4,0.6,0.8,1.0", "Zipf eta values")
 	fileLifetimes := flag.String("file-lifetimes", "10,15,20,25,30", "popular-file lifetime values")
-	fileSizes := flag.String("file-sizes", "100,300,500,700,900", "popular-file sizes in MiB")
+	fileSizes := flag.String("file-sizes", "100,200,500,700,1000", "popular-file sizes in MiB")
 	fileImportances := flag.String("file-importances", "0.1,0.3,0.5,0.7,0.9", "popular-file importance values")
 	runMDPTbl := flag.Bool("mdp-table", false, "run and print Table III (MDP vs SMDP time quota comparison)")
 	flag.Parse()
@@ -292,7 +279,6 @@ func main() {
 		measurementWindow = *requests
 	}
 
-	printBox("FIFO / LRU / LFU / SIEVE / CTD / SMDP-UTILITY CACHE EXPERIMENT", []string{
 	printBox("SMDP EDGE CACHING EXPERIMENT: PROPOSED (SMDP-DDQL) vs CTD", []string{
 		fmt.Sprintf("Seed              : %d", *seed),
 		fmt.Sprintf("Requests          : %d", *requests),
@@ -307,29 +293,17 @@ func main() {
 	results := runAllWithConcurrency(cfg, files, events, measurementWindow, *graphInterval, *concurrent)
 	printComparisonTable(results)
 	for _, result := range results {
-		printResult(result)
 		if result.name == "SMDP-DDQL" || result.name == "CTD" {
 			printResult(result)
 		}
 	}
 
 	if *runMDPTbl || *generateGraphs {
-		mdpResults := baselines.RunMDPvsSMDPComparison(cfg, files, *seed, 1000, []float64{5.0, 1.66, 1.0, 0.2}, []float64{0.2, 0.4, 0.6, 0.8, 1.0})
-		if *runMDPTbl {
-			printBox("TABLE III: MDP vs SMDP HIT RATES", []string{"Comparing discrete MDP time quotas against continuous SMDP"})
-			border := "+-------+--------+---------------+----------------+"
-			fmt.Fprintln(output, border)
-			fmt.Fprintln(output, "| Quota | Lambda | MDP Hit Count | SMDP Hit Count |")
-			fmt.Fprintln(output, border)
-			for _, mr := range mdpResults {
-				fmt.Fprintf(output, "| %5.1f | %6.2f | %13d | %14d |\n", mr.Quota, mr.Lambda, mr.MDPHitCount, mr.SMDPHitCount)
-			}
-			fmt.Fprintln(output, border)
-		}
-		if *generateGraphs {
-			_ = writeMDPComparisonJSON(*graphsPath, mdpResults)
-		}
+		mdpResults := baselines.RunMDPvsSMDPComparison(cfg, files, *seed, 1000, []float64{5.0, 1.66, 1.0}, []float64{0.2, 0.4, 0.6, 0.8, 1.0})
 		_ = writeMDPComparisonJSON(*graphsPath, mdpResults)
+		if *runMDPTbl {
+			printTableIII(mdpResults)
+		}
 	}
 
 	if *generateGraphs {
@@ -486,7 +460,6 @@ func printComparisonTable(results []runResult) {
 			displayName = "Proposed"
 		}
 		fmt.Fprintf(output, "| %-10s | %6.2f%% | %6.2f%% | %6.2f%% | %6.2f%% | %6.2f%% | %13.2f | %6s |\n",
-			r.name, s.HitRate()*100, s.ByteHitRate()*100, s.MissRate()*100, s.EvictionRate()*100, s.Utilization()*100, r.totalUtility, ops)
 			displayName, s.HitRate()*100, s.ByteHitRate()*100, s.MissRate()*100, s.EvictionRate()*100, s.Utilization()*100, r.totalUtility, ops)
 	}
 	fmt.Fprintln(output, border)
@@ -557,3 +530,33 @@ func printBox(title string, lines []string) {
 	}
 	fmt.Fprintln(output, border)
 }
+
+func printTableIII(results []baselines.MDPEvaluationResult) {
+	fmt.Fprintln(output, "\n+-------------------------------------------------------------------------+")
+	fmt.Fprintln(output, "| TABLE III: Hit rate for MDP and SMDP under different quotas and rates   |")
+	fmt.Fprintln(output, "+----------------------+------------+--------------+----------------------+")
+	fmt.Fprintln(output, "| Size of time quota   | lambda = 5 | lambda = 1.66| lambda = 1.0         |")
+	fmt.Fprintln(output, "+----------------------+------------+--------------+----------------------+")
+
+	quotas := []float64{0.2, 0.4, 0.6, 0.8, 1.0}
+	tableMap := make(map[float64]map[float64]int)
+	smdpMap := make(map[float64]int)
+
+	for _, r := range results {
+		if _, ok := tableMap[r.Quota]; !ok {
+			tableMap[r.Quota] = make(map[float64]int)
+		}
+		tableMap[r.Quota][r.Lambda] = r.MDPHitCount
+		smdpMap[r.Lambda] = r.SMDPHitCount
+	}
+
+	for _, q := range quotas {
+		fmt.Fprintf(output, "| MDP  %-15.1f | %-10d | %-12d | %-20d |\n",
+			q, tableMap[q][5.0], tableMap[q][1.66], tableMap[q][1.0])
+	}
+	fmt.Fprintln(output, "+----------------------+------------+--------------+----------------------+")
+	fmt.Fprintf(output, "| SMDP %-15s | %-10d | %-12d | %-20d |\n",
+		"—", smdpMap[5.0], smdpMap[1.66], smdpMap[1.0])
+	fmt.Fprintln(output, "+----------------------+------------+--------------+----------------------+")
+}
+

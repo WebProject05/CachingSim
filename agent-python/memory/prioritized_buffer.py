@@ -61,6 +61,7 @@ class PrioritizedReplayBuffer:
         n_step: int = 3,
         gamma: float = 0.99,
         use_proposed_priority: bool = True,
+        allow_overwrite_demo: bool = True,
     ):
         self.capacity = capacity
         self.alpha = alpha
@@ -71,6 +72,7 @@ class PrioritizedReplayBuffer:
         self.n_step = n_step
         self.gamma = gamma
         self.use_proposed_priority = use_proposed_priority
+        self.allow_overwrite_demo = allow_overwrite_demo
 
         self.tree = SumTree(capacity)
         self.data: List[Optional[Transition]] = [None] * capacity
@@ -94,26 +96,31 @@ class PrioritizedReplayBuffer:
         tau: float,
         is_expert: bool = False,
         expert_action: int = 0,
-    ):
+    ) -> Optional[Transition]:
         """
         Pushes a 1-step transition to n_step_buffer and stores computed n-step transition to PER.
+        Returns the computed n-step transition if ready, else None.
         """
         self.step_count += 1
         self.n_step_buffer.append((state, action, reward, next_state, tau, is_expert, expert_action))
 
         if len(self.n_step_buffer) < self.n_step:
-            return
+            return None
 
         # Compute n-step return and cumulative tau
         transition = self._create_n_step_transition()
         self._store_transition(transition, is_expert=is_expert)
+        return transition
 
-    def flush_n_step(self):
-        """Flushes remaining transitions in n-step buffer when episode resets."""
+    def flush_n_step(self) -> List[Transition]:
+        """Flushes remaining transitions in n-step buffer when episode resets and returns them."""
+        flushed = []
         while len(self.n_step_buffer) > 0:
             transition = self._create_n_step_transition()
             self._store_transition(transition, is_expert=self.n_step_buffer[0][5])
+            flushed.append(transition)
             self.n_step_buffer.popleft()
+        return flushed
 
     def _create_n_step_transition(self) -> Transition:
         state, action, _, _, _, is_expert, expert_action = self.n_step_buffer[0]
@@ -148,6 +155,20 @@ class PrioritizedReplayBuffer:
         max_p = self.tree.max_priority
         if max_p <= 0.0:
             max_p = 1.0
+
+        # In standard DQfD (allow_overwrite_demo=False), never overwrite demonstration slots
+        if not self.allow_overwrite_demo and not is_expert and self.num_demonstrations > 0:
+            avail_cap = self.capacity - self.num_demonstrations
+            if avail_cap > 0:
+                if self.tree.data_pointer < self.num_demonstrations or self.tree.data_pointer >= self.capacity:
+                    self.tree.data_pointer = self.num_demonstrations
+                idx = self.tree.data_pointer
+                self.data[idx] = transition
+                self.tree.update(idx + self.capacity - 1, max_p)
+                self.tree.data_pointer = self.num_demonstrations + ((self.tree.data_pointer - self.num_demonstrations + 1) % avail_cap)
+                if self.tree.size < self.capacity:
+                    self.tree.size += 1
+                return
 
         idx = self.tree.data_pointer
         # If overwriting an existing expert demonstration, decrement counter

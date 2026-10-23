@@ -68,9 +68,6 @@ func (c *CTDCache) AccessAtTime(fileID int, currentTime float64) bool {
 		c.requestedBytes += fileSize
 	}
 
-	// Update file generation time upon request (fetched fresh from data center)
-	c.files[fileID].GenTime = currentTime
-
 	// Check if already in cache and not expired
 	if c.inCache[fileID] {
 		freshness := c.files[fileID].Freshness(currentTime)
@@ -89,7 +86,8 @@ func (c *CTDCache) AccessAtTime(fileID int, currentTime float64) bool {
 		c.remove(fileID)
 	}
 
-	// Cache Miss
+	// Cache Miss: fetched fresh from data center
+	c.files[fileID].GenTime = currentTime
 	if fileSize > 0 {
 		c.missBytes += fileSize
 	}

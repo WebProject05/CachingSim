@@ -54,7 +54,7 @@ func RunMDPvsSMDPComparison(
 			reqFile := smdpGen.SampleRequestedFile()
 			smdpEngine.RecordRequest(reqFile)
 
-			if smdpEngine.IsCached(reqFile) {
+			if smdpEngine.CheckHit(reqFile, smdpEngine.CurrentTime) {
 				smdpHits++
 			} else {
 				smdpEngine.EvictUntilFits(reqFile)
@@ -73,19 +73,16 @@ func RunMDPvsSMDPComparison(
 			mdpHits := 0
 			currentTime := 0.0
 
+			effectiveDelta := quota * (5.0 / lambda)
 			for t := 0; t < totalTrials; t++ {
-				// In discrete MDP, decisions happen at synchronized time quotas
-				tau := mdpGen.NextPoissonInterval(lambda)
-				currentTime += tau
-
-				// Align simulation time with next time quota boundary
-				quotaSteps := int(currentTime / quota)
-				mdpEngine.CurrentTime = float64(quotaSteps+1) * quota
+				// In discrete MDP, time between requests corresponds to time quota relative to request rate
+				currentTime += effectiveDelta
+				mdpEngine.CurrentTime = currentTime
 
 				reqFile := mdpGen.SampleRequestedFile()
 				mdpEngine.RecordRequest(reqFile)
 
-				if mdpEngine.IsCached(reqFile) {
+				if mdpEngine.CheckHit(reqFile, currentTime) {
 					mdpHits++
 				} else {
 					mdpEngine.EvictUntilFits(reqFile)

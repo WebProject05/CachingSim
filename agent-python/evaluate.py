@@ -57,7 +57,7 @@ def run_transfer_learning_comparison(
     4. LFS: Learning From Scratch without demonstrations.
     """
     tl_results = {}
-    methods = ["proposed", "dqfd", "lfs", "dpr"]
+    methods = ["proposed", "dqfd", "lfs", "dpr", "dqfd_overwrite", "dqfd_new_prio"]
 
     for method in methods:
         print(f"\n>>> Running Target Domain Transfer Learning Experiment: [{method.upper()}]...")
@@ -65,12 +65,9 @@ def run_transfer_learning_comparison(
         agent.demo_buffer = source_agent.demo_buffer
 
         if method == "dpr":
-            # Copy source weights and evaluate without further training
             # Copy source weights and execute DPR across target_steps without backpropagation
             agent.online_net.load_state_dict(source_agent.online_net.state_dict())
             agent.target_net.load_state_dict(source_agent.target_net.state_dict())
-            eval_res = agent.evaluate(env, eval_requests=1000, lambda_rate=cfg.lambda_target, eta=cfg.zipf_eta)
-            tl_results["DPR"] = [(step, eval_res['avg_reward']) for step in range(100, target_steps + 1, 100)]
             target_res = agent.run_dpr_target_domain(env, total_steps=target_steps, verbose=True)
             tl_results["DPR"] = target_res['reward_history']
         else:
@@ -179,7 +176,8 @@ def save_results_and_plot(
     if tl_histories:
         plt.figure(figsize=(9, 5.5))
         colors = {"PROPOSED": "#006d77", "DQFD": "#c44536", "LFS": "#386641", "DPR": "#6a4c93"}
-        for method, hist in tl_histories.items():
+        for method in ["PROPOSED", "DQFD", "LFS", "DPR"]:
+            hist = tl_histories.get(method)
             if hist:
                 steps, rewards = zip(*hist)
                 plt.plot(steps, rewards, label=method, color=colors.get(method, "#222222"), linewidth=2)
@@ -192,6 +190,38 @@ def save_results_and_plot(
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, "transfer_learning_comparison.png"), dpi=300)
         plt.close()
+
+        # Fig. 8b: The impact of overwriting demonstration data
+        if "DQFD" in tl_histories and "DQFD_OVERWRITE" in tl_histories:
+            plt.figure(figsize=(8, 5))
+            s1, r1 = zip(*tl_histories["DQFD"])
+            s2, r2 = zip(*tl_histories["DQFD_OVERWRITE"])
+            plt.plot(s1, r1, label="DQfD", color="#c44536", linewidth=2)
+            plt.plot(s2, r2, label="DQfD with overwriting demonstration data", color="#006d77", linewidth=2)
+            plt.title("Fig. 8b: The impact of overwriting demonstration data")
+            plt.xlabel("Trial / Step")
+            plt.ylabel("Average Reward")
+            plt.grid(True, linestyle="--", alpha=0.6)
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, "fig8b_overwriting_impact.png"), dpi=300)
+            plt.close()
+
+        # Fig. 8c: The impact of assigning priorities with Eq. (6)
+        if "DQFD" in tl_histories and "DQFD_NEW_PRIO" in tl_histories:
+            plt.figure(figsize=(8, 5))
+            s1, r1 = zip(*tl_histories["DQFD"])
+            s3, r3 = zip(*tl_histories["DQFD_NEW_PRIO"])
+            plt.plot(s1, r1, label="DQfD", color="#c44536", linewidth=2)
+            plt.plot(s3, r3, label="DQfD with new priorities (Eq. 6)", color="#006d77", linewidth=2)
+            plt.title("Fig. 8c: The impact of assigning priorities with Eq. (6)")
+            plt.xlabel("Trial / Step")
+            plt.ylabel("Average Reward")
+            plt.grid(True, linestyle="--", alpha=0.6)
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, "fig8c_priorities_impact.png"), dpi=300)
+            plt.close()
 
     print(f"\n>>> Results and detailed JSON metrics saved to '{output_dir}':")
     print(f"    - {source_json_path}")

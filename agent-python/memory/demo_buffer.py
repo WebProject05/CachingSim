@@ -47,6 +47,25 @@ class DemonstrationBuffer:
         )
         self.transitions.append(t)
 
+    def add_transition(self, t: Transition):
+        """Adds an already computed n-step transition marked as expert demonstration."""
+        if len(self.transitions) >= self.capacity:
+            self.transitions.pop(0)
+
+        expert_t = Transition(
+            state=t.state,
+            action=t.action,
+            reward=t.reward,
+            next_state=t.next_state,
+            tau=t.tau,
+            n_step_state=t.n_step_state,
+            n_step_return=t.n_step_return,
+            n_step_tau=t.n_step_tau,
+            expert_action=t.action,
+            is_expert=True,
+        )
+        self.transitions.append(expert_t)
+
     def populate_target_buffer(self, target_buffer: PrioritizedReplayBuffer):
         """
         Loads all demonstration transitions into target domain PER buffer (Section VI).

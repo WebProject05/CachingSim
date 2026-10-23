@@ -95,8 +95,43 @@ func (c *CacheEngine) Insert(fileID int) bool {
 		return false
 	}
 	c.Cached[fileID] = true
+	c.Files[fileID].GenTime = c.CurrentTime
 	c.UsedCapacity += fileSize
 	return true
+}
+
+// IsFresh returns whether the file is currently stored in cache and has not expired.
+func (c *CacheEngine) IsFresh(fileID int, currentTime float64) bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.isFreshLocked(fileID, currentTime)
+}
+
+func (c *CacheEngine) isFreshLocked(fileID int, currentTime float64) bool {
+	if !c.validFileID(fileID) || fileID >= len(c.Cached) || !c.Cached[fileID] {
+		return false
+	}
+	return c.Files[fileID].Freshness(currentTime) < 1.0
+}
+
+// CheckHit checks whether requested file is cached and valid at currentTime.
+// If cached but expired (freshness >= 1.0), it purges the stale file and returns false.
+func (c *CacheEngine) CheckHit(fileID int, currentTime float64) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if !c.validFileID(fileID) || fileID >= len(c.Cached) || !c.Cached[fileID] {
+		return false
+	}
+	if c.Files[fileID].Freshness(currentTime) < 1.0 {
+		return true
+	}
+	// Expired: purge stale entry
+	c.Cached[fileID] = false
+	c.UsedCapacity -= c.Files[fileID].Size
+	if c.UsedCapacity < 0 {
+		c.UsedCapacity = 0
+	}
+	return false
 }
 
 // Remove deletes a file from the cache and updates used capacity.
@@ -137,7 +172,7 @@ func (c *CacheEngine) memRatioLocked() float64 {
 	return ratio
 }
 
-// RecordRequest updates the sliding window popularity history d(t) and resets file generation time w_g^f.
+// RecordRequest updates the sliding window popularity history d(t).
 func (c *CacheEngine) RecordRequest(fileID int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -166,9 +201,6 @@ func (c *CacheEngine) RecordRequest(fileID int) {
 			c.popularity[fileID]++
 		}
 	}
-
-	// Refresh file generation timestamp w_g^f = current time
-	c.Files[fileID].GenTime = c.CurrentTime
 }
 
 // EvictUntilFits removes files with lowest utility until sufficient space is freed (Section IV-A-2).
@@ -256,9 +288,14 @@ func (c *CacheEngine) GetCurrentState(requestedFile int) *State {
 	}
 
 	for i := 0; i < limit; i++ {
-		y[i] = c.Files[i].Utility(c.CurrentTime, c.Cfg)
-		if i < len(c.Cached) && c.Cached[i] {
+		if i < len(c.Cached) && c.Cached[i] && c.isFreshLocked(i, c.CurrentTime) {
+			y[i] = c.Files[i].Utility(c.CurrentTime, c.Cfg)
 			b[i] = 1
+		} else if i == requestedFile {
+			// Newly fetched candidate from data center is brand new (freshness = 0)
+			y[i] = c.Cfg.UTMax * c.Files[i].Importance
+		} else {
+			y[i] = c.Files[i].Utility(c.CurrentTime, c.Cfg)
 		}
 	}
 

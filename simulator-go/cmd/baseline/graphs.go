@@ -56,16 +56,26 @@ func writeGraphs(
 		return err
 	}
 
-	// 2. Write Convergence Line Chart
-	if err := writeLineChart(filepath.Join(path, "cumulative_miss_rate.svg"), "Miss-rate convergence", "Trial", "Cumulative miss rate (%)", convergenceSeries(results, interval)); err != nil {
+	// 2. Write Convergence Line Chart (Proposed vs CTD only)
+	var paperResults []runResult
+	for _, r := range results {
+		if r.name == "SMDP-DDQL" || r.name == "CTD" {
+			displayName := r.name
+			if r.name == "SMDP-DDQL" {
+				displayName = "Proposed (SMDP-DDQL)"
+			}
+			copyResult := r
+			copyResult.name = displayName
+			paperResults = append(paperResults, copyResult)
+		}
+	}
+	if err := writeLineChart(filepath.Join(path, "cumulative_miss_rate.svg"), "Miss-rate convergence", "Trial", "Cumulative miss rate (%)", convergenceSeries(paperResults, interval)); err != nil {
 		return err
 	}
 
-	popularFile := mostPopularFile(events)
-
 	specs := []sweepSpec{
 		// Fig. 6c & 7c: Cache size sweeps
-		{"miss_rate_vs_cache_size.svg", "Miss ratio vs cache size (Fig. 6c)", "Cache size (MiB)", "Miss ratio (%)", parseValues(cacheSizeText), false,
+		{"hit_count_vs_cache_size.svg", "Total hit count vs cache size (Fig. 6c)", "Cache size (MiB)", "Total hit count", parseValues(cacheSizeText), false,
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 				n := *c
 				n.CacheCapacity = v
@@ -79,7 +89,7 @@ func writeGraphs(
 			}},
 
 		// Fig. 6b & 7b: Request rate lambda sweeps
-		{"miss_rate_vs_request_rate.svg", "Miss ratio vs request rate (Fig. 6b)", "Request rate lambda", "Miss ratio (%)", parseValues(rateText), false,
+		{"hit_count_vs_request_rate.svg", "Total hit count vs request rate (Fig. 6b)", "Request rate lambda", "Total hit count", parseValues(rateText), false,
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 				n := *c
 				n.LambdaSource = v
@@ -93,7 +103,7 @@ func writeGraphs(
 			}},
 
 		// Fig. 6a & 7a: Popularity skewness eta sweeps
-		{"miss_rate_vs_zipf_eta.svg", "Miss ratio vs popularity skewness (Fig. 6a)", "Zipf eta", "Miss ratio (%)", parseValues(etaText), false,
+		{"hit_count_vs_zipf_eta.svg", "Total hit count vs popularity skewness (Fig. 6a)", "Zipf eta", "Total hit count", parseValues(etaText), false,
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 				n := *c
 				n.ZipfEta = v
@@ -106,34 +116,34 @@ func writeGraphs(
 				return f, &n
 			}},
 
-		// Fig. 4a & 5a: Lifetime of popular file sweeps
-		{"miss_rate_vs_file_lifetime.svg", "Miss ratio vs popular-file lifetime (Fig. 4a)", "Popular file lifetime", "Miss ratio (%)", parseValues(lifetimeText), false,
+		// Fig. 4a & 5a: Lifetime of popular file sweeps (all other files fixed: lifetime=20, size=500, importance=0.5)
+		{"hit_count_vs_file_lifetime.svg", "Total hit count vs popular-file lifetime (Fig. 4a)", "Popular file lifetime", "Total hit count", parseValues(lifetimeText), false,
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
-				return modifyPopularFileField(f, v, "lifetime", popularFile), c
+				return core.GenerateSweepFiles(c, v, 500.0, 0.5), c
 			}},
 		{"total_utility_vs_file_lifetime.svg", "Total utility vs popular-file lifetime (Fig. 5a)", "Popular file lifetime", "Total utility", parseValues(lifetimeText), true,
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
-				return modifyPopularFileField(f, v, "lifetime", popularFile), c
+				return core.GenerateSweepFiles(c, v, 500.0, 0.5), c
 			}},
 
-		// Fig. 4b & 5b: Size of popular file sweeps
-		{"miss_rate_vs_file_size.svg", "Miss ratio vs popular-file size (Fig. 4b)", "Popular file size (MiB)", "Miss ratio (%)", parseValues(sizeText), false,
+		// Fig. 4b & 5b: Size of popular file sweeps (all other files fixed: size=500, lifetime=20, importance=0.5)
+		{"hit_count_vs_file_size.svg", "Total hit count vs popular-file size (Fig. 4b)", "Popular file size (MiB)", "Total hit count", parseValues(sizeText), false,
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
-				return modifyPopularFileField(f, v, "size", popularFile), c
+				return core.GenerateSweepFiles(c, 20.0, v, 0.5), c
 			}},
 		{"total_utility_vs_file_size.svg", "Total utility vs popular-file size (Fig. 5b)", "Popular file size (MiB)", "Total utility", parseValues(sizeText), true,
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
-				return modifyPopularFileField(f, v, "size", popularFile), c
+				return core.GenerateSweepFiles(c, 20.0, v, 0.5), c
 			}},
 
-		// Fig. 4c & 5c: Importance of popular file sweeps
-		{"miss_rate_vs_file_importance.svg", "Miss ratio vs popular-file importance (Fig. 4c)", "Popular file importance", "Miss ratio (%)", parseValues(importanceText), false,
+		// Fig. 4c & 5c: Importance of popular file sweeps (all other files fixed: importance=0.5, lifetime=20, size=500)
+		{"hit_count_vs_file_importance.svg", "Total hit count vs popular-file importance (Fig. 4c)", "Popular file importance", "Total hit count", parseValues(importanceText), false,
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
-				return modifyPopularFileField(f, v, "importance", popularFile), c
+				return core.GenerateSweepFiles(c, 20.0, 500.0, v), c
 			}},
 		{"total_utility_vs_file_importance.svg", "Total utility vs popular-file importance (Fig. 5c)", "Popular file importance", "Total utility", parseValues(importanceText), true,
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
-				return modifyPopularFileField(f, v, "importance", popularFile), c
+				return core.GenerateSweepFiles(c, 20.0, 500.0, v), c
 			}},
 	}
 
@@ -161,14 +171,29 @@ func writeGraphs(
 				if spec.isUtilityMetric {
 					series[i].y[point] = result.totalUtility
 				} else {
-					series[i].y[point] = result.stats.MissRate() * 100.0
+					series[i].y[point] = float64(result.stats.Hits)
 				}
 			}
 		}
 
 		sweepResultsMap[spec.file] = series
 
-		if err := writeLineChart(filepath.Join(path, spec.file), spec.title, spec.xLabel, spec.yLabel, series); err != nil {
+		var chartSeries []lineSeries
+		for _, s := range series {
+			if s.name == "SMDP-DDQL" || s.name == "CTD" {
+				dispName := s.name
+				if s.name == "SMDP-DDQL" {
+					dispName = "Proposed (SMDP-DDQL)"
+				}
+				chartSeries = append(chartSeries, lineSeries{
+					name: dispName,
+					x:    s.x,
+					y:    s.y,
+				})
+			}
+		}
+
+		if err := writeLineChart(filepath.Join(path, spec.file), spec.title, spec.xLabel, spec.yLabel, chartSeries); err != nil {
 			return err
 		}
 	}

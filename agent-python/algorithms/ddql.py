@@ -194,7 +194,7 @@ class DDQLAgent:
             self.update_running_reward(reward)
 
             # Store transition in PER buffer and demonstration buffer
-            self.replay_buffer.add(
+            n_trans = self.replay_buffer.add(
                 state=state,
                 action=action,
                 reward=reward,
@@ -202,13 +202,8 @@ class DDQLAgent:
                 tau=tau,
                 is_expert=False,
             )
-            self.demo_buffer.add(
-                state=state,
-                action=action,
-                reward=reward,
-                next_state=next_state,
-                tau=tau,
-            )
+            if n_trans is not None:
+                self.demo_buffer.add_transition(n_trans)
 
             state = next_state
             self.decay_epsilon()
@@ -220,7 +215,10 @@ class DDQLAgent:
                     print(f"[Source Domain] Step [{step:5d}/{total_steps:5d}] | Hit Rate: {hits/step*100:5.2f}% | "
                           f"Avg Reward: {self.avg_reward:6.2f} | Epsilon: {self.epsilon:.3f}")
 
-        self.replay_buffer.flush_n_step()
+        flushed = self.replay_buffer.flush_n_step()
+        for t in flushed:
+            self.demo_buffer.add_transition(t)
+
         return {
             'hit_rate': hits / total_steps * 100.0,
             'total_utility': total_utility,
@@ -233,7 +231,9 @@ class DDQLAgent:
         Configures agent for target domain according to specified TL methodology (Section VI & VII-C-2):
         - 'proposed': Reinitializes weights, creates target buffer |Lambda'|=10000 with demonstrations,
                       uses proposed priority Eq. (6), allows overwriting demonstrations.
-        - 'dqfd': Standard DQfD (does not reinitialize weights, uses standard TDE priority Eq. 5).
+        - 'dqfd': Standard DQfD (retains source weights, standard TDE priority Eq. 5, preserves demonstrations).
+        - 'dqfd_overwrite': DQfD with overwriting demonstrations ablation (Fig. 8b).
+        - 'dqfd_new_prio': DQfD with Eq. (6) priority ablation (Fig. 8c).
         - 'lfs': Learning From Scratch (reinitializes weights, empty buffer, no demonstrations).
         - 'dpr': Direct Policy Reuse (keeps source policy without training in target domain).
         """
@@ -244,7 +244,8 @@ class DDQLAgent:
             self.target_net.copy_weights_from(self.online_net)
             self.optimizer = optim.Adam(self.online_net.parameters(), lr=self.cfg.learning_rate)
 
-        use_proposed_priority = (mode == "proposed")
+        use_proposed_priority = (mode in ["proposed", "dqfd_new_prio"])
+        allow_overwrite = (mode in ["proposed", "dqfd_overwrite", "lfs"])
 
         # Initialize Target Domain Replay Buffer |Lambda'| = 10000
         self.replay_buffer = PrioritizedReplayBuffer(
@@ -257,10 +258,11 @@ class DDQLAgent:
             n_step=self.cfg.n_step_horizon,
             gamma=self.cfg.gamma,
             use_proposed_priority=use_proposed_priority,
+            allow_overwrite_demo=allow_overwrite,
         )
 
         # Pre-fill target replay buffer with demonstrations if applicable
-        if mode in ["proposed", "dqfd"]:
+        if mode in ["proposed", "dqfd", "dqfd_overwrite", "dqfd_new_prio"]:
             self.demo_buffer.populate_target_buffer(self.replay_buffer)
 
         self.epsilon = self.cfg.epsilon_start if mode != "dpr" else 0.0

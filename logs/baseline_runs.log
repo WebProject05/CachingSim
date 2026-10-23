@@ -1,0 +1,12 @@
+RUN START : 2026-10-18T22:18:06+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=5000 files=50 capacity=10000.00 MiB eta=1.000 window=500 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 60.74% | 58.50% | 39.26% | 38.90% | 97.34% | 154.10 | 218.9
+LRU        : 66.30% | 63.78% | 33.70% | 33.32% | 99.96% | 167.10 | 109.7
+LFU        : 74.10% | 70.44% | 25.90% | 25.50% | 97.82% | 188.33 | 111.2
+SIEVE      : 70.82% | 68.94% | 29.18% | 28.80% | 99.68% | 178.38 | 111.4
+CTD        : 36.60% | 34.70% | 63.40% | 63.04% | 98.50% | 94.17 | 357.4
+SMDP-DDQL  : 62.62% | 53.93% | 37.38% | 5.00% | 97.88% | 190.05 | 3335.9
+RUN END   : 2026-10-18T22:18:06+05:30
+
