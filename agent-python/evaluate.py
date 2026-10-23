@@ -24,23 +24,45 @@ def run_source_training_and_eval(
     env: GrpcEnvClient,
     train_steps: int = 5000,
     eval_requests: int = 1000,
+    eval_lambda: float = 5.0,
 ) -> Tuple[DDQLAgent, Dict[str, Any], List[Tuple[int, float]]]:
-    """Trains DDQL agent on source domain and evaluates on test requests."""
+    """Trains DDQL agent on source domain and evaluates on test requests across request rates."""
     print(f"\n>>> [1/2] Training Proposed DDQL Agent on Source Domain (lambda={cfg.lambda_source}, eta={cfg.zipf_eta})...")
     agent = DDQLAgent(cfg)
     train_res = agent.train_source_domain(env, total_steps=train_steps, verbose=True)
 
     print(f"\n>>> [2/2] Evaluating Converged DDQL Agent on {eval_requests} Test Requests...")
-    eval_res = agent.evaluate(env, eval_requests=eval_requests, lambda_rate=cfg.lambda_source, eta=cfg.zipf_eta)
+    eval_res_source = agent.evaluate(env, eval_requests=eval_requests, lambda_rate=cfg.lambda_source, eta=cfg.zipf_eta)
+    eval_res_benchmark = agent.evaluate(env, eval_requests=eval_requests, lambda_rate=eval_lambda, eta=cfg.zipf_eta)
 
-    print("\n=== DDQL Source Domain Evaluation Results ===")
-    print(f"Total Requests : {eval_res['requests']}")
-    print(f"Hit Count      : {eval_res['hits']}")
-    print(f"Hit Rate       : {eval_res['hit_rate']:.2f}%")
-    print(f"Total Utility  : {eval_res['total_utility']:.2f}")
-    print(f"Average Reward : {eval_res['avg_reward']:.2f}")
+    # Multi-rate evaluation for Table III and Figure 6b verification
+    multi_lambda_results = {}
+    print("\n" + "=" * 75)
+    print(f" DDQL EVALUATION ACROSS REQUEST RATES (Table III & Fig. 6b Reproduction)")
+    print("=" * 75)
+    print(f" {'Lambda':<8} | {'Inter-Arrival':<14} | {'Hits':<8} | {'Hit Rate (%)':<14} | {'Total Utility':<14}")
+    print("-" * 75)
+    for lam in [0.20, 0.50, 1.00, 1.66, 2.50, 5.00, 6.50]:
+        res_lam = agent.evaluate(env, eval_requests=eval_requests, lambda_rate=lam, eta=cfg.zipf_eta)
+        multi_lambda_results[str(lam)] = res_lam
+        mean_tau = 1.0 / lam
+        print(f" {lam:<8.2f} | {mean_tau:<14.2f}s | {res_lam['hits']:<8d} | {res_lam['hit_rate']:<14.2f}% | {res_lam['total_utility']:<14.2f}")
+    print("=" * 75)
 
-    return agent, eval_res, train_res['reward_history']
+    print(f"\n=== Key Benchmark Summary ===")
+    print(f"Source Domain (lambda={cfg.lambda_source:.2f}, tau={1.0/cfg.lambda_source:.1f}s)    : Hit Rate = {eval_res_source['hit_rate']:.2f}% ({eval_res_source['hits']}/{eval_requests}) | Utility = {eval_res_source['total_utility']:.2f}")
+    print(f"Table III Benchmark (lambda={eval_lambda:.2f}, tau={1.0/eval_lambda:.2f}s) : Hit Rate = {eval_res_benchmark['hit_rate']:.2f}% ({eval_res_benchmark['hits']}/{eval_requests}) | Utility = {eval_res_benchmark['total_utility']:.2f}")
+
+    combined_eval_res = {
+        **eval_res_source,
+        'benchmark_lambda': eval_lambda,
+        'benchmark_hits': eval_res_benchmark['hits'],
+        'benchmark_hit_rate': eval_res_benchmark['hit_rate'],
+        'benchmark_total_utility': eval_res_benchmark['total_utility'],
+        'multi_lambda_eval': multi_lambda_results,
+    }
+
+    return agent, combined_eval_res, train_res['reward_history']
 
 
 def run_transfer_learning_comparison(

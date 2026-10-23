@@ -1,17 +1,17 @@
 <#
 .SYNOPSIS
-    1-Click Complete Research Experiment Pipeline for SMDP Edge Caching Framework.
+    Complete Research Experiment Pipeline for SMDP Edge Caching Framework.
     Paper: "Edge Caching Based on Deep Reinforcement Learning and Transfer Learning"
     (Niknia et al., IEEE / arXiv:2402.14576v2, 2024)
 
 .DESCRIPTION
-    Executes the entire research experiment from start to finish:
-    1. Verifies / builds Go simulator binaries (server.exe, baseline.exe)
-    2. Runs Go caching benchmarks, parameter sweeps, and Table III MDP vs SMDP evaluation
-    3. Starts Go gRPC environment server on port 50051
-    4. Runs Python PyTorch DDQL agent and Transfer Learning suite (Proposed TL, DQfD, LFS, DPR, and ablations)
-    5. Renders all 25 research paper publication figures (PNG 300 DPI + vector SVG)
-    6. Generates comprehensive experiment reports (JSON, TXT, Markdown)
+    Executes the entire research experiment with fully configurable parameters:
+    - Number of requests / evaluation steps
+    - Training steps for source and target domains
+    - Cache capacity in MiB
+    - Evaluation lambda request rate
+    - Zipf popularity exponent eta
+    - Total file types count F
 
 .PARAMETER EvalRequests
     Number of evaluation requests (Default: 1000)
@@ -19,12 +19,24 @@
     Source domain training steps (Default: 5000)
 .PARAMETER TargetSteps
     Target domain training steps (Default: 6000)
+.PARAMETER Capacity
+    Cache capacity in MiB (Default: 10000, e.g. 5000, 15000, 20000)
+.PARAMETER EvalLambda
+    Evaluation lambda request rate (Default: 5.0 for 62%+ Table III benchmark)
+.PARAMETER ZipfEta
+    Zipf popularity skewness parameter eta (Default: 1.0)
+.PARAMETER Files
+    Total number of file types F (Default: 50)
 #>
 
 param(
     [int]$EvalRequests = 1000,
     [int]$SourceSteps = 5000,
-    [int]$TargetSteps = 6000
+    [int]$TargetSteps = 6000,
+    [double]$Capacity = 10000,
+    [double]$EvalLambda = 5.0,
+    [double]$ZipfEta = 1.0,
+    [int]$Files = 50
 )
 
 $ErrorActionPreference = "Stop"
@@ -32,8 +44,9 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RootDir = Split-Path -Parent $ScriptDir
 
 Write-Host "======================================================================" -ForegroundColor Cyan
-Write-Host " SMDP Edge Caching: 1-Click Complete Research Experiment Pipeline" -ForegroundColor Cyan
-Write-Host " Test Requests: $EvalRequests | Source Steps: $SourceSteps | Target Steps: $TargetSteps" -ForegroundColor Cyan
+Write-Host " SMDP Edge Caching: Complete Research Experiment Pipeline" -ForegroundColor Cyan
+Write-Host " Requests: $EvalRequests | Source Steps: $SourceSteps | Target Steps: $TargetSteps" -ForegroundColor Cyan
+Write-Host " Capacity: $Capacity MiB | Eval Lambda: $EvalLambda | Eta: $ZipfEta | Files: $Files" -ForegroundColor Cyan
 Write-Host "======================================================================" -ForegroundColor Cyan
 
 # 1. Verify / Build Go Simulator Binaries
@@ -60,7 +73,7 @@ Write-Host "====================================================================
 
 Push-Location (Join-Path $RootDir "simulator-go")
 try {
-    & $BaselineBin -requests 5000 -files 50 -capacity 10000 -g -mdp-table
+    & $BaselineBin -requests $EvalRequests -files $Files -capacity $Capacity -eta $ZipfEta -g -mdp-table
     if ($LASTEXITCODE -ne 0) {
         Write-Error "[!] Baseline runner failed with exit code $LASTEXITCODE"
         exit $LASTEXITCODE
@@ -72,13 +85,13 @@ try {
 # 3. Ensure port 50051 is free and start Go gRPC Server in background
 Write-Host ""
 Write-Host "======================================================================" -ForegroundColor Cyan
-Write-Host "[*] [3/6] Starting Go SMDP Caching Server on port 50051..." -ForegroundColor Yellow
+Write-Host "[*] [3/6] Starting Go SMDP Caching Server (Capacity: $Capacity MiB)..." -ForegroundColor Yellow
 Write-Host "======================================================================" -ForegroundColor Cyan
 
 Get-Process -Name "server" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Milliseconds 500
 
-$ServerProc = Start-Process -FilePath $ServerBin -ArgumentList "-port 50051" -PassThru -WindowStyle Hidden
+$ServerProc = Start-Process -FilePath $ServerBin -ArgumentList "-port 50051 -capacity $Capacity -files $Files -eta $ZipfEta" -PassThru -WindowStyle Hidden
 Start-Sleep -Seconds 2
 
 # 4. Run Python DRL and Transfer Learning Pipeline
@@ -91,7 +104,7 @@ Write-Host "====================================================================
 $PyExitCode = 0
 Push-Location (Join-Path $RootDir "agent-python")
 try {
-    & python main.py --mode full_experiment --source-steps $SourceSteps --target-steps $TargetSteps --eval-requests $EvalRequests
+    & python main.py --mode full_experiment --source-steps $SourceSteps --target-steps $TargetSteps --eval-requests $EvalRequests --capacity $Capacity --files $Files --eta $ZipfEta --eval-lambda $EvalLambda
     $PyExitCode = $LASTEXITCODE
 } finally {
     Pop-Location

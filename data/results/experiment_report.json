@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "report_generated_at": "2026-10-23 07:33:41 UTC",
+    "report_generated_at": "2026-10-23 11:32:44 UTC",
     "environment": "SMDP Edge Caching (Go Simulation Engine + Python PyTorch DDQL)",
     "evaluated_algorithms": [
       "Proposed (SMDP-DDQL)",
@@ -32,98 +32,98 @@
   },
   "caching_performance": {
     "CTD": {
-      "requests": 5000,
-      "hits": 793,
-      "misses": 4207,
-      "hit_rate_pct": 15.86,
-      "byte_hit_rate_pct": 15.09,
-      "miss_rate_pct": 84.14,
-      "evictions": 3235,
-      "eviction_rate_pct": 64.7,
-      "cached_files": 18,
-      "used_capacity_mib": 9849.92,
-      "utilization_pct": 98.5,
-      "total_utility": 40.0823,
-      "warmup_miss_rate_pct": 87.2,
-      "final_miss_rate_pct": 84.8
+      "requests": 100000,
+      "hits": 15791,
+      "misses": 84209,
+      "hit_rate_pct": 15.79,
+      "byte_hit_rate_pct": 14.99,
+      "miss_rate_pct": 84.21,
+      "evictions": 57733,
+      "eviction_rate_pct": 57.73,
+      "cached_files": 27,
+      "used_capacity_mib": 14728.53,
+      "utilization_pct": 98.19,
+      "total_utility": 793.9881,
+      "warmup_miss_rate_pct": 84.06,
+      "final_miss_rate_pct": 84.3
     },
     "Proposed (SMDP-DDQL)": {
-      "requests": 5000,
-      "hits": 616,
-      "misses": 4384,
-      "hit_rate_pct": 12.32,
-      "byte_hit_rate_pct": 10.25,
-      "miss_rate_pct": 87.68,
-      "evictions": 211,
-      "eviction_rate_pct": 4.22,
-      "cached_files": 23,
-      "used_capacity_mib": 9816.48,
-      "utilization_pct": 98.16,
-      "total_utility": 34.4326,
-      "warmup_miss_rate_pct": 90.2,
-      "final_miss_rate_pct": 88.8
+      "requests": 100000,
+      "hits": 14262,
+      "misses": 85738,
+      "hit_rate_pct": 14.26,
+      "byte_hit_rate_pct": 12.85,
+      "miss_rate_pct": 85.74,
+      "evictions": 7312,
+      "eviction_rate_pct": 7.31,
+      "cached_files": 30,
+      "used_capacity_mib": 14916.37,
+      "utilization_pct": 99.44,
+      "total_utility": 754.4033,
+      "warmup_miss_rate_pct": 85.56,
+      "final_miss_rate_pct": 86.02
     }
   },
   "relative_improvements": {
-    "hit_rate_absolute_gain_pct": -3.54,
-    "hit_rate_relative_improvement_pct": -22.32,
-    "total_utility_gain_pct": -14.1,
-    "eviction_reduction_pct": 93.48
+    "hit_rate_absolute_gain_pct": -1.53,
+    "hit_rate_relative_improvement_pct": -9.69,
+    "total_utility_gain_pct": -4.99,
+    "eviction_reduction_pct": 87.33
   },
   "source_domain_drl": {
-    "training_steps": 5000,
-    "final_training_average_reward": 10.7081,
+    "training_steps": 10000,
+    "final_training_average_reward": 12.2801,
     "policy_evaluation_1000_requests": {
-      "requests": 1000,
-      "hits": 216,
-      "hit_rate_pct": 21.6,
-      "total_utility": 97.98,
-      "total_reward": 11739.36,
-      "average_reward_per_step": 11.7394
+      "requests": 100000,
+      "hits": 21409,
+      "hit_rate_pct": 21.41,
+      "total_utility": 9751.23,
+      "total_reward": 1590554.09,
+      "average_reward_per_step": 15.9055
     }
   },
   "target_domain_transfer_learning": {
     "PROPOSED": {
-      "initial_reward_step_100": -27.3126,
-      "midpoint_reward": 16.2437,
-      "final_asymptotic_reward": 17.3024,
-      "peak_reward": 17.3024,
-      "recorded_steps": 6000
+      "initial_reward_step_100": -48.0009,
+      "midpoint_reward": 17.7485,
+      "final_asymptotic_reward": 18.7411,
+      "peak_reward": 18.7411,
+      "recorded_steps": 10000
     },
     "DQFD": {
-      "initial_reward_step_100": -32.2625,
-      "midpoint_reward": 16.3441,
-      "final_asymptotic_reward": 17.4183,
-      "peak_reward": 17.4183,
-      "recorded_steps": 6000
+      "initial_reward_step_100": -40.7478,
+      "midpoint_reward": 17.515,
+      "final_asymptotic_reward": 18.5879,
+      "peak_reward": 18.5879,
+      "recorded_steps": 10000
     },
     "LFS": {
-      "initial_reward_step_100": -42.1843,
-      "midpoint_reward": 15.978,
-      "final_asymptotic_reward": 17.2081,
-      "peak_reward": 17.2081,
-      "recorded_steps": 6000
+      "initial_reward_step_100": -43.0796,
+      "midpoint_reward": 17.8294,
+      "final_asymptotic_reward": 18.6932,
+      "peak_reward": 18.6932,
+      "recorded_steps": 10000
     },
     "DPR": {
-      "initial_reward_step_100": -5.4446,
-      "midpoint_reward": 18.4176,
-      "final_asymptotic_reward": 18.5593,
-      "peak_reward": 18.5673,
-      "recorded_steps": 6000
+      "initial_reward_step_100": -15.627,
+      "midpoint_reward": 18.7197,
+      "final_asymptotic_reward": 18.9582,
+      "peak_reward": 19.2872,
+      "recorded_steps": 10000
     },
     "DQFD_OVERWRITE": {
-      "initial_reward_step_100": -18.3096,
-      "midpoint_reward": 16.6042,
-      "final_asymptotic_reward": 17.5367,
-      "peak_reward": 17.5367,
-      "recorded_steps": 6000
+      "initial_reward_step_100": -44.8639,
+      "midpoint_reward": 17.4207,
+      "final_asymptotic_reward": 18.5604,
+      "peak_reward": 18.5604,
+      "recorded_steps": 10000
     },
     "DQFD_NEW_PRIO": {
-      "initial_reward_step_100": -20.7332,
-      "midpoint_reward": 16.3835,
-      "final_asymptotic_reward": 17.3366,
-      "peak_reward": 17.3366,
-      "recorded_steps": 6000
+      "initial_reward_step_100": -44.0749,
+      "midpoint_reward": 17.4393,
+      "final_asymptotic_reward": 18.5136,
+      "peak_reward": 18.5136,
+      "recorded_steps": 10000
     }
   },
   "parameter_sensitivity_sweeps": [
@@ -143,21 +143,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            793,
-            793,
-            793,
-            793,
-            793
+            15782,
+            15791,
+            15791,
+            15791,
+            15791
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            509,
-            522,
-            616,
-            686,
-            718
+            9654,
+            10222,
+            11693,
+            13665,
+            14262
           ]
         }
       ]
@@ -178,21 +178,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            40.08,
-            40.08,
-            40.08,
-            40.08,
-            40.08
+            793.63,
+            793.99,
+            793.99,
+            793.99,
+            793.99
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            29.54,
-            30.43,
-            34.43,
-            37.06,
-            38.18
+            556.68,
+            590.74,
+            657.97,
+            733.91,
+            754.4
           ]
         }
       ]
@@ -215,25 +215,25 @@
         {
           "algorithm": "CTD",
           "values": [
-            1442,
-            2475,
-            2843,
-            2928,
-            2935,
-            2935,
-            2935
+            29225,
+            50016,
+            59768,
+            65680,
+            69385,
+            71591,
+            72679
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            1210,
-            2107,
-            2695,
-            2882,
-            3033,
-            3054,
-            3161
+            26942,
+            46957,
+            56940,
+            62841,
+            67118,
+            69966,
+            71936
           ]
         }
       ]
@@ -256,25 +256,25 @@
         {
           "algorithm": "CTD",
           "values": [
-            73.2,
-            128.22,
-            150.83,
-            158.95,
-            162.87,
-            166.0,
-            168.77
+            1463.22,
+            2496.56,
+            2991.78,
+            3300.22,
+            3496.22,
+            3615.48,
+            3675.79
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            65.77,
-            116.1,
-            148.51,
-            163.81,
-            175.18,
-            183.32,
-            192.9
+            1404.04,
+            2412.81,
+            2914.09,
+            3222.35,
+            3445.72,
+            3607.88,
+            3725.67
           ]
         }
       ]
@@ -295,21 +295,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            374,
-            388,
-            436,
-            611,
-            793
+            7265,
+            7770,
+            9232,
+            11967,
+            15791
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            249,
-            238,
-            278,
-            418,
-            616
+            5677,
+            6138,
+            7446,
+            10293,
+            14262
           ]
         }
       ]
@@ -330,21 +330,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            19.42,
-            19.46,
-            21.94,
-            30.86,
-            40.08
+            372.76,
+            394.53,
+            453.26,
+            593.09,
+            793.99
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            15.01,
-            14.33,
-            16.46,
-            24.19,
-            34.43
+            328.28,
+            349.29,
+            404.07,
+            548.77,
+            754.4
           ]
         }
       ]
@@ -365,21 +365,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            826,
-            934,
-            1011,
-            1068,
-            1117
+            16580,
+            18656,
+            20140,
+            21352,
+            22382
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            724,
-            832,
-            909,
-            966,
-            1015
+            14999,
+            17241,
+            18553,
+            20104,
+            20967
           ]
         }
       ]
@@ -400,21 +400,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            41.55,
-            47.14,
-            51.07,
-            53.96,
-            56.44
+            829.25,
+            933.24,
+            1007.52,
+            1068.16,
+            1119.69
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            36.45,
-            42.04,
-            45.97,
-            48.86,
-            51.34
+            750.2,
+            862.49,
+            928.17,
+            1005.76,
+            1048.94
           ]
         }
       ]
@@ -435,21 +435,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            1011,
-            1011,
-            1011,
-            1011,
-            1011
+            20140,
+            20140,
+            20140,
+            20140,
+            20140
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            914,
-            914,
-            909,
-            905,
-            906
+            18953,
+            18786,
+            18553,
+            16568,
+            16398
           ]
         }
       ]
@@ -470,21 +470,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            51.07,
-            51.07,
-            51.07,
-            51.07,
-            51.07
+            1007.52,
+            1007.52,
+            1007.52,
+            1007.52,
+            1007.52
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            46.22,
-            46.22,
-            45.97,
-            45.77,
-            45.82
+            948.17,
+            939.82,
+            928.17,
+            828.92,
+            820.42
           ]
         }
       ]
@@ -505,21 +505,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            1011,
-            1011,
-            1011,
-            1011,
-            1011
+            20140,
+            20140,
+            20140,
+            20140,
+            20140
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            583,
-            902,
-            909,
-            1008,
-            1008
+            9784,
+            18200,
+            18553,
+            20072,
+            20072
           ]
         }
       ]
@@ -540,21 +540,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            28.97,
-            40.02,
-            51.07,
-            62.11,
-            73.16
+            591.1,
+            799.31,
+            1007.52,
+            1215.72,
+            1423.93
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            21.81,
-            34.57,
-            45.97,
-            61.96,
-            73.01
+            384.42,
+            704.97,
+            928.17,
+            1212.32,
+            1420.53
           ]
         }
       ]

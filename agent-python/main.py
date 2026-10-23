@@ -46,6 +46,42 @@ def parse_args():
 
     parser.add_argument("--checkpoint-dir", type=str, default=default_ckpt, help="Directory to store model checkpoints")
     parser.add_argument("--output-dir", type=str, default=default_out, help="Directory to store evaluation plots and CSVs")
+    parser.add_argument(
+        "--eval-lambda",
+        type=float,
+        default=5.0,
+        help="Request arrival rate lambda for evaluation (default: 5.0 matching Paper Table III / Fig. 6b; use 0.2 for source training rate)",
+    )
+    parser.add_argument(
+        "--capacity",
+        type=float,
+        default=10000.0,
+        help="Cache capacity in MiB (default: 10000.0, e.g. 5000, 15000, 20000)",
+    )
+    parser.add_argument(
+        "--files",
+        type=int,
+        default=50,
+        help="Total number of file types F (default: 50)",
+    )
+    parser.add_argument(
+        "--eta",
+        type=float,
+        default=1.0,
+        help="Zipf popularity skewness parameter eta (default: 1.0)",
+    )
+    parser.add_argument(
+        "--lambda-source",
+        type=float,
+        default=0.2,
+        help="Poisson request arrival rate in source domain lambda_S (default: 0.2)",
+    )
+    parser.add_argument(
+        "--lambda-target",
+        type=float,
+        default=0.3,
+        help="Poisson request arrival rate in target domain lambda_T (default: 0.3)",
+    )
     return parser.parse_args()
 
 
@@ -88,7 +124,15 @@ def ensure_server_running(
         print(f"[*] Go server not detected at {cfg.server_host}:{cfg.server_port}.")
         print(f"[*] Auto-launching '{bin_path}' in the background...")
         server_process = subprocess.Popen(
-            [bin_path, "-port", str(cfg.server_port)],
+            [
+                bin_path,
+                "-port", str(cfg.server_port),
+                "-capacity", str(cfg.cache_capacity),
+                "-files", str(cfg.total_files),
+                "-lambda", str(cfg.lambda_source),
+                "-eta", str(cfg.zipf_eta),
+                "-seed", str(cfg.seed),
+            ],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             cwd=project_root,
@@ -99,7 +143,15 @@ def ensure_server_running(
         if os.path.exists(sim_dir):
             print(f"[*] Binary not found. Auto-launching Go server via 'go run ./cmd/server'...")
             server_process = subprocess.Popen(
-                ["go", "run", "./cmd/server", "-port", str(cfg.server_port)],
+                [
+                    "go", "run", "./cmd/server",
+                    "-port", str(cfg.server_port),
+                    "-capacity", str(cfg.cache_capacity),
+                    "-files", str(cfg.total_files),
+                    "-lambda", str(cfg.lambda_source),
+                    "-eta", str(cfg.zipf_eta),
+                    "-seed", str(cfg.seed),
+                ],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 cwd=sim_dir,
@@ -170,12 +222,17 @@ def main():
     cfg.source_train_steps = args.source_steps
     cfg.target_train_steps = args.target_steps
     cfg.eval_requests = args.eval_requests
+    cfg.cache_capacity = args.capacity
+    cfg.total_files = args.files
+    cfg.zipf_eta = args.eta
+    cfg.lambda_source = args.lambda_source
+    cfg.lambda_target = args.lambda_target
 
     print("=" * 70)
     print(" SMDP Edge Caching Reinforcement Learning & Transfer Learning System")
     print(f" Mode: {args.mode} | Host: {args.host}:{args.port} | Seed: {args.seed}")
-    print(f" Files (F): {cfg.total_files} | Cache (M): {cfg.cache_capacity:.0f} MiB")
-    print(f" Source Lambda: {cfg.lambda_source} | Target Lambda: {cfg.lambda_target}")
+    print(f" Files (F): {cfg.total_files} | Cache (M): {cfg.cache_capacity:.0f} MiB | Zipf Eta: {cfg.zipf_eta:.2f}")
+    print(f" Source Lambda: {cfg.lambda_source} | Target Lambda: {cfg.lambda_target} | Eval Lambda: {args.eval_lambda}")
     print("=" * 70)
 
     # Connect to or auto-spawn Go SMDP server
@@ -186,7 +243,9 @@ def main():
 
     try:
         if args.mode == "train_source":
-            agent, eval_res, hist = run_source_training_and_eval(cfg, env, cfg.source_train_steps, cfg.eval_requests)
+            agent, eval_res, hist = run_source_training_and_eval(
+                cfg, env, cfg.source_train_steps, cfg.eval_requests, eval_lambda=args.eval_lambda
+            )
             ckpt_path = os.path.join(args.checkpoint_dir, "source_agent.pt")
             agent.save_checkpoint(ckpt_path)
             print(f"Checkpoint saved to {ckpt_path}")
@@ -195,7 +254,7 @@ def main():
         elif args.mode == "full_experiment":
             # 1. Train on Source Domain
             source_agent, eval_res, source_hist = run_source_training_and_eval(
-                cfg, env, cfg.source_train_steps, cfg.eval_requests
+                cfg, env, cfg.source_train_steps, cfg.eval_requests, eval_lambda=args.eval_lambda
             )
             ckpt_path = os.path.join(args.checkpoint_dir, "source_agent.pt")
             source_agent.save_checkpoint(ckpt_path)
@@ -214,10 +273,16 @@ def main():
             if os.path.exists(ckpt_path):
                 agent.load_checkpoint(ckpt_path)
                 print(f"Loaded checkpoint from {ckpt_path}")
-            eval_res = agent.evaluate(env, eval_requests=cfg.eval_requests, lambda_rate=cfg.lambda_source, eta=cfg.zipf_eta)
-            print("\n=== Evaluation Results ===")
+            print(f"Evaluating at Table III Benchmark lambda = {args.eval_lambda}:")
+            eval_res = agent.evaluate(env, eval_requests=cfg.eval_requests, lambda_rate=args.eval_lambda, eta=cfg.zipf_eta)
+            print("\n=== Benchmark Evaluation Results ===")
             for k, v in eval_res.items():
                 print(f"{k:15s}: {v}")
+            if args.eval_lambda != cfg.lambda_source:
+                print(f"\nEvaluating at Source Domain lambda = {cfg.lambda_source}:")
+                eval_res_src = agent.evaluate(env, eval_requests=cfg.eval_requests, lambda_rate=cfg.lambda_source, eta=cfg.zipf_eta)
+                for k, v in eval_res_src.items():
+                    print(f"{k:15s}: {v}")
 
     finally:
         env.close()

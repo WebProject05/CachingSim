@@ -1,27 +1,89 @@
 {
-  "timestamp": "2026-10-23T07:32:01.595300Z",
+  "timestamp": "2026-10-23T11:30:52.103016Z",
   "experiment": "SMDP Edge Caching RL and Transfer Learning",
   "parameters": {
     "total_files": 50,
-    "cache_capacity_mib": 10000.0,
+    "cache_capacity_mib": 15000.0,
     "lambda_source": 0.2,
     "lambda_target": 0.3,
     "zipf_eta": 1.0
   },
   "source_evaluation": {
-    "requests": 1000,
-    "hits": 216,
-    "hit_rate": 21.6,
-    "total_utility": 97.97868689347797,
-    "total_reward": 11739.361912259365,
-    "avg_reward": 11.739361912259364
+    "requests": 100000,
+    "hits": 21409,
+    "hit_rate": 21.409,
+    "total_utility": 9751.229862409726,
+    "total_reward": 1590554.0923601845,
+    "avg_reward": 15.905540923601846,
+    "benchmark_lambda": 5.0,
+    "benchmark_hits": 72820,
+    "benchmark_hit_rate": 72.82,
+    "benchmark_total_utility": 34635.7869733187,
+    "multi_lambda_eval": {
+      "0.2": {
+        "requests": 100000,
+        "hits": 21409,
+        "hit_rate": 21.409,
+        "total_utility": 9751.229862409726,
+        "total_reward": 1590554.0923601845,
+        "avg_reward": 15.905540923601846
+      },
+      "0.5": {
+        "requests": 100000,
+        "hits": 35469,
+        "hit_rate": 35.469,
+        "total_utility": 16202.635383773113,
+        "total_reward": 2139366.3623000956,
+        "avg_reward": 21.393663623000958
+      },
+      "1.0": {
+        "requests": 100000,
+        "hits": 47309,
+        "hit_rate": 47.309,
+        "total_utility": 21712.751267146094,
+        "total_reward": 2637216.0847214637,
+        "avg_reward": 26.372160847214637
+      },
+      "1.66": {
+        "requests": 100000,
+        "hits": 55996,
+        "hit_rate": 55.996,
+        "total_utility": 25922.377230866798,
+        "total_reward": 3036676.4311700393,
+        "avg_reward": 30.366764311700393
+      },
+      "2.5": {
+        "requests": 100000,
+        "hits": 62688,
+        "hit_rate": 62.688,
+        "total_utility": 29158.250427802213,
+        "total_reward": 3342304.7565233842,
+        "avg_reward": 33.423047565233844
+      },
+      "5.0": {
+        "requests": 100000,
+        "hits": 72820,
+        "hit_rate": 72.82,
+        "total_utility": 34635.7869733187,
+        "total_reward": 3871407.990775047,
+        "avg_reward": 38.71407990775047
+      },
+      "6.5": {
+        "requests": 100000,
+        "hits": 75093,
+        "hit_rate": 75.093,
+        "total_utility": 36610.415555195,
+        "total_reward": 4078306.2838023184,
+        "avg_reward": 40.783062838023184
+      }
+    }
   },
   "transfer_learning_final_rewards": {
-    "PROPOSED": 17.30237955562097,
-    "DQFD": 17.418307683221478,
-    "LFS": 17.208070167691513,
-    "DPR": 18.55934519517618,
-    "DQFD_OVERWRITE": 17.536707856989707,
-    "DQFD_NEW_PRIO": 17.336550339559505
+    "PROPOSED": 18.74112715039313,
+    "DQFD": 18.587948812579633,
+    "LFS": 18.69323205877976,
+    "DPR": 18.958179140324223,
+    "DQFD_OVERWRITE": 18.56039187302393,
+    "DQFD_NEW_PRIO": 18.513627019331402
   }
 }

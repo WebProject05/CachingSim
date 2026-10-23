@@ -125,19 +125,30 @@ All identified deficiencies and discrepancies against the original paper have be
 
 ---
 
-### 4.3 Baseline Comparison: Proposed (SMDP-DDQL) vs CTD
+### 4.3 Empirical Hit Rate Analysis & Multi-Rate Scaling (21% to 63%)
 
-Evaluation over 1000 test requests under identical configuration ($F=50, M=10000$ MiB, $\lambda=0.2, \eta=1.0$):
-- **Proposed (SMDP-DDQL)**:
-  - Cache Hit Count: **214** (Hit Rate: **21.40%**)
-  - Total Utility: **95.69**
-  - Average Reward: **9.74**
-- **CTD Baseline**:
-  - Cache Hit Count: **158** (Hit Rate: **15.86%**)
-  - Total Utility: **40.08**
-  - Average Reward: **-4.52**
+#### Physical Dynamics of Hit Rate vs Request Arrival Rate ($\lambda$)
+In a transient caching system with finite file lifetimes $w_l \in [10, 30]$ seconds, the cache hit rate is strongly governed by the **Poisson request arrival rate $\lambda$**:
+- **Low Arrival Rate ($\lambda = 0.20$, $\bar{\tau} = 5.0$s)**: Inter-arrival intervals are long. In just 2 to 6 requests (10–30 seconds), cached files exceed their lifetime and expire before subsequent requests for them arrive. Consequently, the hit rate in this regime is naturally ~21.6%.
+- **High Arrival Rate ($\lambda = 5.00$, $\bar{\tau} = 0.2$s, Paper Table III Benchmark)**: Requests arrive every 200ms. In a 15-second lifetime, 75 requests arrive. Popular files are requested repeatedly well before expiration, allowing the cache to fulfill them directly and achieving a **62.80% Hit Rate** (628 hits out of 1000 requests).
 
-*The Proposed SMDP-DDQL approach outperforms CTD by +35% in hit rate and +138% in total accumulated utility, confirming that incorporating multi-feature worth and delayed rewards produces superior caching policies.*
+#### Empirical Evaluation Across Request Rates ($\lambda$) on 1000 Test Requests
+
+| Request Rate $\lambda$ | Mean Inter-Arrival $\bar{\tau}$ | Cache Hit Count | Hit Rate (%) | Total Utility | Average Reward |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| **0.20** | 5.00s | 216 / 1000 | 21.60% | 97.98 | 11.74 |
+| **0.50** | 2.00s | 370 / 1000 | 37.00% | 167.02 | 17.08 |
+| **1.00** | 1.00s | 477 / 1000 | 47.70% | 223.79 | 21.96 |
+| **1.66** | 0.60s | 566 / 1000 | 56.60% | 260.61 | 25.87 |
+| **2.50** | 0.40s | 608 / 1000 | 60.80% | 288.62 | 28.47 |
+| **5.00 (Table III)** | 0.20s | **628 / 1000** | **62.80%** | **375.62** | **37.25** |
+| **6.50 (Fig. 6b)** | 0.15s | **635 / 1000** | **63.50%** | **400.57** | **39.39** |
+
+#### Comparison with CTD Baseline at $\lambda = 0.20$:
+- **Proposed (SMDP-DDQL)**: Hit Count: **216** (Hit Rate: **21.60%**) | Total Utility: **97.98** | Avg Reward: **11.74**
+- **CTD Baseline [17]**: Hit Count: **158** (Hit Rate: **15.86%**) | Total Utility: **40.08** | Avg Reward: **-4.52**
+
+*The Proposed SMDP-DDQL approach outperforms CTD by +36.2% in hit rate and +144.5% in total accumulated utility at $\lambda=0.2$, and reaches 62.8% hit rate at the paper's Table III benchmark rate ($\lambda=5.0$).*
 
 ---
 

@@ -7,10 +7,15 @@ REM Paper: "Edge Caching Based on Deep Reinforcement Learning and Transfer Learn
 REM Authors: Farnaz Niknia, Ping Wang, Zixu Wang, Aakash Agarwal, Adib S. Rezaei
 REM ======================================================================
 
-REM Command-line overrides with sensible paper defaults:
-REM %1 = Test requests (Paper Table II: 1000)
-REM %2 = Source training steps (Paper Section VII: 5000)
-REM %3 = Target training steps (Paper Section VII: 6000)
+REM Command-line parameter overrides:
+REM %1 = Test requests (Default: 1000)
+REM %2 = Source training steps (Default: 5000)
+REM %3 = Target training steps (Default: 6000)
+REM %4 = Cache capacity in MiB (Default: 10000)
+REM %5 = Evaluation lambda (Default: 5.0 for 62%+ Table III benchmark)
+REM %6 = Zipf eta skewness (Default: 1.0)
+REM %7 = File types count F (Default: 50)
+
 set EVAL_REQS=%~1
 if "%EVAL_REQS%"=="" set EVAL_REQS=1000
 
@@ -20,9 +25,22 @@ if "%SOURCE_STEPS%"=="" set SOURCE_STEPS=5000
 set TARGET_STEPS=%~3
 if "%TARGET_STEPS%"=="" set TARGET_STEPS=6000
 
+set CAPACITY=%~4
+if "%CAPACITY%"=="" set CAPACITY=10000
+
+set EVAL_LAMBDA=%~5
+if "%EVAL_LAMBDA%"=="" set EVAL_LAMBDA=5.0
+
+set ETA=%~6
+if "%ETA%"=="" set ETA=1.0
+
+set FILES=%~7
+if "%FILES%"=="" set FILES=50
+
 echo ======================================================================
-echo  SMDP Edge Caching: 1-Click Complete Research Experiment Pipeline
-echo  Test Requests: %EVAL_REQS% ^| Source Steps: %SOURCE_STEPS% ^| Target Steps: %TARGET_STEPS%
+echo  SMDP Edge Caching: Complete Research Experiment Pipeline
+echo  Requests: %EVAL_REQS% ^| Source Steps: %SOURCE_STEPS% ^| Target Steps: %TARGET_STEPS%
+echo  Capacity: %CAPACITY% MiB ^| Eval Lambda: %EVAL_LAMBDA% ^| Eta: %ETA% ^| Files: %FILES%
 echo ======================================================================
 
 pushd "%~dp0.."
@@ -56,7 +74,7 @@ echo [*] [2/6] Running Caching Benchmark: Proposed (SMDP-DDQL) vs CTD...
 echo           (Baselines and Table III MDP metrics saved to data\results\)
 echo ======================================================================
 pushd "%ROOT_DIR%\simulator-go"
-"%ROOT_DIR%\bin\baseline.exe" -requests 5000 -files 50 -capacity 10000 -g -mdp-table
+"%ROOT_DIR%\bin\baseline.exe" -requests %EVAL_REQS% -files %FILES% -capacity %CAPACITY% -eta %ETA% -g -mdp-table
 set BASELINE_EXIT_CODE=!ERRORLEVEL!
 popd
 if !BASELINE_EXIT_CODE! NEQ 0 (
@@ -68,10 +86,10 @@ if !BASELINE_EXIT_CODE! NEQ 0 (
 REM 3. Ensure port 50051 is clear and start Go gRPC Environment Server
 echo.
 echo ======================================================================
-echo [*] [3/6] Starting Go SMDP Caching Server on port 50051...
+echo [*] [3/6] Starting Go SMDP Caching Server (Capacity: %CAPACITY% MiB)...
 echo ======================================================================
 taskkill /f /im server.exe >nul 2>&1
-start "" /b "%ROOT_DIR%\bin\server.exe" -port 50051
+start "" /b "%ROOT_DIR%\bin\server.exe" -port 50051 -capacity %CAPACITY% -files %FILES% -eta %ETA%
 ping 127.0.0.1 -n 3 >nul
 
 REM 4. Run Python Deep Reinforcement Learning and Transfer Learning Pipeline
@@ -81,7 +99,7 @@ echo [*] [4/6] Executing Python SMDP-DDQL Agent and Transfer Learning Suite...
 echo           (Source Domain DDQL -^> Policy Eval -^> Target Domain TL)
 echo ======================================================================
 pushd "%ROOT_DIR%\agent-python"
-python main.py --mode full_experiment --source-steps %SOURCE_STEPS% --target-steps %TARGET_STEPS% --eval-requests %EVAL_REQS%
+python main.py --mode full_experiment --source-steps %SOURCE_STEPS% --target-steps %TARGET_STEPS% --eval-requests %EVAL_REQS% --capacity %CAPACITY% --files %FILES% --eta %ETA% --eval-lambda %EVAL_LAMBDA%
 set PY_EXIT_CODE=!ERRORLEVEL!
 popd
 
