@@ -106,6 +106,9 @@ func (s *EnvServer) MDPStep(action int32, timeQuota float64) *pb.StepResponse {
 
 // executeStepLocked handles state transition, caching, reward, and clock advance.
 func (s *EnvServer) executeStepLocked(action int32, tau float64) *pb.StepResponse {
+	// Reclaim cache capacity occupied by expired files
+	s.cache.PurgeExpired(s.cache.CurrentTime)
+
 	reqFile := s.currentReq
 	isHit := s.cache.CheckHit(reqFile, s.cache.CurrentTime)
 

@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "report_generated_at": "2026-10-23 11:32:44 UTC",
+    "report_generated_at": "2026-10-26 16:08:30 UTC",
     "environment": "SMDP Edge Caching (Go Simulation Engine + Python PyTorch DDQL)",
     "evaluated_algorithms": [
       "Proposed (SMDP-DDQL)",
@@ -71,59 +71,59 @@
     "eviction_reduction_pct": 87.33
   },
   "source_domain_drl": {
-    "training_steps": 10000,
-    "final_training_average_reward": 12.2801,
+    "training_steps": 1000,
+    "final_training_average_reward": -76.7211,
     "policy_evaluation_1000_requests": {
-      "requests": 100000,
-      "hits": 21409,
-      "hit_rate_pct": 21.41,
-      "total_utility": 9751.23,
-      "total_reward": 1590554.09,
-      "average_reward_per_step": 15.9055
+      "requests": 500,
+      "hits": 114,
+      "hit_rate_pct": 22.8,
+      "total_utility": 49.06,
+      "total_reward": -32129.55,
+      "average_reward_per_step": -64.2591
     }
   },
   "target_domain_transfer_learning": {
     "PROPOSED": {
-      "initial_reward_step_100": -48.0009,
-      "midpoint_reward": 17.7485,
-      "final_asymptotic_reward": 18.7411,
-      "peak_reward": 18.7411,
-      "recorded_steps": 10000
+      "initial_reward_step_100": -82.3016,
+      "midpoint_reward": -76.3521,
+      "final_asymptotic_reward": -71.5012,
+      "peak_reward": -71.5012,
+      "recorded_steps": 1000
     },
     "DQFD": {
-      "initial_reward_step_100": -40.7478,
-      "midpoint_reward": 17.515,
-      "final_asymptotic_reward": 18.5879,
-      "peak_reward": 18.5879,
-      "recorded_steps": 10000
+      "initial_reward_step_100": -83.3345,
+      "midpoint_reward": -77.7286,
+      "final_asymptotic_reward": -72.1461,
+      "peak_reward": -72.1461,
+      "recorded_steps": 1000
     },
     "LFS": {
-      "initial_reward_step_100": -43.0796,
-      "midpoint_reward": 17.8294,
-      "final_asymptotic_reward": 18.6932,
-      "peak_reward": 18.6932,
-      "recorded_steps": 10000
+      "initial_reward_step_100": -80.9701,
+      "midpoint_reward": -72.6551,
+      "final_asymptotic_reward": -70.6548,
+      "peak_reward": -70.5088,
+      "recorded_steps": 1000
     },
     "DPR": {
-      "initial_reward_step_100": -15.627,
-      "midpoint_reward": 18.7197,
-      "final_asymptotic_reward": 18.9582,
-      "peak_reward": 19.2872,
-      "recorded_steps": 10000
+      "initial_reward_step_100": -70.6173,
+      "midpoint_reward": -60.9878,
+      "final_asymptotic_reward": -60.5858,
+      "peak_reward": -60.5858,
+      "recorded_steps": 1000
     },
     "DQFD_OVERWRITE": {
-      "initial_reward_step_100": -44.8639,
-      "midpoint_reward": 17.4207,
-      "final_asymptotic_reward": 18.5604,
-      "peak_reward": 18.5604,
-      "recorded_steps": 10000
+      "initial_reward_step_100": -84.4488,
+      "midpoint_reward": -72.325,
+      "final_asymptotic_reward": -68.8205,
+      "peak_reward": -68.8205,
+      "recorded_steps": 1000
     },
     "DQFD_NEW_PRIO": {
-      "initial_reward_step_100": -44.0749,
-      "midpoint_reward": 17.4393,
-      "final_asymptotic_reward": 18.5136,
-      "peak_reward": 18.5136,
-      "recorded_steps": 10000
+      "initial_reward_step_100": -81.2416,
+      "midpoint_reward": -71.6153,
+      "final_asymptotic_reward": -67.9715,
+      "peak_reward": -67.9715,
+      "recorded_steps": 1000
     }
   },
   "parameter_sensitivity_sweeps": [

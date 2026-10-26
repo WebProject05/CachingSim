@@ -16,6 +16,7 @@ from memory.prioritized_buffer import PrioritizedReplayBuffer
 from memory.demo_buffer import DemonstrationBuffer
 from algorithms.dqfd_loss import DQfDLoss
 from client.grpc_env_client import GrpcEnvClient
+from ui_utils import update_progress, end_progress, render_milestone, render_card
 
 
 class DDQLAgent:
@@ -164,6 +165,18 @@ class DDQLAgent:
         if self.epsilon > self.cfg.epsilon_min:
             self.epsilon = max(self.cfg.epsilon_min, self.epsilon * self.cfg.epsilon_decay)
 
+    def collect_expert_demonstrations(self, env: GrpcEnvClient, count: int = 2500):
+        """
+        Populates demonstration buffer with decisions from trained greedy policy (Section VI).
+        Ensures high-quality expert demonstrations guide target domain supervised loss.
+        """
+        state, _ = env.reset(seed=self.cfg.seed + 777, lambda_rate=self.cfg.lambda_source, eta=self.cfg.zipf_eta)
+        for _ in range(count):
+            action = self.select_action(state, evaluate=True)
+            next_state, reward, tau, is_hit, utility = env.step(action)
+            self.demo_buffer.add(state=state, action=action, reward=reward, next_state=next_state, tau=tau)
+            state = next_state
+
     def train_source_domain(
         self,
         env: GrpcEnvClient,
@@ -172,7 +185,7 @@ class DDQLAgent:
     ) -> Dict[str, Any]:
         """
         Trains the DDQL agent in the source domain (lambda_S = 0.2)
-        and populates the demonstration buffer.
+        and populates the demonstration buffer with high-quality decisions.
         """
         state, _ = env.reset(seed=self.cfg.seed, lambda_rate=self.cfg.lambda_source, eta=self.cfg.zipf_eta)
         self.running_reward_sum = 0.0
@@ -181,6 +194,7 @@ class DDQLAgent:
 
         hits = 0
         total_utility = 0.0
+        last_loss = 0.0
         avg_reward_history = []
 
         for step in range(1, total_steps + 1):
@@ -193,7 +207,7 @@ class DDQLAgent:
 
             self.update_running_reward(reward)
 
-            # Store transition in PER buffer and demonstration buffer
+            # Store transition in PER buffer
             n_trans = self.replay_buffer.add(
                 state=state,
                 action=action,
@@ -202,22 +216,69 @@ class DDQLAgent:
                 tau=tau,
                 is_expert=False,
             )
-            if n_trans is not None:
+            # Only record demonstration data once the policy has explored and learned
+            if n_trans is not None and self.epsilon <= 0.20:
                 self.demo_buffer.add_transition(n_trans)
 
             state = next_state
             self.decay_epsilon()
-            self.step_learn()
+            loss_metrics = self.step_learn()
+            if loss_metrics:
+                last_loss = loss_metrics.get('loss_total', last_loss)
+
+            if verbose and (step % 25 == 0 or step == total_steps):
+                update_progress(
+                    "Source DDQL",
+                    step,
+                    total_steps,
+                    stats={
+                        "Hits": hits,
+                        "HR": f"{hits/step*100:5.2f}%",
+                        "AvgR": self.avg_reward,
+                        "Loss": last_loss,
+                        "Eps": self.epsilon,
+                    },
+                )
 
             if step % 100 == 0:
                 avg_reward_history.append((step, self.avg_reward))
                 if verbose and step % 1000 == 0:
-                    print(f"[Source Domain] Step [{step:5d}/{total_steps:5d}] | Hit Rate: {hits/step*100:5.2f}% | "
-                          f"Avg Reward: {self.avg_reward:6.2f} | Epsilon: {self.epsilon:.3f}")
+                    render_milestone(
+                        "Source Domain",
+                        step,
+                        total_steps,
+                        hit_rate=hits / step * 100.0,
+                        hits=hits,
+                        avg_reward=self.avg_reward,
+                        loss=last_loss,
+                        epsilon=self.epsilon,
+                    )
+
+        if verbose:
+            end_progress()
 
         flushed = self.replay_buffer.flush_n_step()
         for t in flushed:
-            self.demo_buffer.add_transition(t)
+            if self.epsilon <= 0.20:
+                self.demo_buffer.add_transition(t)
+
+        # Collect converged expert demonstrations if needed
+        if len(self.demo_buffer) < 2000:
+            fill_count = min(3000, self.cfg.replay_capacity - len(self.demo_buffer))
+            self.collect_expert_demonstrations(env, count=fill_count)
+
+        if verbose:
+            render_card(
+                "Source Domain Training Complete",
+                {
+                    "Total Steps": total_steps,
+                    "Total Hits": hits,
+                    "Final Hit Rate": f"{hits / total_steps * 100.0:.2f}%",
+                    "Total Utility": total_utility,
+                    "Running Avg Reward": self.avg_reward,
+                    "Demonstrations Collected": len(self.demo_buffer),
+                },
+            )
 
         return {
             'hit_rate': hits / total_steps * 100.0,
@@ -273,6 +334,7 @@ class DDQLAgent:
         self,
         env: GrpcEnvClient,
         total_steps: int = 8000,
+        method_name: str = "Target TL",
         verbose: bool = True,
     ) -> Dict[str, Any]:
         """Trains the agent in target domain (lambda_T = 0.3)."""
@@ -282,6 +344,7 @@ class DDQLAgent:
 
         hits = 0
         total_utility = 0.0
+        last_loss = 0.0
         avg_reward_history = []
 
         for step in range(1, total_steps + 1):
@@ -306,13 +369,40 @@ class DDQLAgent:
 
             state = next_state
             self.decay_epsilon()
-            self.step_learn()
+            loss_metrics = self.step_learn()
+            if loss_metrics:
+                last_loss = loss_metrics.get('loss_total', last_loss)
+
+            if verbose and (step % 25 == 0 or step == total_steps):
+                update_progress(
+                    method_name,
+                    step,
+                    total_steps,
+                    stats={
+                        "Hits": hits,
+                        "HR": f"{hits/step*100:5.2f}%",
+                        "AvgR": self.avg_reward,
+                        "Loss": last_loss,
+                        "Eps": self.epsilon,
+                    },
+                )
 
             if step % 100 == 0:
                 avg_reward_history.append((step, self.avg_reward))
                 if verbose and step % 1000 == 0:
-                    print(f"[Target Domain] Step [{step:5d}/{total_steps:5d}] | Hit Rate: {hits/step*100:5.2f}% | "
-                          f"Avg Reward: {self.avg_reward:6.2f} | Epsilon: {self.epsilon:.3f}")
+                    render_milestone(
+                        method_name,
+                        step,
+                        total_steps,
+                        hit_rate=hits / step * 100.0,
+                        hits=hits,
+                        avg_reward=self.avg_reward,
+                        loss=last_loss,
+                        epsilon=self.epsilon,
+                    )
+
+        if verbose:
+            end_progress()
 
         return {
             'hit_rate': hits / total_steps * 100.0,
@@ -330,7 +420,6 @@ class DDQLAgent:
         """
         Executes Direct Policy Reuse (DPR) in target domain (lambda_T = 0.3).
         Reuses the trained source policy greedily without gradient updates (epsilon = 0).
-        Steps through total_steps in the environment, recording running reward and logging progress every 1000 steps.
         """
         state, _ = env.reset(seed=self.cfg.seed + 100, lambda_rate=self.cfg.lambda_target, eta=self.cfg.zipf_eta)
         self.running_reward_sum = 0.0
@@ -352,11 +441,28 @@ class DDQLAgent:
             self.update_running_reward(reward)
             state = next_state
 
+            if verbose and (step % 25 == 0 or step == total_steps):
+                update_progress(
+                    "Target DPR",
+                    step,
+                    total_steps,
+                    stats={"Hits": hits, "HR": f"{hits/step*100:5.2f}%", "AvgR": self.avg_reward},
+                )
+
             if step % 100 == 0:
                 avg_reward_history.append((step, self.avg_reward))
                 if verbose and step % 1000 == 0:
-                    print(f"[Target Domain: DPR] Step [{step:5d}/{total_steps:5d}] | Hit Rate: {hits/step*100:5.2f}% | "
-                          f"Avg Reward: {self.avg_reward:6.2f}")
+                    render_milestone(
+                        "Target DPR",
+                        step,
+                        total_steps,
+                        hit_rate=hits / step * 100.0,
+                        hits=hits,
+                        avg_reward=self.avg_reward,
+                    )
+
+        if verbose:
+            end_progress()
 
         return {
             'hit_rate': hits / total_steps * 100.0,
@@ -371,17 +477,26 @@ class DDQLAgent:
         eval_requests: int = 1000,
         lambda_rate: float = 0.2,
         eta: float = 1.0,
+        verbose: bool = True,
     ) -> Dict[str, Any]:
         """
-        Evaluates policy performance on 1000 user requests without exploration (Section VII-D).
-        Returns hit count, hit rate, total utility, and average reward.
+        Evaluates policy performance on user requests without exploration (Section VII-D).
+        Returns hit count, hit rate, byte hit rate, total utility, and average reward.
         """
         state, _ = env.reset(seed=self.cfg.seed + 999, lambda_rate=lambda_rate, eta=eta)
         hits = 0
         total_utility = 0.0
         total_reward = 0.0
+        total_req_bytes = 0.0
+        hit_bytes = 0.0
+        f_count = self.cfg.total_files
 
         for step in range(1, eval_requests + 1):
+            # Extract requested file index and size from state
+            req_idx = int(np.argmax(state[-f_count:]))
+            req_size = float(state[1 + 2 * f_count + req_idx] * 1000.0) if (0 <= req_idx < f_count) else 100.0
+            total_req_bytes += req_size
+
             # Greedy action selection (evaluate = True)
             action = self.select_action(state, evaluate=True)
             next_state, reward, tau, is_hit, utility = env.step(action)
@@ -389,14 +504,35 @@ class DDQLAgent:
             if is_hit:
                 hits += 1
                 total_utility += utility
+                hit_bytes += req_size
 
             total_reward += reward
             state = next_state
 
+            if verbose and (step % 25 == 0 or step == eval_requests):
+                update_progress(
+                    f"Eval lambda={lambda_rate:.2f}",
+                    step,
+                    eval_requests,
+                    stats={
+                        "Hits": hits,
+                        "HR": f"{hits/step*100:5.2f}%",
+                        "BHR": f"{hit_bytes/total_req_bytes*100:5.2f}%",
+                        "Utility": total_utility,
+                    },
+                )
+
+        if verbose:
+            end_progress()
+
+        hit_rate = (hits / eval_requests) * 100.0
+        byte_hit_rate = (hit_bytes / total_req_bytes * 100.0) if total_req_bytes > 0 else 0.0
+
         return {
             'requests': eval_requests,
             'hits': hits,
-            'hit_rate': (hits / eval_requests) * 100.0,
+            'hit_rate': hit_rate,
+            'byte_hit_rate': byte_hit_rate,
             'total_utility': total_utility,
             'total_reward': total_reward,
             'avg_reward': total_reward / eval_requests,

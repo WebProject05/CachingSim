@@ -18,6 +18,7 @@ from evaluate import (
     run_transfer_learning_comparison,
     save_results_and_plot,
 )
+from ui_utils import render_banner, render_card, render_section_header
 
 
 def parse_args():
@@ -228,12 +229,23 @@ def main():
     cfg.lambda_source = args.lambda_source
     cfg.lambda_target = args.lambda_target
 
-    print("=" * 70)
-    print(" SMDP Edge Caching Reinforcement Learning & Transfer Learning System")
-    print(f" Mode: {args.mode} | Host: {args.host}:{args.port} | Seed: {args.seed}")
-    print(f" Files (F): {cfg.total_files} | Cache (M): {cfg.cache_capacity:.0f} MiB | Zipf Eta: {cfg.zipf_eta:.2f}")
-    print(f" Source Lambda: {cfg.lambda_source} | Target Lambda: {cfg.lambda_target} | Eval Lambda: {args.eval_lambda}")
-    print("=" * 70)
+    render_banner(
+        "SMDP Edge Caching Reinforcement Learning & Transfer Learning System",
+        details={
+            "Execution Mode": args.mode,
+            "gRPC Server Target": f"{args.host}:{args.port}",
+            "Random Seed": args.seed,
+            "File Types (F)": cfg.total_files,
+            "Cache Capacity (M)": f"{cfg.cache_capacity:,.0f} MiB",
+            "Zipf Exponent (Eta)": f"{cfg.zipf_eta:.2f}",
+            "Source Lambda (lambda_S)": f"{cfg.lambda_source:.2f} req/s",
+            "Target Lambda (lambda_T)": f"{cfg.lambda_target:.2f} req/s",
+            "Evaluation Lambda (lambda)": f"{args.eval_lambda:.2f} req/s",
+            "Source Steps": f"{cfg.source_train_steps:,}",
+            "Target Steps": f"{cfg.target_train_steps:,}",
+            "Evaluation Requests": f"{cfg.eval_requests:,}",
+        },
+    )
 
     # Connect to or auto-spawn Go SMDP server
     env = ensure_server_running(cfg, auto_start=not args.no_auto_start)
@@ -273,20 +285,40 @@ def main():
             if os.path.exists(ckpt_path):
                 agent.load_checkpoint(ckpt_path)
                 print(f"Loaded checkpoint from {ckpt_path}")
-            print(f"Evaluating at Table III Benchmark lambda = {args.eval_lambda}:")
-            eval_res = agent.evaluate(env, eval_requests=cfg.eval_requests, lambda_rate=args.eval_lambda, eta=cfg.zipf_eta)
-            print("\n=== Benchmark Evaluation Results ===")
-            for k, v in eval_res.items():
-                print(f"{k:15s}: {v}")
+
+            render_section_header(f"Evaluating Model at Table III Benchmark (lambda = {args.eval_lambda:.2f})")
+            eval_res = agent.evaluate(env, eval_requests=cfg.eval_requests, lambda_rate=args.eval_lambda, eta=cfg.zipf_eta, verbose=True)
+            render_card("Benchmark Evaluation Results", {
+                "Requests": eval_res["requests"],
+                "Hits": eval_res["hits"],
+                "Hit Rate": f"{eval_res['hit_rate']:.2f}%",
+                "Byte Hit Rate": f"{eval_res.get('byte_hit_rate', 0.0):.2f}%",
+                "Total Utility": f"{eval_res['total_utility']:.2f}",
+                "Average Reward": f"{eval_res['avg_reward']:.2f}",
+            })
+
             if args.eval_lambda != cfg.lambda_source:
-                print(f"\nEvaluating at Source Domain lambda = {cfg.lambda_source}:")
-                eval_res_src = agent.evaluate(env, eval_requests=cfg.eval_requests, lambda_rate=cfg.lambda_source, eta=cfg.zipf_eta)
-                for k, v in eval_res_src.items():
-                    print(f"{k:15s}: {v}")
+                render_section_header(f"Evaluating Model at Source Domain Rate (lambda = {cfg.lambda_source:.2f})")
+                eval_res_src = agent.evaluate(env, eval_requests=cfg.eval_requests, lambda_rate=cfg.lambda_source, eta=cfg.zipf_eta, verbose=True)
+                render_card("Source Rate Evaluation Results", {
+                    "Requests": eval_res_src["requests"],
+                    "Hits": eval_res_src["hits"],
+                    "Hit Rate": f"{eval_res_src['hit_rate']:.2f}%",
+                    "Byte Hit Rate": f"{eval_res_src.get('byte_hit_rate', 0.0):.2f}%",
+                    "Total Utility": f"{eval_res_src['total_utility']:.2f}",
+                    "Average Reward": f"{eval_res_src['avg_reward']:.2f}",
+                })
 
     finally:
         env.close()
-        print("\n=== Experiment Execution Complete ===")
+        render_banner(
+            "Experiment Execution Complete",
+            details={
+                "Status": "SUCCESS",
+                "Results Directory": os.path.abspath(args.output_dir),
+                "Checkpoints": os.path.abspath(args.checkpoint_dir),
+            },
+        )
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # SMDP EDGE CACHING EXPERIMENT: COMPREHENSIVE PERFORMANCE REPORT
 
-> **Generated at**: `2026-10-23 11:32:44 UTC`  
+> **Generated at**: `2026-10-26 16:08:30 UTC`  
 > **Targeted Algorithms**: `Proposed (SMDP-DDQL)`, `CTD`, `Proposed TL`, `DQfD`, `LFS`, `DPR`  
 > **Excluded Baselines**: `FIFO`, `LIFO`, `LRU`, `LFU`, `SIEVE` (omitted per user configuration)
 
@@ -20,23 +20,23 @@
 
 ## 2. Source Domain DRL (DDQL) Performance
 
-- **Training Steps**: `10,000` steps
-- **Final Moving Average Reward**: `12.2801`
-- **Greedy Policy Hit Rate**: `21.41%` (`21409 / 100000` requests)
-- **Total Accumulated Utility**: `9751.23`
-- **Average Reward Per Step**: `15.9055`
+- **Training Steps**: `1,000` steps
+- **Final Moving Average Reward**: `-76.7211`
+- **Greedy Policy Hit Rate**: `22.80%` (`114 / 500` requests)
+- **Total Accumulated Utility**: `49.06`
+- **Average Reward Per Step**: `-64.2591`
 
 
 ## 3. Target Domain Transfer Learning Performance (lambda_T = 0.3)
 
 | Transfer Learning Method | Initial Reward (t=100) | Midpoint Reward | Final Reward | Peak Reward |
 | :--- | :--- | :--- | :--- | :--- |
-| **PROPOSED** | `-48.00` | `17.75` | **`18.74`** | `18.74` |
-| **DQFD** | `-40.75` | `17.52` | **`18.59`** | `18.59` |
-| **LFS** | `-43.08` | `17.83` | **`18.69`** | `18.69` |
-| **DPR** | `-15.63` | `18.72` | **`18.96`** | `19.29` |
-| **DQFD_OVERWRITE** | `-44.86` | `17.42` | **`18.56`** | `18.56` |
-| **DQFD_NEW_PRIO** | `-44.07` | `17.44` | **`18.51`** | `18.51` |
+| **PROPOSED** | `-82.30` | `-76.35` | **`-71.50`** | `-71.50` |
+| **DQFD** | `-83.33` | `-77.73` | **`-72.15`** | `-72.15` |
+| **LFS** | `-80.97` | `-72.66` | **`-70.65`** | `-70.51` |
+| **DPR** | `-70.62` | `-60.99` | **`-60.59`** | `-60.59` |
+| **DQFD_OVERWRITE** | `-84.45` | `-72.33` | **`-68.82`** | `-68.82` |
+| **DQFD_NEW_PRIO** | `-81.24` | `-71.62` | **`-67.97`** | `-67.97` |
 
 ## 4. Parameter Sensitivity Sweeps (Proposed vs CTD)
 

@@ -114,6 +114,24 @@ func (c *CacheEngine) isFreshLocked(fileID int, currentTime float64) bool {
 	return c.Files[fileID].Freshness(currentTime) < 1.0
 }
 
+// PurgeExpired removes all expired files (freshness >= 1.0) from cache and reclaims memory.
+func (c *CacheEngine) PurgeExpired(currentTime float64) int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	purged := 0
+	for id := 0; id < len(c.Cached) && id < len(c.Files); id++ {
+		if c.Cached[id] && c.Files[id].Freshness(currentTime) >= 1.0 {
+			c.Cached[id] = false
+			c.UsedCapacity -= c.Files[id].Size
+			if c.UsedCapacity < 0 {
+				c.UsedCapacity = 0
+			}
+			purged++
+		}
+	}
+	return purged
+}
+
 // CheckHit checks whether requested file is cached and valid at currentTime.
 // If cached but expired (freshness >= 1.0), it purges the stale file and returns false.
 func (c *CacheEngine) CheckHit(fileID int, currentTime float64) bool {

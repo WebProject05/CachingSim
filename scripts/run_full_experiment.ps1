@@ -73,7 +73,7 @@ Write-Host "====================================================================
 
 Push-Location (Join-Path $RootDir "simulator-go")
 try {
-    & $BaselineBin -requests $EvalRequests -files $Files -capacity $Capacity -eta $ZipfEta -g -mdp-table
+    & $BaselineBin -requests $EvalRequests -files $Files -capacity $Capacity -eta $ZipfEta -lambda $EvalLambda -g -mdp-table
     if ($LASTEXITCODE -ne 0) {
         Write-Error "[!] Baseline runner failed with exit code $LASTEXITCODE"
         exit $LASTEXITCODE

@@ -74,7 +74,7 @@ echo [*] [2/6] Running Caching Benchmark: Proposed (SMDP-DDQL) vs CTD...
 echo           (Baselines and Table III MDP metrics saved to data\results\)
 echo ======================================================================
 pushd "%ROOT_DIR%\simulator-go"
-"%ROOT_DIR%\bin\baseline.exe" -requests %EVAL_REQS% -files %FILES% -capacity %CAPACITY% -eta %ETA% -g -mdp-table
+"%ROOT_DIR%\bin\baseline.exe" -requests %EVAL_REQS% -files %FILES% -capacity %CAPACITY% -eta %ETA% -lambda %EVAL_LAMBDA% -g -mdp-table
 set BASELINE_EXIT_CODE=!ERRORLEVEL!
 popd
 if !BASELINE_EXIT_CODE! NEQ 0 (

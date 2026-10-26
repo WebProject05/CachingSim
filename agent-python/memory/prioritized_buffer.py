@@ -127,12 +127,14 @@ class PrioritizedReplayBuffer:
         n_step_state = self.n_step_buffer[-1][3]
 
         n_step_return = 0.0
-        n_step_tau = 0.0
+        cumulative_tau = 0.0
 
         for s, a, r, ns, tau, _, _ in self.n_step_buffer:
-            n_step_tau += tau
-            discount = (self.gamma ** n_step_tau)
+            discount = (self.gamma ** cumulative_tau)
             n_step_return += discount * r
+            cumulative_tau += tau
+
+        n_step_tau = cumulative_tau
 
         first_r = self.n_step_buffer[0][2]
         first_ns = self.n_step_buffer[0][3]
@@ -266,7 +268,7 @@ class PrioritizedReplayBuffer:
             tde = abs(float(td_errors[i]))
             if self.use_proposed_priority:
                 r = float(rewards[i])
-                p = (avg_reward - r) + tde + self.priority_epsilon
+                p = max(0.0, avg_reward - r) + tde + self.priority_epsilon
             else:
                 p = tde + self.priority_epsilon
 

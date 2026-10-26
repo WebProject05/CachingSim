@@ -56,17 +56,24 @@ func newSMDPCacheWrapper(cfg *config.Config, files []core.FileMetadata) *smdpCac
 
 func (w *smdpCacheWrapper) AccessAt(fileID int, currentTime float64) bool {
 	w.requests++
-	if fileID < 0 || fileID >= len(w.files) {
+	if fileID < 0 || fileID >= len(w.engine.Files) {
 		w.rejected++
 		return false
 	}
-	fileSize := w.files[fileID].Size
+	fileSize := w.engine.Files[fileID].Size
 	if fileSize > 0 {
 		w.requestedBytes += fileSize
 	}
 
 	w.engine.CurrentTime = currentTime
 	w.engine.RecordRequest(fileID)
+
+	// Proactively clean expired entries so fresh capacity is accurately reflected
+	for id, c := range w.engine.Cached {
+		if c && w.engine.Files[id].Freshness(currentTime) >= 1.0 {
+			w.engine.Remove(id)
+		}
+	}
 
 	if w.engine.CheckHit(fileID, currentTime) {
 		w.hits++
@@ -99,7 +106,7 @@ func (w *smdpCacheWrapper) AccessAt(fileID int, currentTime float64) bool {
 }
 
 func (w *smdpCacheWrapper) shouldAdmit(fileID int, currentTime float64) bool {
-	fileSize := w.files[fileID].Size
+	fileSize := w.engine.Files[fileID].Size
 	freeSpace := w.cfg.CacheCapacity - w.engine.UsedCapacity
 	if freeSpace >= fileSize {
 		return true
@@ -110,7 +117,8 @@ func (w *smdpCacheWrapper) shouldAdmit(fileID int, currentTime float64) bool {
 	if fileID < len(popVec) {
 		candPop += popVec[fileID]
 	}
-	candUtil := w.files[fileID].Utility(currentTime, w.cfg)
+	// Newly fetched candidate from origin has zero age, giving maximum initial utility
+	candUtil := w.cfg.UTMax * w.engine.Files[fileID].Importance
 	candScore := (math.Pow(candPop, 1.25) * candUtil) / math.Pow(fileSize, 0.25)
 
 	needed := fileSize - freeSpace
@@ -129,8 +137,8 @@ func (w *smdpCacheWrapper) shouldAdmit(fileID int, currentTime float64) bool {
 			}
 			cachedItems = append(cachedItems, cachedItem{
 				id:   id,
-				u:    w.files[id].Utility(currentTime, w.cfg),
-				size: w.files[id].Size,
+				u:    w.engine.Files[id].Utility(currentTime, w.cfg),
+				size: w.engine.Files[id].Size,
 				pop:  p,
 			})
 		}
@@ -154,7 +162,7 @@ func (w *smdpCacheWrapper) shouldAdmit(fileID int, currentTime float64) bool {
 		return true
 	}
 	victimScore := victimValSum / victimCount
-	return candScore >= (victimScore * 0.72)
+	return candScore >= (victimScore * 0.70)
 }
 
 func (w *smdpCacheWrapper) Access(fileID int) bool {
@@ -238,6 +246,7 @@ func main() {
 	fileSizes := flag.String("file-sizes", "100,200,500,700,1000", "popular-file sizes in MiB")
 	fileImportances := flag.String("file-importances", "0.1,0.3,0.5,0.7,0.9", "popular-file importance values")
 	runMDPTbl := flag.Bool("mdp-table", false, "run and print Table III (MDP vs SMDP time quota comparison)")
+	lambdaRate := flag.Float64("lambda", 0.2, "Poisson request arrival rate lambda (default: 0.2; use 5.0 for high request rate)")
 	flag.Parse()
 
 	if *generateGraphs {
@@ -265,6 +274,9 @@ func main() {
 
 	cfg := config.DefaultConfig()
 	cfg.TotalFileTypes, cfg.CacheCapacity, cfg.ZipfEta = *fileCount, *capacity, *eta
+	if *lambdaRate > 0 {
+		cfg.LambdaSource = *lambdaRate
+	}
 	files := core.GenerateFiles(cfg, rand.New(rand.NewSource(*seed)))
 	events := generateRequestEvents(cfg, *seed, *requests)
 
@@ -441,14 +453,12 @@ func printResult(result runResult) {
 }
 
 func printComparisonTable(results []runResult) {
-	printBox("ALGORITHM COMPARISON", []string{
-		"Higher hit rate, byte hit rate, and total utility are better.",
-		"Lower miss, rejection, eviction, and latency values are better.",
-	})
-	border := "+------------+--------+--------+--------+--------+--------+---------------+--------+"
-	fmt.Fprintln(output, border)
-	fmt.Fprintln(output, "| Algorithm  | Hit %   | Byte %  | Miss %  | Evict % | Util %  | Total Utility | Ops/sec|")
-	fmt.Fprintln(output, border)
+	fmt.Fprintln(output, "")
+	fmt.Fprintln(output, "=========================================================================================")
+	fmt.Fprintln(output, " ALGORITHM PERFORMANCE BENCHMARK (Proposed SMDP-DDQL vs CTD Baseline)")
+	fmt.Fprintln(output, "=========================================================================================")
+	fmt.Fprintln(output, " Algorithm   | Hit Rate | Byte Hit | Miss Rate | Evict Rate | Cache Util | Total Utility | Ops/sec")
+	fmt.Fprintln(output, "-------------+----------+----------+-----------+------------+------------+---------------+---------")
 	for _, r := range results {
 		if r.name != "SMDP-DDQL" && r.name != "CTD" {
 			continue
@@ -459,10 +469,10 @@ func printComparisonTable(results []runResult) {
 		if r.name == "SMDP-DDQL" {
 			displayName = "Proposed"
 		}
-		fmt.Fprintf(output, "| %-10s | %6.2f%% | %6.2f%% | %6.2f%% | %6.2f%% | %6.2f%% | %13.2f | %6s |\n",
+		fmt.Fprintf(output, " %-11s | %7.2f%% | %7.2f%% | %8.2f%% | %9.2f%% | %9.2f%% | %13.2f | %7s\n",
 			displayName, s.HitRate()*100, s.ByteHitRate()*100, s.MissRate()*100, s.EvictionRate()*100, s.Utilization()*100, r.totalUtility, ops)
 	}
-	fmt.Fprintln(output, border)
+	fmt.Fprintln(output, "=========================================================================================")
 }
 
 func openRunLog(path string) (*os.File, error) {
@@ -505,8 +515,8 @@ func printFileStats(files []core.FileMetadata) {
 		maximum = math.Max(maximum, file.Size)
 		total += file.Size
 	}
-	printBox("GENERATED FILES", []string{
-		fmt.Sprintf("Count             : %d", len(files)),
+	printBox("GENERATED FILES OVERVIEW", []string{
+		fmt.Sprintf("Count             : %d files", len(files)),
 		fmt.Sprintf("Total size        : %.2f MiB", total),
 		fmt.Sprintf("Average size      : %.2f MiB", total/float64(len(files))),
 		fmt.Sprintf("Minimum size      : %.2f MiB", minimum),
@@ -515,28 +525,31 @@ func printFileStats(files []core.FileMetadata) {
 }
 
 func printBox(title string, lines []string) {
-	width := len(title) + 4
+	width := 85
 	for _, line := range lines {
-		if len(line)+4 > width {
-			width = len(line) + 4
+		if len(line)+6 > width {
+			width = len(line) + 6
 		}
 	}
-	border := "+" + strings.Repeat("-", width-2) + "+"
+	border := strings.Repeat("=", width)
+	subBorder := strings.Repeat("-", width)
+	fmt.Fprintln(output, "")
 	fmt.Fprintln(output, border)
-	fmt.Fprintf(output, "| %-*s |\n", width-4, title)
-	fmt.Fprintln(output, border)
+	fmt.Fprintf(output, "  %s\n", title)
+	fmt.Fprintln(output, subBorder)
 	for _, line := range lines {
-		fmt.Fprintf(output, "| %-*s |\n", width-4, line)
+		fmt.Fprintf(output, "    %s\n", line)
 	}
 	fmt.Fprintln(output, border)
 }
 
 func printTableIII(results []baselines.MDPEvaluationResult) {
-	fmt.Fprintln(output, "\n+-------------------------------------------------------------------------+")
-	fmt.Fprintln(output, "| TABLE III: Hit rate for MDP and SMDP under different quotas and rates   |")
-	fmt.Fprintln(output, "+----------------------+------------+--------------+----------------------+")
-	fmt.Fprintln(output, "| Size of time quota   | lambda = 5 | lambda = 1.66| lambda = 1.0         |")
-	fmt.Fprintln(output, "+----------------------+------------+--------------+----------------------+")
+	fmt.Fprintln(output, "")
+	fmt.Fprintln(output, "=========================================================================================")
+	fmt.Fprintln(output, " TABLE III: Hit Count for Discrete MDP vs Continuous SMDP (1000 Total Trials)")
+	fmt.Fprintln(output, "=========================================================================================")
+	fmt.Fprintln(output, " Time Quota (s)      | lambda = 5.00 req/s  | lambda = 1.66 req/s  | lambda = 1.00 req/s")
+	fmt.Fprintln(output, "---------------------+----------------------+----------------------+---------------------")
 
 	quotas := []float64{0.2, 0.4, 0.6, 0.8, 1.0}
 	tableMap := make(map[float64]map[float64]int)
@@ -551,12 +564,12 @@ func printTableIII(results []baselines.MDPEvaluationResult) {
 	}
 
 	for _, q := range quotas {
-		fmt.Fprintf(output, "| MDP  %-15.1f | %-10d | %-12d | %-20d |\n",
+		fmt.Fprintf(output, " MDP  quota = %-6.2fs |      %-15d |      %-15d |      %-15d\n",
 			q, tableMap[q][5.0], tableMap[q][1.66], tableMap[q][1.0])
 	}
-	fmt.Fprintln(output, "+----------------------+------------+--------------+----------------------+")
-	fmt.Fprintf(output, "| SMDP %-15s | %-10d | %-12d | %-20d |\n",
-		"—", smdpMap[5.0], smdpMap[1.66], smdpMap[1.0])
-	fmt.Fprintln(output, "+----------------------+------------+--------------+----------------------+")
+	fmt.Fprintln(output, "---------------------+----------------------+----------------------+---------------------")
+	fmt.Fprintf(output, " SMDP (Continuous)   |      %-15d |      %-15d |      %-15d\n",
+		smdpMap[5.0], smdpMap[1.66], smdpMap[1.0])
+	fmt.Fprintln(output, "=========================================================================================")
 }
 

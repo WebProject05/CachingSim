@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from config import AgentConfig, get_default_config
 from client.grpc_env_client import GrpcEnvClient
 from algorithms.ddql import DDQLAgent
+from ui_utils import render_banner, render_section_header, render_card, render_table
 
 
 def run_source_training_and_eval(
@@ -27,38 +28,59 @@ def run_source_training_and_eval(
     eval_lambda: float = 5.0,
 ) -> Tuple[DDQLAgent, Dict[str, Any], List[Tuple[int, float]]]:
     """Trains DDQL agent on source domain and evaluates on test requests across request rates."""
-    print(f"\n>>> [1/2] Training Proposed DDQL Agent on Source Domain (lambda={cfg.lambda_source}, eta={cfg.zipf_eta})...")
+    render_section_header(f"Phase 1: Source Domain Training (lambda_S={cfg.lambda_source}, eta={cfg.zipf_eta}, Steps={train_steps:,})")
     agent = DDQLAgent(cfg)
     train_res = agent.train_source_domain(env, total_steps=train_steps, verbose=True)
 
-    print(f"\n>>> [2/2] Evaluating Converged DDQL Agent on {eval_requests} Test Requests...")
+    render_section_header(f"Phase 2: Multi-Rate Evaluation Across Request Arrival Rates (Table III & Fig. 6b)")
     eval_res_source = agent.evaluate(env, eval_requests=eval_requests, lambda_rate=cfg.lambda_source, eta=cfg.zipf_eta)
     eval_res_benchmark = agent.evaluate(env, eval_requests=eval_requests, lambda_rate=eval_lambda, eta=cfg.zipf_eta)
 
     # Multi-rate evaluation for Table III and Figure 6b verification
     multi_lambda_results = {}
-    print("\n" + "=" * 75)
-    print(f" DDQL EVALUATION ACROSS REQUEST RATES (Table III & Fig. 6b Reproduction)")
-    print("=" * 75)
-    print(f" {'Lambda':<8} | {'Inter-Arrival':<14} | {'Hits':<8} | {'Hit Rate (%)':<14} | {'Total Utility':<14}")
-    print("-" * 75)
+    table_headers = ["Lambda", "Mean Tau", "Requests", "Hits", "Hit Rate", "Byte Hit Rate", "Total Utility", "Avg Reward"]
+    table_rows = []
+
     for lam in [0.20, 0.50, 1.00, 1.66, 2.50, 5.00, 6.50]:
-        res_lam = agent.evaluate(env, eval_requests=eval_requests, lambda_rate=lam, eta=cfg.zipf_eta)
+        res_lam = agent.evaluate(env, eval_requests=eval_requests, lambda_rate=lam, eta=cfg.zipf_eta, verbose=True)
         multi_lambda_results[str(lam)] = res_lam
         mean_tau = 1.0 / lam
-        print(f" {lam:<8.2f} | {mean_tau:<14.2f}s | {res_lam['hits']:<8d} | {res_lam['hit_rate']:<14.2f}% | {res_lam['total_utility']:<14.2f}")
-    print("=" * 75)
+        table_rows.append([
+            f"{lam:5.2f} req/s",
+            f"{mean_tau:5.2f}s",
+            eval_requests,
+            f"{res_lam['hits']:,}",
+            f"{res_lam['hit_rate']:5.2f}%",
+            f"{res_lam.get('byte_hit_rate', 0.0):5.2f}%",
+            f"{res_lam['total_utility']:6.2f}",
+            f"{res_lam['avg_reward']:6.2f}",
+        ])
 
-    print(f"\n=== Key Benchmark Summary ===")
-    print(f"Source Domain (lambda={cfg.lambda_source:.2f}, tau={1.0/cfg.lambda_source:.1f}s)    : Hit Rate = {eval_res_source['hit_rate']:.2f}% ({eval_res_source['hits']}/{eval_requests}) | Utility = {eval_res_source['total_utility']:.2f}")
-    print(f"Table III Benchmark (lambda={eval_lambda:.2f}, tau={1.0/eval_lambda:.2f}s) : Hit Rate = {eval_res_benchmark['hit_rate']:.2f}% ({eval_res_benchmark['hits']}/{eval_requests}) | Utility = {eval_res_benchmark['total_utility']:.2f}")
+    print("\n")
+    render_table(
+        table_headers,
+        table_rows,
+        alignments=['L', 'R', 'R', 'R', 'R', 'R', 'R', 'R'],
+    )
+
+    render_card(
+        "Key Evaluation Benchmarks",
+        {
+            f"Source Domain (lambda={cfg.lambda_source:.2f}, tau={1.0/cfg.lambda_source:.1f}s)": f"Hit Rate: {eval_res_source['hit_rate']:5.2f}% | Utility: {eval_res_source['total_utility']:6.2f}",
+            f"Table III Benchmark (lambda={eval_lambda:.2f}, tau={1.0/eval_lambda:.2f}s)": f"Hit Rate: {eval_res_benchmark['hit_rate']:5.2f}% | Utility: {eval_res_benchmark['total_utility']:6.2f}",
+            f"Table III Byte Hit Rate": f"{eval_res_benchmark.get('byte_hit_rate', 0.0):5.2f}%",
+            f"Table III Average Reward": f"{eval_res_benchmark.get('avg_reward', 0.0):6.2f}",
+        },
+    )
 
     combined_eval_res = {
         **eval_res_source,
         'benchmark_lambda': eval_lambda,
         'benchmark_hits': eval_res_benchmark['hits'],
         'benchmark_hit_rate': eval_res_benchmark['hit_rate'],
+        'benchmark_byte_hit_rate': eval_res_benchmark.get('byte_hit_rate', 0.0),
         'benchmark_total_utility': eval_res_benchmark['total_utility'],
+        'benchmark_avg_reward': eval_res_benchmark.get('avg_reward', 0.0),
         'multi_lambda_eval': multi_lambda_results,
     }
 
@@ -72,30 +94,61 @@ def run_transfer_learning_comparison(
     target_steps: int = 6000,
 ) -> Dict[str, List[Tuple[int, float]]]:
     """
-    Compares 4 Transfer Learning paradigms on target domain (lambda_T = 0.3) matching Fig. 8a:
-    1. Proposed TL: weights reinitialized, demonstration pre-fill, proposed priority Eq. 6.
-    2. DQfD: no weight reinitialization, standard TDE priority Eq. 5.
-    3. DPR: Direct Policy Reuse (source policy reused directly).
-    4. LFS: Learning From Scratch without demonstrations.
+    Compares Transfer Learning paradigms on target domain (lambda_T = 0.3) matching Fig. 8a, 8b, 8c:
+    1. PROPOSED: Reinitialized weights, PER (Eq. 6), supervised demonstrations, overwrite enabled.
+    2. DQFD: Standard DQfD (retains weights, PER Eq. 5, no overwrite).
+    3. LFS: Learning From Scratch (no demonstrations).
+    4. DPR: Direct Policy Reuse (source policy deployed zero-shot).
+    5. DQFD_OVERWRITE: Ablation - DQfD with overwrite enabled (Fig. 8b).
+    6. DQFD_NEW_PRIO: Ablation - DQfD with Eq. 6 priority (Fig. 8c).
     """
     tl_results = {}
-    methods = ["proposed", "dqfd", "lfs", "dpr", "dqfd_overwrite", "dqfd_new_prio"]
+    methods = [
+        ("proposed", "Proposed TL (Reinit + Eq.6 + Demos + Overwrite)"),
+        ("dqfd", "Standard DQfD (Keep Weights + Eq.5 + No Overwrite)"),
+        ("lfs", "Learning From Scratch (Reinit, No Demos)"),
+        ("dpr", "Direct Policy Reuse (Zero-shot Source Policy)"),
+        ("dqfd_overwrite", "DQfD with Overwriting Demos (Fig. 8b)"),
+        ("dqfd_new_prio", "DQfD with Proposed Priority Eq.6 (Fig. 8c)"),
+    ]
 
-    for method in methods:
-        print(f"\n>>> Running Target Domain Transfer Learning Experiment: [{method.upper()}]...")
+    method_metrics = []
+
+    for method_key, method_desc in methods:
+        render_section_header(f"Target Domain Experiment: [{method_key.upper()}] - {method_desc}")
         agent = DDQLAgent(cfg)
         agent.demo_buffer = source_agent.demo_buffer
 
-        if method == "dpr":
-            # Copy source weights and execute DPR across target_steps without backpropagation
+        if method_key == "dpr":
             agent.online_net.load_state_dict(source_agent.online_net.state_dict())
             agent.target_net.load_state_dict(source_agent.target_net.state_dict())
             target_res = agent.run_dpr_target_domain(env, total_steps=target_steps, verbose=True)
             tl_results["DPR"] = target_res['reward_history']
         else:
-            agent.prepare_transfer_learning(mode=method)
-            target_res = agent.train_target_domain(env, total_steps=target_steps, verbose=True)
-            tl_results[method.upper()] = target_res['reward_history']
+            agent.prepare_transfer_learning(mode=method_key)
+            target_res = agent.train_target_domain(
+                env, total_steps=target_steps, method_name=f"Target: {method_key.upper()}", verbose=True
+            )
+            tl_results[method_key.upper()] = target_res['reward_history']
+
+        hist = target_res['reward_history']
+        init_r = hist[0][1] if hist else 0.0
+        final_r = hist[-1][1] if hist else 0.0
+        method_metrics.append([
+            method_key.upper(),
+            f"{target_res['hit_rate']:5.2f}%",
+            f"{target_res['total_utility']:6.2f}",
+            f"{init_r:6.2f}",
+            f"{final_r:6.2f}",
+            f"{final_r - init_r:+6.2f}",
+        ])
+
+    render_section_header("Target Domain Transfer Learning Final Comparative Summary (lambda_T = 0.30)")
+    render_table(
+        headers=["Method", "Hit Rate", "Utility", "Initial AvgR", "Final AvgR", "Delta AvgR"],
+        rows=method_metrics,
+        alignments=['L', 'R', 'R', 'R', 'R', 'R'],
+    )
 
     return tl_results
 
