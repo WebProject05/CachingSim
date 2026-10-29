@@ -50,6 +50,10 @@ type Config struct {
 	LossWeightExpert  float64 // lambda_2: Weight for large margin supervised loss J_E (default: 1.0)
 	LossWeightL2      float64 // lambda_3: Weight for L2 regularization J_L2 (default: 1e-5)
 	ExpertMargin      float64 // Supervised margin penalty L(a_E, a) (default: 0.8)
+
+	// --- Enhanced Strategy Parameters (Resolving Gaps #1 & #2) ---
+	EvictionStrategy string  // "utility_density" (default enhanced) or "lowest_utility" (legacy paper)
+	MemPenaltyWeight float64 // Penalty weight for unoccupied memory (default: 10.0 enhanced, 100.0 legacy paper)
 }
 
 // ComputeCurve calculates the Curve coefficient: (UT_max - UT_min) / (e - 1).
@@ -92,6 +96,8 @@ func DefaultConfig() *Config {
 		LossWeightExpert: 1.0,
 		LossWeightL2:     1e-5,
 		ExpertMargin:     0.8,
+		EvictionStrategy: "utility_density",
+		MemPenaltyWeight: 10.0,
 	}
 }
 

@@ -68,3 +68,66 @@ func (e *LowestUtilityEvictor) Evict(
 
 	return evictedIDs, currentUsed
 }
+
+// UtilityDensityEvictor implements size-aware value-density eviction (Resolving Gap #1):
+// It removes cached files with the lowest utility per megabyte (y_f(t) / z_f),
+// preventing large low-density files from displacing multiple small, highly-requested files.
+type UtilityDensityEvictor struct{}
+
+// NewUtilityDensityEvictor constructs a new UtilityDensityEvictor.
+func NewUtilityDensityEvictor() *UtilityDensityEvictor {
+	return &UtilityDensityEvictor{}
+}
+
+// Evict iteratively finds and removes the cached file with minimum utility density (utility / size)
+// until (cacheCapacity - usedCapacity) >= requiredSize.
+func (e *UtilityDensityEvictor) Evict(
+	cached []bool,
+	files []FileMetadata,
+	usedCapacity, cacheCapacity, requiredSize, currentTime float64,
+	cfg *config.Config,
+) ([]int, float64) {
+	if cacheCapacity <= 0 || requiredSize > cacheCapacity {
+		return nil, usedCapacity
+	}
+
+	var evictedIDs []int
+	currentUsed := usedCapacity
+
+	for (cacheCapacity - currentUsed) < requiredSize {
+		lowestID := -1
+		minDensity := math.MaxFloat64
+
+		// Find cached item with minimum utility density (utility / size)
+		for id := 0; id < len(cached) && id < len(files); id++ {
+			if !cached[id] {
+				continue
+			}
+			u := files[id].Utility(currentTime, cfg)
+			size := files[id].Size
+			if size <= 0 {
+				size = 1.0
+			}
+			density := u / size
+			if density < minDensity {
+				minDensity = density
+				lowestID = id
+			}
+		}
+
+		// If no items remain to evict, break
+		if lowestID == -1 {
+			break
+		}
+
+		cached[lowestID] = false
+		currentUsed -= files[lowestID].Size
+		if currentUsed < 0 {
+			currentUsed = 0
+		}
+		evictedIDs = append(evictedIDs, lowestID)
+	}
+
+	return evictedIDs, currentUsed
+}
+

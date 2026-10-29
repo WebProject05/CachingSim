@@ -86,10 +86,23 @@ def parse_args():
     return parser.parse_args()
 
 
-def try_connect_env(host: str, port: int, total_files: int, seed: int, lambda_source: float, zipf_eta: float) -> Optional[GrpcEnvClient]:
+def try_connect_env(
+    host: str,
+    port: int,
+    total_files: int,
+    seed: int,
+    lambda_source: float,
+    zipf_eta: float,
+    use_candidate_features: bool = True,
+) -> Optional[GrpcEnvClient]:
     """Attempts to connect to the Go gRPC environment and perform a probe reset."""
     try:
-        env = GrpcEnvClient(host=host, port=port, total_files=total_files)
+        env = GrpcEnvClient(
+            host=host,
+            port=port,
+            total_files=total_files,
+            use_candidate_features=use_candidate_features,
+        )
         env.reset(seed=seed, lambda_rate=lambda_source, eta=zipf_eta)
         return env
     except Exception:
@@ -105,7 +118,15 @@ def ensure_server_running(
     automatically launches bin/server.exe or go run ./cmd/server.
     """
     # 1. First probe check: Is server already running?
-    env = try_connect_env(cfg.server_host, cfg.server_port, cfg.total_files, cfg.seed, cfg.lambda_source, cfg.zipf_eta)
+    env = try_connect_env(
+        cfg.server_host,
+        cfg.server_port,
+        cfg.total_files,
+        cfg.seed,
+        cfg.lambda_source,
+        cfg.zipf_eta,
+        cfg.use_candidate_features,
+    )
     if env is not None:
         print(f" Connected to active Go SMDP Caching Server at {cfg.server_host}:{cfg.server_port}.")
         return env
@@ -178,7 +199,15 @@ def ensure_server_running(
     print("[*] Waiting for gRPC server to initialize...")
     for attempt in range(1, 10):
         time.sleep(1.0)
-        env = try_connect_env(cfg.server_host, cfg.server_port, cfg.total_files, cfg.seed, cfg.lambda_source, cfg.zipf_eta)
+        env = try_connect_env(
+            cfg.server_host,
+            cfg.server_port,
+            cfg.total_files,
+            cfg.seed,
+            cfg.lambda_source,
+            cfg.zipf_eta,
+            cfg.use_candidate_features,
+        )
         if env is not None:
             print(f" Successfully connected to auto-spawned Go SMDP Caching Server at {cfg.server_host}:{cfg.server_port}.")
             return env
@@ -262,6 +291,29 @@ def main():
             agent.save_checkpoint(ckpt_path)
             print(f"Checkpoint saved to {ckpt_path}")
             save_results_and_plot(cfg, eval_res, hist, {}, output_dir=args.output_dir)
+
+        elif args.mode == "transfer_target":
+            source_agent = DDQLAgent(cfg)
+            ckpt_path = os.path.join(args.checkpoint_dir, "source_agent.pt")
+            if os.path.exists(ckpt_path):
+                source_agent.load_checkpoint(ckpt_path)
+                print(f"Loaded source checkpoint from {ckpt_path}")
+            else:
+                print("[*] No checkpoint found. Pre-training source agent...")
+                source_agent, _, _ = run_source_training_and_eval(
+                    cfg, env, cfg.source_train_steps, cfg.eval_requests, eval_lambda=args.eval_lambda
+                )
+                source_agent.save_checkpoint(ckpt_path)
+
+            # Populate demonstrations if empty
+            if len(source_agent.demo_buffer) < 1000:
+                print("[*] Populating demonstration buffer with expert decisions...")
+                source_agent.collect_expert_demonstrations(env, count=2500)
+
+            tl_histories = run_transfer_learning_comparison(
+                source_agent, cfg, env, target_steps=cfg.target_train_steps
+            )
+            save_results_and_plot(cfg, {}, [], tl_histories, output_dir=args.output_dir)
 
         elif args.mode == "full_experiment":
             # 1. Train on Source Domain

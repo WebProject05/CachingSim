@@ -29,6 +29,8 @@ func main() {
 	capacity := flag.Float64("capacity", 10000, "cache capacity in MiB")
 	lambda := flag.Float64("lambda", 0.2, "Poisson request rate lambda")
 	eta := flag.Float64("eta", 1.0, "Zipf skewness eta")
+	evictStrategy := flag.String("evict", "utility_density", "eviction strategy: 'utility_density' or 'lowest_utility'")
+	memPenalty := flag.Float64("mem-penalty", 10.0, "penalty weight for unoccupied memory")
 	flag.Parse()
 
 	cfg := config.DefaultConfig()
@@ -36,6 +38,12 @@ func main() {
 	cfg.CacheCapacity = *capacity
 	cfg.LambdaSource = *lambda
 	cfg.ZipfEta = *eta
+	if *evictStrategy != "" {
+		cfg.EvictionStrategy = *evictStrategy
+	}
+	if *memPenalty >= 0 {
+		cfg.MemPenaltyWeight = *memPenalty
+	}
 
 	if *isStandalone {
 		runStandaloneSimulation(cfg, *seed, *totalTrials)

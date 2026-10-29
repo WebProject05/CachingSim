@@ -10,11 +10,18 @@ from pb import cache_env_pb2
 from pb.cache_env_pb2_grpc import CacheEnvServiceStub
 
 
-def state_response_to_numpy(resp: cache_env_pb2.StateResponse, total_files: int) -> np.ndarray:
+def state_response_to_numpy(
+    resp: cache_env_pb2.StateResponse,
+    total_files: int,
+    use_candidate_features: bool = True,
+) -> np.ndarray:
     """
-    Transforms protobuf StateResponse into a normalized feature vector s(t):
-    [Mem(1), D(F), Y(F), Z(F)/1000, B(F), OneHot(RequestedFile)(F)]
-    Total length = 1 + 5*F (251 for F=50).
+    Transforms protobuf StateResponse into a normalized feature vector s(t).
+    Base vector: [Mem(1), D(F), Y(F), Z(F)/1000, B(F), OneHot(RequestedFile)(F)] (1 + 5*F)
+    Candidate features (10 dims): [cand_pop, cand_util, cand_size, cand_density, cand_is_cached,
+                                   min_cached_density, avg_cached_density, density_diff,
+                                   can_fit_free, needed_space]
+    Resolves Agentic Gap #3: explicitly aligns candidate attributes with cache state.
     """
     mem = np.array([resp.mem], dtype=np.float32)
     d = np.array(resp.d, dtype=np.float32)
@@ -28,16 +35,63 @@ def state_response_to_numpy(resp: cache_env_pb2.StateResponse, total_files: int)
     if 0 <= req_idx < total_files:
         req_one_hot[req_idx] = 1.0
 
-    return np.concatenate([mem, d, y, z, b, req_one_hot])
+    base_vec = np.concatenate([mem, d, y, z, b, req_one_hot])
+    if not use_candidate_features:
+        return base_vec
+
+    # Explicit Candidate-Centric Features
+    max_d = float(np.max(d)) if len(d) > 0 and np.max(d) > 0 else 1.0
+    cand_pop = float(d[req_idx] / max_d) if (0 <= req_idx < len(d)) else 0.0
+    cand_util = float(y[req_idx]) if (0 <= req_idx < len(y)) else 0.0
+    cand_size = float(z[req_idx]) if (0 <= req_idx < len(z)) else 0.5
+    cand_density = cand_util / max(0.01, cand_size)
+    cand_is_cached = float(b[req_idx]) if (0 <= req_idx < len(b)) else 0.0
+
+    cached_indices = np.where(b > 0.5)[0]
+    if len(cached_indices) > 0:
+        cached_densities = y[cached_indices] / np.maximum(0.01, z[cached_indices])
+        min_cached_density = float(np.min(cached_densities))
+        avg_cached_density = float(np.mean(cached_densities))
+        density_diff = cand_density - min_cached_density
+    else:
+        min_cached_density = 0.0
+        avg_cached_density = 0.0
+        density_diff = cand_density
+
+    free_mem = float(resp.mem)
+    can_fit_free = 1.0 if free_mem >= cand_size else 0.0
+    needed_space = max(0.0, cand_size - free_mem)
+
+    cand_features = np.array([
+        cand_pop,
+        cand_util,
+        cand_size,
+        cand_density,
+        cand_is_cached,
+        min_cached_density,
+        avg_cached_density,
+        density_diff,
+        can_fit_free,
+        needed_space,
+    ], dtype=np.float32)
+
+    return np.concatenate([cand_features, base_vec])
 
 
 class GrpcEnvClient:
     """Client for interacting with the Go SMDP Edge Caching gRPC environment."""
 
-    def __init__(self, host: str = "localhost", port: int = 50051, total_files: int = 50):
+    def __init__(
+        self,
+        host: str = "localhost",
+        port: int = 50051,
+        total_files: int = 50,
+        use_candidate_features: bool = True,
+    ):
         self.host = host
         self.port = port
         self.total_files = total_files
+        self.use_candidate_features = use_candidate_features
         self.channel: Optional[grpc.Channel] = None
         self.stub: Optional[CacheEnvServiceStub] = None
         self._connect()
@@ -63,7 +117,7 @@ class GrpcEnvClient:
         )
         setattr(request, 'lambda', float(lambda_rate))
         resp = self.stub.Reset(request)
-        state = state_response_to_numpy(resp, self.total_files)
+        state = state_response_to_numpy(resp, self.total_files, self.use_candidate_features)
         return state, resp.current_time
 
     def step(self, action: int) -> Tuple[np.ndarray, float, float, bool, float]:
@@ -73,7 +127,7 @@ class GrpcEnvClient:
         """
         request = cache_env_pb2.StepRequest(action=int(action))
         resp = self.stub.Step(request)
-        next_state = state_response_to_numpy(resp.next_state, self.total_files)
+        next_state = state_response_to_numpy(resp.next_state, self.total_files, self.use_candidate_features)
         return (
             next_state,
             resp.reward,
@@ -88,7 +142,7 @@ class GrpcEnvClient:
         resp = self.stub.BatchStep(request)
         results = []
         for step_resp in resp.step_responses:
-            next_state = state_response_to_numpy(step_resp.next_state, self.total_files)
+            next_state = state_response_to_numpy(step_resp.next_state, self.total_files, self.use_candidate_features)
             results.append((
                 next_state,
                 step_resp.reward,

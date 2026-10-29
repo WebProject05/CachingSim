@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "report_generated_at": "2026-10-26 16:08:30 UTC",
+    "report_generated_at": "2026-10-29 19:05:27 UTC",
     "environment": "SMDP Edge Caching (Go Simulation Engine + Python PyTorch DDQL)",
     "evaluated_algorithms": [
       "Proposed (SMDP-DDQL)",
@@ -32,47 +32,47 @@
   },
   "caching_performance": {
     "CTD": {
-      "requests": 100000,
-      "hits": 15791,
-      "misses": 84209,
-      "hit_rate_pct": 15.79,
-      "byte_hit_rate_pct": 14.99,
-      "miss_rate_pct": 84.21,
-      "evictions": 57733,
-      "eviction_rate_pct": 57.73,
-      "cached_files": 27,
-      "used_capacity_mib": 14728.53,
-      "utilization_pct": 98.19,
-      "total_utility": 793.9881,
-      "warmup_miss_rate_pct": 84.06,
-      "final_miss_rate_pct": 84.3
+      "requests": 500,
+      "hits": 278,
+      "misses": 222,
+      "hit_rate_pct": 55.6,
+      "byte_hit_rate_pct": 54.16,
+      "miss_rate_pct": 44.4,
+      "evictions": 204,
+      "eviction_rate_pct": 40.8,
+      "cached_files": 18,
+      "used_capacity_mib": 9491.41,
+      "utilization_pct": 94.91,
+      "total_utility": 30.8761,
+      "warmup_miss_rate_pct": 54,
+      "final_miss_rate_pct": 34
     },
     "Proposed (SMDP-DDQL)": {
-      "requests": 100000,
-      "hits": 14262,
-      "misses": 85738,
-      "hit_rate_pct": 14.26,
-      "byte_hit_rate_pct": 12.85,
-      "miss_rate_pct": 85.74,
-      "evictions": 7312,
-      "eviction_rate_pct": 7.31,
-      "cached_files": 30,
-      "used_capacity_mib": 14916.37,
-      "utilization_pct": 99.44,
-      "total_utility": 754.4033,
-      "warmup_miss_rate_pct": 85.56,
-      "final_miss_rate_pct": 86.02
+      "requests": 500,
+      "hits": 298,
+      "misses": 202,
+      "hit_rate_pct": 59.6,
+      "byte_hit_rate_pct": 56.48,
+      "miss_rate_pct": 40.4,
+      "evictions": 115,
+      "eviction_rate_pct": 23,
+      "cached_files": 20,
+      "used_capacity_mib": 9822.25,
+      "utilization_pct": 98.22,
+      "total_utility": 33.5024,
+      "warmup_miss_rate_pct": 50,
+      "final_miss_rate_pct": 36
     }
   },
   "relative_improvements": {
-    "hit_rate_absolute_gain_pct": -1.53,
-    "hit_rate_relative_improvement_pct": -9.69,
-    "total_utility_gain_pct": -4.99,
-    "eviction_reduction_pct": 87.33
+    "hit_rate_absolute_gain_pct": 4.0,
+    "hit_rate_relative_improvement_pct": 7.19,
+    "total_utility_gain_pct": 8.51,
+    "eviction_reduction_pct": 43.63
   },
   "source_domain_drl": {
     "training_steps": 1000,
-    "final_training_average_reward": -76.7211,
+    "final_training_average_reward": -78.104,
     "policy_evaluation_1000_requests": {
       "requests": 500,
       "hits": 114,
@@ -84,24 +84,24 @@
   },
   "target_domain_transfer_learning": {
     "PROPOSED": {
-      "initial_reward_step_100": -82.3016,
-      "midpoint_reward": -76.3521,
-      "final_asymptotic_reward": -71.5012,
-      "peak_reward": -71.5012,
+      "initial_reward_step_100": -81.2823,
+      "midpoint_reward": -78.1282,
+      "final_asymptotic_reward": -71.6294,
+      "peak_reward": -71.6294,
       "recorded_steps": 1000
     },
     "DQFD": {
-      "initial_reward_step_100": -83.3345,
-      "midpoint_reward": -77.7286,
-      "final_asymptotic_reward": -72.1461,
-      "peak_reward": -72.1461,
+      "initial_reward_step_100": -84.2714,
+      "midpoint_reward": -76.5473,
+      "final_asymptotic_reward": -70.8158,
+      "peak_reward": -70.8158,
       "recorded_steps": 1000
     },
     "LFS": {
-      "initial_reward_step_100": -80.9701,
-      "midpoint_reward": -72.6551,
-      "final_asymptotic_reward": -70.6548,
-      "peak_reward": -70.5088,
+      "initial_reward_step_100": -81.0859,
+      "midpoint_reward": -84.8855,
+      "final_asymptotic_reward": -82.5573,
+      "peak_reward": -80.5949,
       "recorded_steps": 1000
     },
     "DPR": {
@@ -112,17 +112,17 @@
       "recorded_steps": 1000
     },
     "DQFD_OVERWRITE": {
-      "initial_reward_step_100": -84.4488,
-      "midpoint_reward": -72.325,
-      "final_asymptotic_reward": -68.8205,
-      "peak_reward": -68.8205,
+      "initial_reward_step_100": -84.0502,
+      "midpoint_reward": -71.1943,
+      "final_asymptotic_reward": -68.5083,
+      "peak_reward": -68.5083,
       "recorded_steps": 1000
     },
     "DQFD_NEW_PRIO": {
-      "initial_reward_step_100": -81.2416,
-      "midpoint_reward": -71.6153,
-      "final_asymptotic_reward": -67.9715,
-      "peak_reward": -67.9715,
+      "initial_reward_step_100": -81.7747,
+      "midpoint_reward": -73.978,
+      "final_asymptotic_reward": -69.3659,
+      "peak_reward": -69.3659,
       "recorded_steps": 1000
     }
   },
@@ -143,21 +143,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            15782,
-            15791,
-            15791,
-            15791,
-            15791
+            175,
+            230,
+            278,
+            307,
+            333
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            9654,
-            10222,
-            11693,
-            13665,
-            14262
+            211,
+            258,
+            298,
+            320,
+            333
           ]
         }
       ]
@@ -178,21 +178,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            793.63,
-            793.99,
-            793.99,
-            793.99,
-            793.99
+            20.9,
+            25.77,
+            30.88,
+            33.51,
+            35.19
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            556.68,
-            590.74,
-            657.97,
-            733.91,
-            754.4
+            26.26,
+            29.43,
+            33.5,
+            34.92,
+            35.59
           ]
         }
       ]
@@ -215,25 +215,25 @@
         {
           "algorithm": "CTD",
           "values": [
-            29225,
-            50016,
-            59768,
-            65680,
-            69385,
-            71591,
-            72679
+            132,
+            233,
+            272,
+            278,
+            278,
+            278,
+            278
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            26942,
-            46957,
-            56940,
-            62841,
-            67118,
-            69966,
-            71936
+            132,
+            233,
+            268,
+            282,
+            290,
+            295,
+            302
           ]
         }
       ]
@@ -256,25 +256,25 @@
         {
           "algorithm": "CTD",
           "values": [
-            1463.22,
-            2496.56,
-            2991.78,
-            3300.22,
-            3496.22,
-            3615.48,
-            3675.79
+            7.73,
+            16.41,
+            21.89,
+            25.68,
+            29.34,
+            32.47,
+            35.24
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            1404.04,
-            2412.81,
-            2914.09,
-            3222.35,
-            3445.72,
-            3607.88,
-            3725.67
+            7.73,
+            16.41,
+            21.9,
+            26.24,
+            31.4,
+            34.97,
+            38.75
           ]
         }
       ]
@@ -295,21 +295,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            7265,
-            7770,
-            9232,
-            11967,
-            15791
+            168,
+            159,
+            204,
+            239,
+            278
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            5677,
-            6138,
-            7446,
-            10293,
-            14262
+            196,
+            182,
+            235,
+            253,
+            298
           ]
         }
       ]
@@ -330,21 +330,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            372.76,
-            394.53,
-            453.26,
-            593.09,
-            793.99
+            22.33,
+            22.51,
+            21.81,
+            25.94,
+            30.88
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            328.28,
-            349.29,
-            404.07,
-            548.77,
-            754.4
+            28.86,
+            27.16,
+            27.87,
+            28.6,
+            33.5
           ]
         }
       ]
@@ -365,21 +365,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            16580,
-            18656,
-            20140,
-            21352,
-            22382
+            294,
+            298,
+            301,
+            302,
+            304
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            14999,
-            17241,
-            18553,
-            20104,
-            20967
+            311,
+            313,
+            312,
+            306,
+            316
           ]
         }
       ]
@@ -400,21 +400,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            829.25,
-            933.24,
-            1007.52,
-            1068.16,
-            1119.69
+            31.68,
+            33.33,
+            35.47,
+            37.52,
+            39.45
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            750.2,
-            862.49,
-            928.17,
-            1005.76,
-            1048.94
+            32.85,
+            35.13,
+            37.31,
+            38.73,
+            41.2
           ]
         }
       ]
@@ -435,21 +435,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            20140,
-            20140,
-            20140,
-            20140,
-            20140
+            301,
+            301,
+            301,
+            298,
+            298
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            18953,
-            18786,
-            18553,
-            16568,
-            16398
+            312,
+            312,
+            312,
+            293,
+            288
           ]
         }
       ]
@@ -470,21 +470,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            1007.52,
-            1007.52,
-            1007.52,
-            1007.52,
-            1007.52
+            35.47,
+            35.47,
+            35.47,
+            34.68,
+            34.68
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            948.17,
-            939.82,
-            928.17,
-            828.92,
-            820.42
+            37.31,
+            37.31,
+            37.31,
+            36.36,
+            36.11
           ]
         }
       ]
@@ -505,21 +505,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            20140,
-            20140,
-            20140,
-            20140,
-            20140
+            301,
+            301,
+            301,
+            301,
+            301
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            9784,
-            18200,
-            18553,
-            20072,
-            20072
+            317,
+            314,
+            312,
+            319,
+            317
           ]
         }
       ]
@@ -540,21 +540,21 @@
         {
           "algorithm": "CTD",
           "values": [
-            591.1,
-            799.31,
-            1007.52,
-            1215.72,
-            1423.93
+            24.76,
+            30.12,
+            35.47,
+            40.83,
+            46.19
           ]
         },
         {
           "algorithm": "Proposed (SMDP-DDQL)",
           "values": [
-            384.42,
-            704.97,
-            928.17,
-            1212.32,
-            1420.53
+            26.17,
+            31.36,
+            37.31,
+            43.26,
+            48.75
           ]
         }
       ]

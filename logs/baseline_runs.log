@@ -82,3 +82,111 @@ CTD        : 56.80% | 54.93% | 43.20% | 41.40% | 99.85% | 45.65 | 525.0
 SMDP-DDQL  : 60.50% | 56.57% | 39.50% | 24.00% | 98.39% | 49.94 | 1056.4
 RUN END   : 2026-10-26T21:31:34+05:30
 
+RUN START : 2026-10-30T00:22:45+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=40000 files=80 capacity=18000.00 MiB eta=1.250 window=4000 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 79.26% | 77.37% | 20.74% | 20.66% | 99.66% | 1776.95 | 66.7
+LRU        : 83.71% | 82.21% | 16.29% | 16.21% | 99.47% | 1874.10 | 29.2
+LFU        : 88.17% | 85.38% | 11.83% | 11.74% | 99.81% | 1950.04 | 26.7
+SIEVE      : 86.67% | 85.68% | 13.33% | 13.24% | 99.28% | 1941.62 | 27.4
+CTD        : 78.00% | 76.42% | 22.00% | 21.93% | 99.09% | 1746.74 | 94.7
+SMDP-DDQL  : 79.29% | 74.86% | 20.71% | 10.08% | 96.28% | 1882.52 | 1077.4
+RUN END   : 2026-10-30T00:22:45+05:30
+
+RUN START : 2026-10-30T00:48:47+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=1000 files=50 capacity=10000.00 MiB eta=1.000 window=100 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 59.20% | 56.65% | 40.80% | 39.10% | 91.82% | 45.49 | n/a
+LRU        : 64.70% | 61.27% | 35.30% | 33.60% | 93.67% | 49.02 | n/a
+LFU        : 73.20% | 69.32% | 26.80% | 24.90% | 94.51% | 54.29 | n/a
+SIEVE      : 70.80% | 66.87% | 29.20% | 27.40% | 96.17% | 52.98 | n/a
+CTD        : 56.80% | 54.93% | 43.20% | 41.40% | 99.85% | 45.65 | 624.7
+SMDP-DDQL  : 60.50% | 54.40% | 39.50% | 24.60% | 92.11% | 50.24 | 1100.4
+RUN END   : 2026-10-30T00:48:47+05:30
+
+RUN START : 2026-10-30T00:48:54+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=10000 files=100 capacity=20000.00 MiB eta=1.000 window=1000 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 65.18% | 63.59% | 34.82% | 34.43% | 98.03% | 361.04 | 117.8
+LRU        : 70.80% | 69.50% | 29.20% | 28.81% | 99.79% | 388.75 | n/a
+LFU        : 76.02% | 74.01% | 23.98% | 23.62% | 96.08% | 421.00 | 51.3
+SIEVE      : 75.23% | 74.51% | 24.77% | 24.39% | 99.40% | 414.35 | 53.0
+CTD        : 63.73% | 62.70% | 36.27% | 35.89% | 96.71% | 351.65 | 109.5
+SMDP-DDQL  : 64.97% | 62.37% | 35.03% | 25.87% | 98.85% | 375.50 | 2091.0
+RUN END   : 2026-10-30T00:48:54+05:30
+
+RUN START : 2026-10-30T00:49:01+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=10000 files=100 capacity=20000.00 MiB eta=1.000 window=1000 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 65.18% | 63.59% | 34.82% | 34.43% | 98.03% | 361.04 | 169.2
+LRU        : 70.80% | 69.50% | 29.20% | 28.81% | 99.79% | 388.75 | 63.8
+LFU        : 76.02% | 74.01% | 23.98% | 23.62% | 96.08% | 421.00 | 55.0
+SIEVE      : 75.23% | 74.51% | 24.77% | 24.39% | 99.40% | 414.35 | n/a
+CTD        : 63.73% | 62.70% | 36.27% | 35.89% | 96.71% | 351.65 | 284.0
+SMDP-DDQL  : 65.85% | 61.46% | 34.15% | 22.72% | 99.11% | 380.77 | 2605.7
+RUN END   : 2026-10-30T00:49:01+05:30
+
+RUN START : 2026-10-30T00:51:11+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=10000 files=100 capacity=20000.00 MiB eta=1.000 window=1000 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 65.18% | 63.59% | 34.82% | 34.43% | 98.03% | 361.04 | 124.5
+LRU        : 70.80% | 69.50% | 29.20% | 28.81% | 99.79% | 388.75 | 61.4
+LFU        : 76.02% | 74.01% | 23.98% | 23.62% | 96.08% | 421.00 | 59.7
+SIEVE      : 75.23% | 74.51% | 24.77% | 24.39% | 99.40% | 414.35 | n/a
+CTD        : 63.73% | 62.70% | 36.27% | 35.89% | 96.71% | 351.65 | 260.9
+SMDP-DDQL  : 64.97% | 62.37% | 35.03% | 25.87% | 98.85% | 375.50 | 3790.9
+RUN END   : 2026-10-30T00:51:11+05:30
+
+RUN START : 2026-10-30T01:00:12+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=5000 files=50 capacity=10000.00 MiB eta=1.000 window=500 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 60.74% | 58.50% | 39.26% | 38.90% | 97.34% | 154.10 | 110.5
+LRU        : 66.30% | 63.78% | 33.70% | 33.32% | 99.96% | 167.10 | n/a
+LFU        : 74.10% | 70.44% | 25.90% | 25.50% | 97.82% | 188.33 | 223.3
+SIEVE      : 70.82% | 68.94% | 29.18% | 28.80% | 99.68% | 178.38 | n/a
+CTD        : 15.86% | 15.09% | 84.14% | 64.70% | 98.50% | 40.08 | 389.5
+SMDP-DDQL  : 15.86% | 15.09% | 84.14% | 0.00% | 24.85% | 40.08 | 364.4
+RUN END   : 2026-10-30T01:00:12+05:30
+
+RUN START : 2026-10-30T01:01:05+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=5000 files=50 capacity=10000.00 MiB eta=1.000 window=500 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 60.74% | 58.50% | 39.26% | 38.90% | 97.34% | 168.83 | 225.2
+LRU        : 66.30% | 63.78% | 33.70% | 33.32% | 99.96% | 182.75 | n/a
+LFU        : 74.10% | 70.44% | 25.90% | 25.50% | 97.82% | 204.91 | 112.6
+SIEVE      : 70.82% | 68.94% | 29.18% | 28.80% | 99.68% | 194.97 | 110.8
+CTD        : 58.70% | 57.16% | 41.30% | 40.90% | 96.08% | 164.41 | 226.4
+SMDP-DDQL  : 63.00% | 58.90% | 37.00% | 17.74% | 98.46% | 182.39 | 2379.9
+RUN END   : 2026-10-30T01:01:05+05:30
+
+RUN START : 2026-10-30T01:01:34+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=1000 files=50 capacity=10000.00 MiB eta=1.000 window=100 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 59.20% | 56.65% | 40.80% | 39.10% | 91.82% | 45.49 | n/a
+LRU        : 64.70% | 61.27% | 35.30% | 33.60% | 93.67% | 49.02 | n/a
+LFU        : 73.20% | 69.32% | 26.80% | 24.90% | 94.51% | 54.29 | n/a
+SIEVE      : 70.80% | 66.87% | 29.20% | 27.40% | 96.17% | 52.98 | 571.2
+CTD        : 56.80% | 54.93% | 43.20% | 41.40% | 99.85% | 45.65 | n/a
+SMDP-DDQL  : 60.50% | 55.58% | 39.50% | 19.60% | 97.37% | 49.14 | 2336.3
+RUN END   : 2026-10-30T01:01:34+05:30
+
+RUN START : 2026-10-30T01:02:59+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=5000 files=100 capacity=5000.00 MiB eta=0.800 window=500 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 21.76% | 20.12% | 78.24% | 78.06% | 96.91% | 60.35 | 220.9
+LRU        : 24.00% | 21.86% | 76.00% | 75.82% | 87.34% | 66.61 | n/a
+LFU        : 39.04% | 34.73% | 60.96% | 60.78% | 92.48% | 96.87 | 107.1
+SIEVE      : 33.66% | 30.46% | 66.34% | 66.18% | 94.38% | 90.18 | 110.6
+CTD        : 19.48% | 18.69% | 80.52% | 80.34% | 96.91% | 54.64 | 217.7
+SMDP-DDQL  : 28.74% | 24.25% | 71.26% | 20.94% | 96.96% | 90.35 | 1571.5
+RUN END   : 2026-10-30T01:02:59+05:30
+

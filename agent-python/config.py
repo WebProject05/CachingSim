@@ -17,8 +17,10 @@ class AgentConfig:
     lambda_target: float = 0.3            # lambda_T: Request rate in target domain
     zipf_eta: float = 1.0                 # eta: Zipf distribution skewness
 
-    # --- Neural Network Parameters (Section VII-B) ---
-    hidden_dim: int = 16                  # 16 nodes in hidden layer
+    # --- Neural Network Parameters (Enhanced Agentic Architecture) ---
+    hidden_dim: int = 64                  # 64 nodes in hidden layer (enhanced from 16 for expressiveness)
+    dueling: bool = True                  # Dueling Q-network architecture (decouples V(s) and A(s, a))
+    use_candidate_features: bool = True   # Prepend 10 candidate-centric features (Resolves Agentic Gap #3)
     weight_init_min: float = -0.1         # Uniform [-0.1, 0.1]
     weight_init_max: float = 0.1
     bias_init: float = 0.1                # Bias initialized to 0.1
@@ -61,10 +63,17 @@ class AgentConfig:
     def state_dim(self) -> int:
         """
         Calculates input state dimension for Q-network:
-        Mem(1) + D(F) + Y(F) + Z(F) + B(F) + RequestedFile(one-hot F) = 1 + 5*F
-        For F=50, state_dim = 1 + 5*50 = 251.
+        Base: Mem(1) + D(F) + Y(F) + Z(F) + B(F) + RequestedFile(one-hot F) = 1 + 5*F
+        Candidate features: +10 dimensions (cand_pop, cand_util, cand_size, cand_density,
+                             cand_is_cached, min_cached_density, avg_cached_density,
+                             density_diff, can_fit_free, needed_space).
+        For F=50 with candidate features: 10 + (1 + 5*50) = 261.
+        Without candidate features: 251.
         """
-        return 1 + 5 * self.total_files
+        base = 1 + 5 * self.total_files
+        if self.use_candidate_features:
+            return base + 10
+        return base
 
 
 def get_default_config() -> AgentConfig:

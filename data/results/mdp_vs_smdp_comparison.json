@@ -1,126 +1,126 @@
 {
-  "timestamp": "2026-10-26T17:19:43Z",
+  "timestamp": "2026-10-29T19:04:06Z",
   "title": "Table III: Hit rate for MDP and SMDP under different time quotas and request rates",
   "results": [
     {
       "Quota": 0.2,
       "Lambda": 5,
-      "MDPHitCount": 491,
-      "SMDPHitCount": 470,
-      "MDPHitRate": 49.1,
-      "SMDPHitRate": 47
+      "MDPHitCount": 590,
+      "SMDPHitCount": 578,
+      "MDPHitRate": 59,
+      "SMDPHitRate": 57.8
     },
     {
       "Quota": 0.4,
       "Lambda": 5,
-      "MDPHitCount": 389,
-      "SMDPHitCount": 470,
-      "MDPHitRate": 38.9,
-      "SMDPHitRate": 47
+      "MDPHitCount": 575,
+      "SMDPHitCount": 578,
+      "MDPHitRate": 57.49999999999999,
+      "SMDPHitRate": 57.8
     },
     {
       "Quota": 0.6,
       "Lambda": 5,
-      "MDPHitCount": 320,
-      "SMDPHitCount": 470,
-      "MDPHitRate": 32,
-      "SMDPHitRate": 47
+      "MDPHitCount": 509,
+      "SMDPHitCount": 578,
+      "MDPHitRate": 50.9,
+      "SMDPHitRate": 57.8
     },
     {
       "Quota": 0.8,
       "Lambda": 5,
-      "MDPHitCount": 288,
-      "SMDPHitCount": 470,
-      "MDPHitRate": 28.799999999999997,
-      "SMDPHitRate": 47
+      "MDPHitCount": 464,
+      "SMDPHitCount": 578,
+      "MDPHitRate": 46.400000000000006,
+      "SMDPHitRate": 57.8
     },
     {
       "Quota": 1,
       "Lambda": 5,
-      "MDPHitCount": 249,
-      "SMDPHitCount": 470,
-      "MDPHitRate": 24.9,
-      "SMDPHitRate": 47
+      "MDPHitCount": 417,
+      "SMDPHitCount": 578,
+      "MDPHitRate": 41.699999999999996,
+      "SMDPHitRate": 57.8
     },
     {
       "Quota": 0.2,
       "Lambda": 1.66,
-      "MDPHitCount": 320,
-      "SMDPHitCount": 307,
-      "MDPHitRate": 32,
-      "SMDPHitRate": 30.7
+      "MDPHitCount": 509,
+      "SMDPHitCount": 487,
+      "MDPHitRate": 50.9,
+      "SMDPHitRate": 48.699999999999996
     },
     {
       "Quota": 0.4,
       "Lambda": 1.66,
-      "MDPHitCount": 215,
-      "SMDPHitCount": 307,
-      "MDPHitRate": 21.5,
-      "SMDPHitRate": 30.7
+      "MDPHitCount": 380,
+      "SMDPHitCount": 487,
+      "MDPHitRate": 38,
+      "SMDPHitRate": 48.699999999999996
     },
     {
       "Quota": 0.6,
       "Lambda": 1.66,
-      "MDPHitCount": 161,
-      "SMDPHitCount": 307,
-      "MDPHitRate": 16.1,
-      "SMDPHitRate": 30.7
+      "MDPHitCount": 306,
+      "SMDPHitCount": 487,
+      "MDPHitRate": 30.599999999999998,
+      "SMDPHitRate": 48.699999999999996
     },
     {
       "Quota": 0.8,
       "Lambda": 1.66,
-      "MDPHitCount": 133,
-      "SMDPHitCount": 307,
-      "MDPHitRate": 13.3,
-      "SMDPHitRate": 30.7
+      "MDPHitCount": 240,
+      "SMDPHitCount": 487,
+      "MDPHitRate": 24,
+      "SMDPHitRate": 48.699999999999996
     },
     {
       "Quota": 1,
       "Lambda": 1.66,
-      "MDPHitCount": 105,
-      "SMDPHitCount": 307,
-      "MDPHitRate": 10.5,
-      "SMDPHitRate": 30.7
+      "MDPHitCount": 200,
+      "SMDPHitCount": 487,
+      "MDPHitRate": 20,
+      "SMDPHitRate": 48.699999999999996
     },
     {
       "Quota": 0.2,
       "Lambda": 1,
-      "MDPHitCount": 249,
-      "SMDPHitCount": 234,
-      "MDPHitRate": 24.9,
-      "SMDPHitRate": 23.400000000000002
+      "MDPHitCount": 417,
+      "SMDPHitCount": 401,
+      "MDPHitRate": 41.699999999999996,
+      "SMDPHitRate": 40.1
     },
     {
       "Quota": 0.4,
       "Lambda": 1,
-      "MDPHitCount": 148,
-      "SMDPHitCount": 234,
-      "MDPHitRate": 14.799999999999999,
-      "SMDPHitRate": 23.400000000000002
+      "MDPHitCount": 281,
+      "SMDPHitCount": 401,
+      "MDPHitRate": 28.1,
+      "SMDPHitRate": 40.1
     },
     {
       "Quota": 0.6,
       "Lambda": 1,
-      "MDPHitCount": 105,
-      "SMDPHitCount": 234,
-      "MDPHitRate": 10.5,
-      "SMDPHitRate": 23.400000000000002
+      "MDPHitCount": 201,
+      "SMDPHitCount": 401,
+      "MDPHitRate": 20.1,
+      "SMDPHitRate": 40.1
     },
     {
       "Quota": 0.8,
       "Lambda": 1,
-      "MDPHitCount": 78,
-      "SMDPHitCount": 234,
-      "MDPHitRate": 7.8,
-      "SMDPHitRate": 23.400000000000002
+      "MDPHitCount": 156,
+      "SMDPHitCount": 401,
+      "MDPHitRate": 15.6,
+      "SMDPHitRate": 40.1
     },
     {
       "Quota": 1,
       "Lambda": 1,
-      "MDPHitCount": 66,
-      "SMDPHitCount": 234,
-      "MDPHitRate": 6.6000000000000005,
-      "SMDPHitRate": 23.400000000000002
+      "MDPHitCount": 141,
+      "SMDPHitCount": 401,
+      "MDPHitRate": 14.099999999999998,
+      "SMDPHitRate": 40.1
     }
   ]
 }

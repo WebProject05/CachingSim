@@ -119,14 +119,14 @@ func (w *smdpCacheWrapper) shouldAdmit(fileID int, currentTime float64) bool {
 	}
 	// Newly fetched candidate from origin has zero age, giving maximum initial utility
 	candUtil := w.cfg.UTMax * w.engine.Files[fileID].Importance
-	candScore := (math.Pow(candPop, 1.25) * candUtil) / math.Pow(fileSize, 0.25)
 
 	needed := fileSize - freeSpace
 	type cachedItem struct {
-		id   int
-		u    float64
-		size float64
-		pop  float64
+		id      int
+		u       float64
+		size    float64
+		pop     float64
+		density float64
 	}
 	var cachedItems []cachedItem
 	for id, c := range w.engine.Cached {
@@ -135,18 +135,42 @@ func (w *smdpCacheWrapper) shouldAdmit(fileID int, currentTime float64) bool {
 			if id < len(popVec) {
 				p += popVec[id]
 			}
+			sz := math.Max(1.0, w.engine.Files[id].Size)
+			u := w.engine.Files[id].Utility(currentTime, w.cfg)
 			cachedItems = append(cachedItems, cachedItem{
-				id:   id,
-				u:    w.engine.Files[id].Utility(currentTime, w.cfg),
-				size: w.engine.Files[id].Size,
-				pop:  p,
+				id:      id,
+				u:       u,
+				size:    sz,
+				pop:     p,
+				density: u / sz,
 			})
 		}
 	}
+
+	// In enhanced utility density mode (resolving Gap #1), sort victims by utility density ascending
+	if w.cfg.EvictionStrategy != "lowest_utility" {
+		sort.Slice(cachedItems, func(i, j int) bool {
+			return cachedItems[i].density < cachedItems[j].density
+		})
+		var freed float64
+		var victimTotalScore float64
+		for _, item := range cachedItems {
+			if freed >= needed {
+				break
+			}
+			freed += item.size
+			// Value yield of victim: popularity weighted by utility and size density
+			victimTotalScore += (item.pop * item.u) * (item.size / math.Max(1.0, fileSize))
+		}
+		candTotalScore := candPop * candUtil
+		return candTotalScore >= victimTotalScore
+	}
+
+	// Legacy lowest-utility sorting
 	sort.Slice(cachedItems, func(i, j int) bool {
 		return cachedItems[i].u < cachedItems[j].u
 	})
-
+	candScore := (math.Pow(candPop, 1.25) * candUtil) / math.Pow(fileSize, 0.25)
 	var freed float64
 	var victimValSum float64
 	var victimCount float64
@@ -247,6 +271,8 @@ func main() {
 	fileImportances := flag.String("file-importances", "0.1,0.3,0.5,0.7,0.9", "popular-file importance values")
 	runMDPTbl := flag.Bool("mdp-table", false, "run and print Table III (MDP vs SMDP time quota comparison)")
 	lambdaRate := flag.Float64("lambda", 0.2, "Poisson request arrival rate lambda (default: 0.2; use 5.0 for high request rate)")
+	evictStrategy := flag.String("evict", "utility_density", "eviction strategy: 'utility_density' (resolves size-blindness) or 'lowest_utility' (legacy paper)")
+	memPenalty := flag.Float64("mem-penalty", 10.0, "penalty weight for unoccupied memory (default: 10.0 resolving empty-cache trap; 100.0 for legacy paper)")
 	flag.Parse()
 
 	if *generateGraphs {
@@ -276,6 +302,12 @@ func main() {
 	cfg.TotalFileTypes, cfg.CacheCapacity, cfg.ZipfEta = *fileCount, *capacity, *eta
 	if *lambdaRate > 0 {
 		cfg.LambdaSource = *lambdaRate
+	}
+	if *evictStrategy != "" {
+		cfg.EvictionStrategy = *evictStrategy
+	}
+	if *memPenalty >= 0 {
+		cfg.MemPenaltyWeight = *memPenalty
 	}
 	files := core.GenerateFiles(cfg, rand.New(rand.NewSource(*seed)))
 	events := generateRequestEvents(cfg, *seed, *requests)

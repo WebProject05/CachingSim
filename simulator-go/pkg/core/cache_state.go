@@ -57,8 +57,23 @@ func NewCacheEngine(cfg *config.Config, files []FileMetadata) *CacheEngine {
 		CurrentTime:   0.0,
 		sizes:         sizes,
 		popularity:    make([]float64, n),
-		evictor:       NewLowestUtilityEvictor(),
+		evictor:       evictorForConfig(cfg),
 	}
+}
+
+// evictorForConfig returns the configured evictor, defaulting to UtilityDensityEvictor (Resolving Gap #1).
+func evictorForConfig(cfg *config.Config) Evictor {
+	if cfg != nil && cfg.EvictionStrategy == "lowest_utility" {
+		return NewLowestUtilityEvictor()
+	}
+	return NewUtilityDensityEvictor()
+}
+
+// SetEvictor allows swapping the eviction strategy dynamically.
+func (c *CacheEngine) SetEvictor(e Evictor) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.evictor = e
 }
 
 // validFileID checks if the fileID is within valid bounds.
@@ -266,15 +281,20 @@ func (c *CacheEngine) getWorthLocked() float64 {
 	return worth
 }
 
-// ComputeReward computes the instant reward r(t) (Eq. 2):
-//
-//	r(t) = W(t) - Mem(t) * 100
+// ComputeReward computes the instant reward r(t) (Eq. 2 & Enhanced Decoupled Reward):
+// In the original paper: r(t) = W(t) - Mem(t) * 100
+// Resolves the empty cache penalty trap (Gap #2) by allowing a balanced memory weight (e.g. 10.0 instead of 100.0)
+// so the agent focuses on maximizing utility and cache hits rather than panic-filling empty space.
 func (c *CacheEngine) ComputeReward() float64 {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	worth := c.getWorthLocked()
 	mem := c.memRatioLocked()
-	return worth - (mem * 100.0)
+	penaltyWeight := 10.0
+	if c.Cfg != nil && c.Cfg.MemPenaltyWeight > 0 {
+		penaltyWeight = c.Cfg.MemPenaltyWeight
+	}
+	return worth - (mem * penaltyWeight)
 }
 
 // GetPopularityVector returns a copy of the popularity vector d(t).

@@ -29,17 +29,19 @@ class DDQLAgent:
         self.cfg = cfg or get_default_config()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        # Initialize Online and Target Q-Networks (Section VII-B)
+        # Initialize Online and Target Q-Networks (Section VII-B & Enhanced Architecture)
         self.online_net = DQNNetwork(
             state_dim=self.cfg.state_dim,
             hidden_dim=self.cfg.hidden_dim,
             action_dim=self.cfg.action_dim,
+            dueling=self.cfg.dueling,
         ).to(self.device)
 
         self.target_net = DQNNetwork(
             state_dim=self.cfg.state_dim,
             hidden_dim=self.cfg.hidden_dim,
             action_dim=self.cfg.action_dim,
+            dueling=self.cfg.dueling,
         ).to(self.device)
         self.target_net.copy_weights_from(self.online_net)
 
@@ -165,16 +167,57 @@ class DDQLAgent:
         if self.epsilon > self.cfg.epsilon_min:
             self.epsilon = max(self.cfg.epsilon_min, self.epsilon * self.cfg.epsilon_decay)
 
+    def compute_expert_action(self, state: np.ndarray) -> int:
+        """
+        Computes the expert admission action a_E in {0, 1} based on marginal yield density.
+        Resolves the demonstration bias gap: provides balanced, high-quality demonstration
+        guidance for DQfD large-margin supervised loss J_E.
+        """
+        if self.cfg.use_candidate_features and len(state) >= 10:
+            # Candidate features: [cand_pop, cand_util, cand_size, cand_density, cand_is_cached,
+            #                      min_cached_density, avg_cached_density, density_diff, can_fit_free, needed_space]
+            cand_density = float(state[3])
+            cand_pop = float(state[0])
+            density_diff = float(state[7])
+            can_fit_free = float(state[8])
+
+            if can_fit_free > 0.5:
+                return 1
+            # Cache is full: admit only if candidate density exceeds minimum victim density
+            if density_diff >= 0.0 or (cand_density >= 0.8 and cand_pop >= 0.05):
+                return 1
+            return 0
+        else:
+            f = self.cfg.total_files
+            mem = float(state[0])
+            req_idx = int(np.argmax(state[-f:]))
+            if 0 <= req_idx < f:
+                cand_size = float(state[1 + 2 * f + req_idx])
+                cand_util = float(state[1 + f + req_idx])
+                cand_density = cand_util / max(0.01, cand_size)
+                if mem >= cand_size:
+                    return 1
+                b = state[1 + 3 * f : 1 + 4 * f]
+                cached_ids = np.where(b > 0.5)[0]
+                if len(cached_ids) > 0:
+                    cached_densities = state[1 + f + cached_ids] / np.maximum(0.01, state[1 + 2 * f + cached_ids])
+                    min_density = float(np.min(cached_densities))
+                    if cand_density >= min_density:
+                        return 1
+                    return 0
+            return 1
+
     def collect_expert_demonstrations(self, env: GrpcEnvClient, count: int = 2500):
         """
-        Populates demonstration buffer with decisions from trained greedy policy (Section VI).
-        Ensures high-quality expert demonstrations guide target domain supervised loss.
+        Populates demonstration buffer with high-quality decisions from expert yield oracle (Section VI).
+        Ensures balanced expert demonstrations (both admissions and selective rejections) guide
+        target domain supervised loss J_E.
         """
-        state, _ = env.reset(seed=self.cfg.seed + 777, lambda_rate=self.cfg.lambda_source, eta=self.cfg.zipf_eta)
+        state, _ = env.reset(seed=self.cfg.seed + 777, lambda_rate=self.cfg.lambda_target, eta=self.cfg.zipf_eta)
         for _ in range(count):
-            action = self.select_action(state, evaluate=True)
-            next_state, reward, tau, is_hit, utility = env.step(action)
-            self.demo_buffer.add(state=state, action=action, reward=reward, next_state=next_state, tau=tau)
+            expert_act = self.compute_expert_action(state)
+            next_state, reward, tau, is_hit, utility = env.step(expert_act)
+            self.demo_buffer.add(state=state, action=expert_act, reward=reward, next_state=next_state, tau=tau)
             state = next_state
 
     def train_source_domain(
@@ -494,7 +537,10 @@ class DDQLAgent:
         for step in range(1, eval_requests + 1):
             # Extract requested file index and size from state
             req_idx = int(np.argmax(state[-f_count:]))
-            req_size = float(state[1 + 2 * f_count + req_idx] * 1000.0) if (0 <= req_idx < f_count) else 100.0
+            if self.cfg.use_candidate_features:
+                req_size = float(state[2] * 1000.0)
+            else:
+                req_size = float(state[1 + 2 * f_count + req_idx] * 1000.0) if (0 <= req_idx < f_count) else 100.0
             total_req_bytes += req_size
 
             # Greedy action selection (evaluate = True)
