@@ -83,6 +83,11 @@ def parse_args():
         default=0.3,
         help="Poisson request arrival rate in target domain lambda_T (default: 0.3)",
     )
+    parser.add_argument(
+        "--part1-only",
+        action="store_true",
+        help="Disable Part 2 AdaLife-Pro mechanisms when auto-launching Go server (Part 1 baseline only)",
+    )
     return parser.parse_args()
 
 
@@ -94,6 +99,7 @@ def try_connect_env(
     lambda_source: float,
     zipf_eta: float,
     use_candidate_features: bool = True,
+    cache_capacity: float = 10000.0,
 ) -> Optional[GrpcEnvClient]:
     """Attempts to connect to the Go gRPC environment and perform a probe reset."""
     try:
@@ -102,6 +108,7 @@ def try_connect_env(
             port=port,
             total_files=total_files,
             use_candidate_features=use_candidate_features,
+            cache_capacity=cache_capacity,
         )
         env.reset(seed=seed, lambda_rate=lambda_source, eta=zipf_eta)
         return env
@@ -126,6 +133,7 @@ def ensure_server_running(
         cfg.lambda_source,
         cfg.zipf_eta,
         cfg.use_candidate_features,
+        cfg.cache_capacity,
     )
     if env is not None:
         print(f" Connected to active Go SMDP Caching Server at {cfg.server_host}:{cfg.server_port}.")
@@ -141,6 +149,8 @@ def ensure_server_running(
     if not os.path.exists(bin_path):
         bin_path = os.path.join(project_root, "bin", "server")
 
+    extra_flags = [] if cfg.adalife_pro else ["-part1-only"]
+
     server_process = None
     if os.path.exists(bin_path):
         print(f"[*] Go server not detected at {cfg.server_host}:{cfg.server_port}.")
@@ -154,6 +164,7 @@ def ensure_server_running(
                 "-lambda", str(cfg.lambda_source),
                 "-eta", str(cfg.zipf_eta),
                 "-seed", str(cfg.seed),
+                *extra_flags,
             ],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -173,6 +184,7 @@ def ensure_server_running(
                     "-lambda", str(cfg.lambda_source),
                     "-eta", str(cfg.zipf_eta),
                     "-seed", str(cfg.seed),
+                    *extra_flags,
                 ],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
@@ -207,6 +219,7 @@ def ensure_server_running(
             cfg.lambda_source,
             cfg.zipf_eta,
             cfg.use_candidate_features,
+            cfg.cache_capacity,
         )
         if env is not None:
             print(f" Successfully connected to auto-spawned Go SMDP Caching Server at {cfg.server_host}:{cfg.server_port}.")
@@ -257,11 +270,13 @@ def main():
     cfg.zipf_eta = args.eta
     cfg.lambda_source = args.lambda_source
     cfg.lambda_target = args.lambda_target
+    cfg.adalife_pro = not args.part1_only
 
     render_banner(
         "SMDP Edge Caching Reinforcement Learning & Transfer Learning System",
         details={
             "Execution Mode": args.mode,
+            "Engine Architecture": "AdaLife-Pro (Part 1 + Part 2)" if cfg.adalife_pro else "Part 1 Baseline Only",
             "gRPC Server Target": f"{args.host}:{args.port}",
             "Random Seed": args.seed,
             "File Types (F)": cfg.total_files,

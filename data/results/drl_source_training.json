@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-29T19:40:30.911290Z",
+  "timestamp": "2026-11-09T18:16:23.474329Z",
   "metadata": {
     "seed": 42,
     "total_files": 50,
@@ -14,144 +14,204 @@
   },
   "evaluation_metrics": {
     "requests": 1000,
-    "hits": 217,
-    "hit_rate": 21.7,
-    "byte_hit_rate": 21.79959719000465,
-    "total_utility": 98.01834942875868,
-    "total_reward": 6592.0414679784535,
-    "avg_reward": 6.592041467978453,
+    "hits": 330,
+    "hit_rate": 33.0,
+    "byte_hit_rate": 33.304752682177444,
+    "total_utility": 171.6270878035924,
+    "total_reward": 14991.093108911604,
+    "avg_reward": 14.991093108911604,
     "benchmark_lambda": 5.0,
-    "benchmark_hits": 656,
-    "benchmark_hit_rate": 65.60000000000001,
-    "benchmark_byte_hit_rate": 63.91850738812528,
-    "benchmark_total_utility": 358.6550722019294,
-    "benchmark_avg_reward": 39.79019628780552,
+    "benchmark_hits": 766,
+    "benchmark_hit_rate": 76.6,
+    "benchmark_byte_hit_rate": 74.04932889204406,
+    "benchmark_total_utility": 567.6896353584752,
+    "benchmark_avg_reward": 61.91584381013914,
     "multi_lambda_eval": {
       "0.2": {
         "requests": 1000,
-        "hits": 217,
-        "hit_rate": 21.7,
-        "byte_hit_rate": 21.79959719000465,
-        "total_utility": 98.01834942875868,
-        "total_reward": 6592.0414679784535,
-        "avg_reward": 6.592041467978453
+        "hits": 330,
+        "hit_rate": 33.0,
+        "byte_hit_rate": 33.304752682177444,
+        "total_utility": 171.6270878035924,
+        "total_reward": 14991.093108911604,
+        "avg_reward": 14.991093108911604
       },
       "0.5": {
         "requests": 1000,
-        "hits": 371,
-        "hit_rate": 37.1,
-        "byte_hit_rate": 37.32591473757304,
-        "total_utility": 167.07116715165412,
-        "total_reward": 13894.307600261209,
-        "avg_reward": 13.89430760026121
+        "hits": 531,
+        "hit_rate": 53.1,
+        "byte_hit_rate": 52.825751355142245,
+        "total_utility": 301.8587645416203,
+        "total_reward": 29374.98194760918,
+        "avg_reward": 29.37498194760918
       },
       "1.0": {
         "requests": 1000,
-        "hits": 478,
-        "hit_rate": 47.8,
-        "byte_hit_rate": 47.483966285631254,
-        "total_utility": 223.85057198787516,
-        "total_reward": 21213.073240315294,
-        "avg_reward": 21.213073240315293
+        "hits": 626,
+        "hit_rate": 62.6,
+        "byte_hit_rate": 61.4867311281544,
+        "total_utility": 394.4005329113388,
+        "total_reward": 41110.1168512942,
+        "avg_reward": 41.1101168512942
       },
       "1.66": {
         "requests": 1000,
-        "hits": 566,
-        "hit_rate": 56.599999999999994,
-        "byte_hit_rate": 55.94962371645995,
-        "total_utility": 260.4538011472745,
-        "total_reward": 27423.053967569893,
-        "avg_reward": 27.423053967569892
+        "hits": 700,
+        "hit_rate": 70.0,
+        "byte_hit_rate": 68.69750521365724,
+        "total_utility": 455.93687643851473,
+        "total_reward": 50384.31563701336,
+        "avg_reward": 50.38431563701336
       },
       "2.5": {
         "requests": 1000,
-        "hits": 611,
-        "hit_rate": 61.1,
-        "byte_hit_rate": 60.13662948566959,
-        "total_utility": 291.1653878052326,
-        "total_reward": 31896.925598606304,
-        "avg_reward": 31.896925598606302
+        "hits": 745,
+        "hit_rate": 74.5,
+        "byte_hit_rate": 73.69557568571533,
+        "total_utility": 505.2044285983989,
+        "total_reward": 56444.71270970376,
+        "avg_reward": 56.44471270970376
       },
       "5.0": {
         "requests": 1000,
-        "hits": 656,
-        "hit_rate": 65.60000000000001,
-        "byte_hit_rate": 63.91850738812528,
-        "total_utility": 358.6550722019294,
-        "total_reward": 39790.19628780552,
-        "avg_reward": 39.79019628780552
+        "hits": 766,
+        "hit_rate": 76.6,
+        "byte_hit_rate": 74.04932889204406,
+        "total_utility": 567.6896353584752,
+        "total_reward": 61915.84381013914,
+        "avg_reward": 61.91584381013914
       },
       "6.5": {
         "requests": 1000,
-        "hits": 660,
-        "hit_rate": 66.0,
-        "byte_hit_rate": 63.59753696681499,
-        "total_utility": 390.4901392924218,
-        "total_reward": 43462.64586323598,
-        "avg_reward": 43.46264586323598
+        "hits": 757,
+        "hit_rate": 75.7,
+        "byte_hit_rate": 72.61807914372447,
+        "total_utility": 577.3327665185584,
+        "total_reward": 62733.331276488716,
+        "avg_reward": 62.73333127648871
       }
     }
   },
   "training_trajectory": [
     {
       "step": 100,
-      "avg_reward": -3.877314638809961
+      "avg_reward": -3.378500439115604
     },
     {
       "step": 200,
-      "avg_reward": 0.10769471137454813
+      "avg_reward": 5.387144494462079
     },
     {
       "step": 300,
-      "avg_reward": 0.9512511980943111
+      "avg_reward": 6.424965428859026
     },
     {
       "step": 400,
-      "avg_reward": 1.4716524139216673
+      "avg_reward": 7.203786772240637
     },
     {
       "step": 500,
-      "avg_reward": 2.7961678449543808
+      "avg_reward": 7.973471113148249
     },
     {
       "step": 600,
-      "avg_reward": 3.041802281251333
+      "avg_reward": 7.984548871228788
     },
     {
       "step": 700,
-      "avg_reward": 3.5635908268300645
+      "avg_reward": 8.392264415848997
     },
     {
       "step": 800,
-      "avg_reward": 3.6408836628072123
+      "avg_reward": 8.962227637755776
     },
     {
       "step": 900,
-      "avg_reward": 3.636599606374652
+      "avg_reward": 9.021033861895246
     },
     {
       "step": 1000,
-      "avg_reward": 3.732266686118289
+      "avg_reward": 9.002706274618221
     },
     {
       "step": 1100,
-      "avg_reward": 3.6702978174069916
+      "avg_reward": 8.849198158047521
     },
     {
       "step": 1200,
-      "avg_reward": 3.6938779786246845
+      "avg_reward": 8.894373567405584
     },
     {
       "step": 1300,
-      "avg_reward": 4.041225212487955
+      "avg_reward": 9.214987405156107
     },
     {
       "step": 1400,
-      "avg_reward": 3.9314468813021333
+      "avg_reward": 9.178515455744574
     },
     {
       "step": 1500,
-      "avg_reward": 4.142249057222479
+      "avg_reward": 9.548208810429749
+    },
+    {
+      "step": 1600,
+      "avg_reward": 9.864361709631218
+    },
+    {
+      "step": 1700,
+      "avg_reward": 9.875134329235163
+    },
+    {
+      "step": 1800,
+      "avg_reward": 9.667836487802642
+    },
+    {
+      "step": 1900,
+      "avg_reward": 9.594642599738767
+    },
+    {
+      "step": 2000,
+      "avg_reward": 9.767681185471687
+    },
+    {
+      "step": 2100,
+      "avg_reward": 10.10370381935294
+    },
+    {
+      "step": 2200,
+      "avg_reward": 10.209578906102799
+    },
+    {
+      "step": 2300,
+      "avg_reward": 10.188657860151356
+    },
+    {
+      "step": 2400,
+      "avg_reward": 10.2005199643103
+    },
+    {
+      "step": 2500,
+      "avg_reward": 10.267933303071185
+    },
+    {
+      "step": 2600,
+      "avg_reward": 10.198553625899331
+    },
+    {
+      "step": 2700,
+      "avg_reward": 10.254353754243771
+    },
+    {
+      "step": 2800,
+      "avg_reward": 10.282564178979946
+    },
+    {
+      "step": 2900,
+      "avg_reward": 10.22790688534018
+    },
+    {
+      "step": 3000,
+      "avg_reward": 10.133281878890559
     }
   ]
 }

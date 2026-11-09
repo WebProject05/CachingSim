@@ -21,6 +21,7 @@ class AgentConfig:
     hidden_dim: int = 64                  # 64 nodes in hidden layer (enhanced from 16 for expressiveness)
     dueling: bool = True                  # Dueling Q-network architecture (decouples V(s) and A(s, a))
     use_candidate_features: bool = True   # Prepend 10 candidate-centric features (Resolves Agentic Gap #3)
+    adalife_pro: bool = True              # Enable Part 2 AdaLife-Pro simulator integration (5 innovations)
     weight_init_min: float = -0.1         # Uniform [-0.1, 0.1]
     weight_init_max: float = 0.1
     bias_init: float = 0.1                # Bias initialized to 0.1

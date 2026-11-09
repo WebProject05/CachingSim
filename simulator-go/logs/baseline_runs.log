@@ -652,3 +652,16 @@ CTD        : 55.60% | 54.16% | 44.40% | 40.80% | 94.91% | 30.88 | n/a
 SMDP-DDQL  : 59.60% | 56.48% | 40.40% | 23.00% | 98.22% | 33.50 | 1074.0
 RUN END   : 2026-10-30T00:34:06+05:30
 
+RUN START : 2026-11-09T23:44:40+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=1000 files=50 capacity=10000.00 MiB eta=1.000 window=100 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 59.20% | 56.65% | 40.80% | 39.10% | 91.82% | 45.49 | n/a
+LRU        : 64.70% | 61.27% | 35.30% | 33.60% | 93.67% | 49.02 | n/a
+LFU        : 73.20% | 69.32% | 26.80% | 24.90% | 94.51% | 54.29 | 647.6
+SIEVE      : 70.80% | 66.87% | 29.20% | 27.40% | 96.17% | 52.98 | n/a
+CTD        : 56.80% | 54.93% | 43.20% | 41.40% | 99.85% | 361.94 | n/a
+Paper-Proposed : 60.60% | 54.59% | 39.40% | 26.50% | 94.41% | 319.60 | 4186.5
+AdaLife-Pro : 74.10% | 68.69% | 25.90% | 11.70% | 92.40% | 538.34 | 2860.7
+RUN END   : 2026-11-09T23:44:40+05:30
+

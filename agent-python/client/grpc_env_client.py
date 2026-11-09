@@ -14,6 +14,7 @@ def state_response_to_numpy(
     resp: cache_env_pb2.StateResponse,
     total_files: int,
     use_candidate_features: bool = True,
+    cache_capacity: float = 10000.0,
 ) -> np.ndarray:
     """
     Transforms protobuf StateResponse into a normalized feature vector s(t).
@@ -58,9 +59,9 @@ def state_response_to_numpy(
         avg_cached_density = 0.0
         density_diff = cand_density
 
-    free_mem = float(resp.mem)
-    can_fit_free = 1.0 if free_mem >= cand_size else 0.0
-    needed_space = max(0.0, cand_size - free_mem)
+    free_space_gib = float(resp.mem) * max(1.0, float(cache_capacity)) / 1000.0
+    can_fit_free = 1.0 if free_space_gib >= cand_size else 0.0
+    needed_space = max(0.0, cand_size - free_space_gib)
 
     cand_features = np.array([
         cand_pop,
@@ -87,11 +88,13 @@ class GrpcEnvClient:
         port: int = 50051,
         total_files: int = 50,
         use_candidate_features: bool = True,
+        cache_capacity: float = 10000.0,
     ):
         self.host = host
         self.port = port
         self.total_files = total_files
         self.use_candidate_features = use_candidate_features
+        self.cache_capacity = cache_capacity
         self.channel: Optional[grpc.Channel] = None
         self.stub: Optional[CacheEnvServiceStub] = None
         self._connect()
@@ -117,7 +120,9 @@ class GrpcEnvClient:
         )
         setattr(request, 'lambda', float(lambda_rate))
         resp = self.stub.Reset(request)
-        state = state_response_to_numpy(resp, self.total_files, self.use_candidate_features)
+        state = state_response_to_numpy(
+            resp, self.total_files, self.use_candidate_features, self.cache_capacity
+        )
         return state, resp.current_time
 
     def step(self, action: int) -> Tuple[np.ndarray, float, float, bool, float]:
@@ -127,7 +132,9 @@ class GrpcEnvClient:
         """
         request = cache_env_pb2.StepRequest(action=int(action))
         resp = self.stub.Step(request)
-        next_state = state_response_to_numpy(resp.next_state, self.total_files, self.use_candidate_features)
+        next_state = state_response_to_numpy(
+            resp.next_state, self.total_files, self.use_candidate_features, self.cache_capacity
+        )
         return (
             next_state,
             resp.reward,
@@ -142,7 +149,9 @@ class GrpcEnvClient:
         resp = self.stub.BatchStep(request)
         results = []
         for step_resp in resp.step_responses:
-            next_state = state_response_to_numpy(step_resp.next_state, self.total_files, self.use_candidate_features)
+            next_state = state_response_to_numpy(
+                step_resp.next_state, self.total_files, self.use_candidate_features, self.cache_capacity
+            )
             results.append((
                 next_state,
                 step_resp.reward,

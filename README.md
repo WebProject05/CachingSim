@@ -142,12 +142,18 @@ scripts\run_full_experiment.bat
 
 ---
 
-### Option 2: Running Baseline Comparisons (Instant Benchmark)
-You can compare the proposed algorithm against standard caching algorithms (FIFO, LRU, LFU, Sieve, and CTD) directly inside the Go engine. This takes just a few seconds:
+### Option 2: Running Instant 3-Way Benchmark Comparisons
+You can compare the 3 primary algorithms (**CTD Baseline** vs **Original Paper** vs **AdaLife-Pro [Our Algorithm]**) directly inside the Go engine in just a couple seconds:
 
 ```powershell
-# Run a 5,000-request benchmark with 50 files and 10,000 MiB cache capacity
-.\bin\baseline.exe -requests 5000 -files 50 -capacity 10000 -lambda 5.0 -eta 1.0
+# Quick 3-Way Benchmark & Comparison Table (1,000 requests, ~1s):
+.\bin\baseline.exe -requests 1000 -lambda 5.0 -mdp-table
+
+# High-Volume Empirical Benchmark (10,000 requests, lambda = 5.0):
+.\bin\baseline.exe -requests 10000 -lambda 5.0
+
+# Severe Contention Benchmark (100 files, 5,000 MiB cache, high competition):
+.\bin\baseline.exe -requests 10000 -files 100 -capacity 5000 -lambda 5.0 -eta 0.85
 ```
 
 #### Useful Settings for `baseline.exe`:

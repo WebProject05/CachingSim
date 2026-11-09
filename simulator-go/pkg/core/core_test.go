@@ -164,3 +164,166 @@ func TestSlidingWindowPopularity(t *testing.T) {
 		t.Errorf("popularity incorrect after window roll: %v", pop)
 	}
 }
+
+func TestDynamicLifetimeLeaseExtension(t *testing.T) {
+	cfg := config.DefaultConfig()
+	file := &FileMetadata{
+		ID:         0,
+		Size:       200.0,
+		Lifetime:   20.0,
+		Importance: 0.8,
+		GenTime:    0.0,
+	}
+
+	file.ResetLease(10.0, 1.0)
+	if file.ActiveLifetime() != 20.0 || file.HitCount != 1 {
+		t.Fatalf("unexpected initial lease: ttl=%f, hits=%d", file.ActiveLifetime(), file.HitCount)
+	}
+
+	// Hit at t=15 -> boost = 1 + 0.5*0.8 + 0.1*2 = 1.6 -> EffectiveLifetime = 32.0
+	file.RenewLease(15.0, cfg)
+	expected := 20.0 * (1.0 + 0.5*0.8 + 0.1*2.0)
+	if math.Abs(file.ActiveLifetime()-expected) > 1e-6 {
+		t.Fatalf("expected renewed TTL %f, got %f", expected, file.ActiveLifetime())
+	}
+	if file.GenTime != 15.0 || file.HitCount != 2 {
+		t.Fatalf("expected GenTime=15.0 and HitCount=2, got %f, %d", file.GenTime, file.HitCount)
+	}
+
+	// Verify MaxLifetimeCap bound
+	cfg.MaxLifetimeCap = 35.0
+	for i := 0; i < 6; i++ {
+		file.RenewLease(20.0+float64(i), cfg)
+	}
+	if file.ActiveLifetime() > 35.0 {
+		t.Fatalf("lease exceeded MaxLifetimeCap: got %f > 35.0", file.ActiveLifetime())
+	}
+
+	// Verify disabled AdaLife leaves base Lifetime untouched
+	cfg.EnableAdaLife = false
+	beforeTTL := file.EffectiveLifetime
+	file.RenewLease(50.0, cfg)
+	if file.EffectiveLifetime != beforeTTL {
+		t.Fatalf("expected RenewLease to be no-op when EnableAdaLife=false")
+	}
+}
+
+func TestElasticCapacityScaling(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.CacheCapacity = 1000.0
+	cfg.LambdaSource = 0.2
+	cfg.EnableElasticCapacity = true
+	cfg.ElasticMaxScale = 0.35
+	cfg.ElasticLambdaRef = 5.0
+
+	files := []FileMetadata{{ID: 0, Size: 200.0, Lifetime: 20.0, Importance: 0.5}}
+	cache := NewCacheEngine(cfg, files)
+
+	// Idle traffic (lambda=0.2 <= 0.5 threshold) should equal exact base capacity
+	if math.Abs(cache.EffectiveCapacity()-1000.0) > 1e-6 {
+		t.Fatalf("expected idle effective capacity 1000.0, got %f", cache.EffectiveCapacity())
+	}
+
+	// Simulate sustained burst arrival rate (tau = 0.2s -> lambda = 5.0 req/s)
+	for i := 0; i < 150; i++ {
+		cache.UpdateTrafficRate(0.2)
+	}
+	effCap := cache.EffectiveCapacity()
+	if effCap < 1340.0 || effCap > 1351.0 {
+		t.Fatalf("expected elastic capacity near 1350.0 under 5 req/s burst, got %f (lambdaEMA=%f)", effCap, cache.LambdaEMA)
+	}
+
+	// Disabled flag should remain strictly 1000.0
+	cfg.EnableElasticCapacity = false
+	if cache.EffectiveCapacity() != 1000.0 {
+		t.Fatalf("expected disabled elastic capacity 1000.0, got %f", cache.EffectiveCapacity())
+	}
+}
+
+func TestProbationShieldAndGhostFastTrack(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.TotalFileTypes = 6
+	cfg.CacheCapacity = 1000.0
+	cfg.EnableElasticCapacity = false // Isolate Probation + Ghost mechanics clearly
+	cfg.ProbationRatio = 0.20         // 200 MiB Probation, 800 MiB Protected
+
+	files := []FileMetadata{
+		{ID: 0, Size: 800.0, Lifetime: 20.0, Importance: 0.9}, // Fills full 800 MiB Protected tier
+		{ID: 1, Size: 200.0, Lifetime: 20.0, Importance: 0.2}, // One-hit noise #1
+		{ID: 2, Size: 200.0, Lifetime: 20.0, Importance: 0.2}, // One-hit noise #2
+		{ID: 3, Size: 200.0, Lifetime: 20.0, Importance: 0.2}, // One-hit noise #3
+		{ID: 4, Size: 200.0, Lifetime: 20.0, Importance: 0.8}, // Rejected then Ghost-hit candidate
+	}
+	cache := NewCacheEngine(cfg, files)
+
+	// 1. Place hot File 0 into Protected directly via 2-step promotion or ghost promotion
+	cache.ProcessAdaLifeStep(0, 1, 1.0) // First miss (fits into idle RAM in Probation)
+	if !cache.IsCached(0) || !cache.InProbation[0] {
+		t.Fatalf("expected file 0 in probation on 1st miss")
+	}
+	// 2. Second request hits and promotes File 0 (800 MiB) into Protected Main Tier (fills all 800 MiB)
+	hit, _, _, _ := cache.ProcessAdaLifeStep(0, 1, 2.0)
+	if !hit || cache.InProbation[0] || !cache.IsCached(0) || cache.Promotions != 1 {
+		t.Fatalf("expected file 0 to promote to protected on 2nd request (hit=%t prob=%t prom=%d)", hit, cache.InProbation[0], cache.Promotions)
+	}
+
+	// 3. Burst of one-hit wonders (Files 1, 2, 3) rotates strictly inside 200 MiB Probation without disturbing Protected File 0
+	cache.ProcessAdaLifeStep(1, 1, 3.0)
+	cache.ProcessAdaLifeStep(2, 1, 4.0)
+	cache.ProcessAdaLifeStep(3, 1, 5.0)
+	if !cache.IsCached(0) || cache.InProbation[0] {
+		t.Fatalf("probation noise displaced or mutated protected file 0")
+	}
+	if cache.IsCached(1) || cache.IsCached(2) || !cache.IsCached(3) {
+		t.Fatalf("expected probation FIFO shield to retain latest file 3 and isolate noise 1,2 (1=%t 2=%t 3=%t)",
+			cache.IsCached(1), cache.IsCached(2), cache.IsCached(3))
+	}
+
+	// 4. Reject File 4 (action=0) -> logs into Ghost Cache; 2nd arrival incurs regret & fast-tracks to Protected!
+	cache.ProcessAdaLifeStep(4, 0, 6.0)
+	if !cache.PeekGhost(4, 7.0) {
+		t.Fatalf("expected rejected file 4 to be present in Ghost Cache")
+	}
+	cache.RecordRequest(0)
+	cache.RecordRequest(4)
+	baseRewardWithoutRegret := cache.GetWorth() - cache.MemRatio()*cfg.MemPenaltyWeight
+
+	hit, _, _, ins := cache.ProcessAdaLifeStep(4, 1, 10.0)
+	if hit || !ins || cache.InProbation[4] || cache.GhostHits != 1 {
+		t.Fatalf("expected returning ghost file 4 to fast-track straight to Protected (hit=%t ins=%t prob=%t ghosts=%d)",
+			hit, ins, cache.InProbation[4], cache.GhostHits)
+	}
+	if cache.LastStepRegret <= 0.0 {
+		t.Fatalf("expected positive LastStepRegret on avoidable ghost miss, got %f", cache.LastStepRegret)
+	}
+	rewardWithRegret := cache.ComputeReward()
+	netWorthMinusMem := cache.GetWorth() - cache.MemRatio()*cfg.MemPenaltyWeight
+	if math.Abs((netWorthMinusMem-rewardWithRegret)-cache.LastStepRegret) > 1e-6 {
+		t.Fatalf("ComputeReward did not subtract LastStepRegret accurately (expected diff %f, got %f)",
+			cache.LastStepRegret, netWorthMinusMem-rewardWithRegret)
+	}
+	_ = baseRewardWithoutRegret
+}
+
+func TestFetchCostAsymmetryEviction(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.CacheCapacity = 1000.0
+	cfg.EnableElasticCapacity = false
+	cfg.EnableFetchCost = true
+
+	// File 0: Size=400, Importance=0.5 -> Utility(0)=0.75, FetchCost=0.8+0.16=0.96 -> CostUtilDensity = 0.720/400 = 0.001800
+	// File 1: Size=600, Importance=0.5 -> Utility(0)=0.75, FetchCost=0.8+0.24=1.04 -> CostUtilDensity = 0.780/600 = 0.001300
+	files := []FileMetadata{
+		{ID: 0, Size: 400.0, Lifetime: 20.0, Importance: 0.5, GenTime: 0.0},
+		{ID: 1, Size: 600.0, Lifetime: 20.0, Importance: 0.5, GenTime: 0.0},
+		{ID: 2, Size: 500.0, Lifetime: 20.0, Importance: 0.9, GenTime: 0.0},
+	}
+	cache := NewCacheEngine(cfg, files)
+	cache.Insert(0)
+	cache.Insert(1)
+
+	evicted := cache.EvictUntilFits(2)
+	if len(evicted) != 1 || evicted[0] != 1 {
+		t.Fatalf("expected lower cost-utility density file 1 to be evicted first, got %v", evicted)
+	}
+}

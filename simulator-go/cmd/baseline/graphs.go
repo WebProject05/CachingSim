@@ -56,13 +56,15 @@ func writeGraphs(
 		return err
 	}
 
-	// 2. Write Convergence Line Chart (Proposed vs CTD only)
+	// 2. Write Convergence Line Chart (AdaLife-Pro, Paper-Proposed, CTD)
 	var paperResults []runResult
 	for _, r := range results {
-		if r.name == "SMDP-DDQL" || r.name == "CTD" {
+		if r.name == "AdaLife-Pro" || r.name == "SMDP-DDQL" || r.name == "Paper-Proposed" || r.name == "CTD" {
 			displayName := r.name
 			if r.name == "SMDP-DDQL" {
 				displayName = "Proposed (SMDP-DDQL)"
+			} else if r.name == "Paper-Proposed" {
+				displayName = "Paper (Niknia '24)"
 			}
 			copyResult := r
 			copyResult.name = displayName
@@ -180,10 +182,12 @@ func writeGraphs(
 
 		var chartSeries []lineSeries
 		for _, s := range series {
-			if s.name == "SMDP-DDQL" || s.name == "CTD" {
+			if s.name == "AdaLife-Pro" || s.name == "SMDP-DDQL" || s.name == "Paper-Proposed" || s.name == "CTD" {
 				dispName := s.name
 				if s.name == "SMDP-DDQL" {
 					dispName = "Proposed (SMDP-DDQL)"
+				} else if s.name == "Paper-Proposed" {
+					dispName = "Paper (Niknia '24)"
 				}
 				chartSeries = append(chartSeries, lineSeries{
 					name: dispName,

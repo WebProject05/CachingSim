@@ -51,9 +51,32 @@ type Config struct {
 	LossWeightL2      float64 // lambda_3: Weight for L2 regularization J_L2 (default: 1e-5)
 	ExpertMargin      float64 // Supervised margin penalty L(a_E, a) (default: 0.8)
 
-	// --- Enhanced Strategy Parameters (Resolving Gaps #1 & #2) ---
+	// --- Enhanced Strategy Parameters (Part 1 Improvements) ---
 	EvictionStrategy string  // "utility_density" (default enhanced) or "lowest_utility" (legacy paper)
 	MemPenaltyWeight float64 // Penalty weight for unoccupied memory (default: 10.0 enhanced, 100.0 legacy paper)
+
+	// --- AdaLife-Pro Strategy Parameters (Part 2 Innovations) ---
+	EnableAdaLife         bool    // Dynamic lifetime lease extensions on cache hit
+	LeaseImportanceWeight float64 // alpha: Importance weight for TTL lease extension (default: 0.5)
+	LeaseHitWeight        float64 // beta: Repeat hit weight for TTL lease extension (default: 0.1)
+	MaxLifetimeCap        float64 // Maximum cap on extended TTL in seconds (default: 150.0)
+
+	EnableElasticCapacity bool    // Elastic cache sizing during traffic surges
+	ElasticMaxScale       float64 // Max expansion factor above base M (default: 0.35 -> 1.35x M)
+	ElasticLambdaRef      float64 // Reference request rate for peak scaling (default: 5.0 req/s)
+
+	EnableProbationShield bool    // Two-Tier Probationary Shield filtering one-hit wonders
+	ProbationRatio        float64 // Probation capacity ratio (default: 0.10)
+	ProbationTTLScale     float64 // Trial TTL multiplier in probation (default: 0.75)
+
+	EnableFetchCost      bool    // Fetch-cost & latency asymmetry weighting
+	BaseOriginRTT        float64 // Baseline origin RTT penalty weight (default: 0.8)
+	FetchBandwidthWeight float64 // Size penalty weight per 1000 MiB (default: 0.4)
+
+	EnableGhostCache  bool    // Counterfactual Ghost Cache for regret tracking
+	GhostMaxEntries   int     // Max ghost entries tracked (default: 1000)
+	GhostHorizon      float64 // Validity window in seconds for ghost hits (default: 60.0)
+	GhostRegretWeight float64 // Counterfactual regret penalty multiplier (default: 5.0)
 }
 
 // ComputeCurve calculates the Curve coefficient: (UT_max - UT_min) / (e - 1).
@@ -96,8 +119,25 @@ func DefaultConfig() *Config {
 		LossWeightExpert: 1.0,
 		LossWeightL2:     1e-5,
 		ExpertMargin:     0.8,
-		EvictionStrategy: "utility_density",
-		MemPenaltyWeight: 10.0,
+		EvictionStrategy:      "utility_density",
+		MemPenaltyWeight:      10.0,
+		EnableAdaLife:         true,
+		LeaseImportanceWeight: 0.5,
+		LeaseHitWeight:        0.1,
+		MaxLifetimeCap:        150.0,
+		EnableElasticCapacity: true,
+		ElasticMaxScale:       0.35,
+		ElasticLambdaRef:      5.0,
+		EnableProbationShield: true,
+		ProbationRatio:        0.10,
+		ProbationTTLScale:     0.75,
+		EnableFetchCost:       true,
+		BaseOriginRTT:         0.8,
+		FetchBandwidthWeight:  0.4,
+		EnableGhostCache:      true,
+		GhostMaxEntries:       1000,
+		GhostHorizon:          60.0,
+		GhostRegretWeight:     5.0,
 	}
 }
 

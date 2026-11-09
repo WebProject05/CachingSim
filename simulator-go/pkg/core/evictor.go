@@ -98,12 +98,12 @@ func (e *UtilityDensityEvictor) Evict(
 		lowestID := -1
 		minDensity := math.MaxFloat64
 
-		// Find cached item with minimum utility density (utility / size)
+		// Find cached item with minimum cost-utility density ((utility * fetch_cost) / size)
 		for id := 0; id < len(cached) && id < len(files); id++ {
 			if !cached[id] {
 				continue
 			}
-			u := files[id].Utility(currentTime, cfg)
+			u := files[id].Utility(currentTime, cfg) * files[id].FetchCost(cfg)
 			size := files[id].Size
 			if size <= 0 {
 				size = 1.0

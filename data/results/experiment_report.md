@@ -1,6 +1,6 @@
 # SMDP EDGE CACHING EXPERIMENT: COMPREHENSIVE PERFORMANCE REPORT
 
-> **Generated at**: `2026-10-29 19:05:27 UTC`  
+> **Generated at**: `2026-11-09 18:17:10 UTC`  
 > **Targeted Algorithms**: `Proposed (SMDP-DDQL)`, `CTD`, `Proposed TL`, `DQfD`, `LFS`, `DPR`  
 > **Excluded Baselines**: `FIFO`, `LIFO`, `LRU`, `LFU`, `SIEVE` (omitted per user configuration)
 
@@ -9,34 +9,26 @@
 
 | Metric | CTD Baseline | Proposed (SMDP-DDQL) | Relative Gain |
 | :--- | :--- | :--- | :--- |
-| **Hit Count** | `278` | **`298`** | **+20 hits** |
-| **Hit Rate (%)** | `55.60%` | **`59.60%`** | **+7.2%** |
-| **Byte Hit Rate (%)** | `54.16%` | **`56.48%`** | **+2.32%** |
-| **Miss Count** | `222` | **`202`** | **-20 misses** |
-| **Miss Rate (%)** | `44.40%` | **`40.40%`** | **-4.00%** |
-| **Evictions** | `204` | **`115`** | **-43.6%** |
-| **Capacity Utilization (%)** | `94.91%` | **`98.22%`** | **3.31%** |
-| **Total Utility** | `30.88` | **`33.50`** | **+8.5%** |
 
 ## 2. Source Domain DRL (DDQL) Performance
 
-- **Training Steps**: `1,000` steps
-- **Final Moving Average Reward**: `-78.1040`
-- **Greedy Policy Hit Rate**: `22.80%` (`114 / 500` requests)
-- **Total Accumulated Utility**: `49.06`
-- **Average Reward Per Step**: `-64.2591`
+- **Training Steps**: `3,000` steps
+- **Final Moving Average Reward**: `10.1333`
+- **Greedy Policy Hit Rate**: `33.00%` (`330 / 1000` requests)
+- **Total Accumulated Utility**: `171.63`
+- **Average Reward Per Step**: `14.9911`
 
 
 ## 3. Target Domain Transfer Learning Performance (lambda_T = 0.3)
 
 | Transfer Learning Method | Initial Reward (t=100) | Midpoint Reward | Final Reward | Peak Reward |
 | :--- | :--- | :--- | :--- | :--- |
-| **PROPOSED** | `-81.28` | `-78.13` | **`-71.63`** | `-71.63` |
-| **DQFD** | `-84.27` | `-76.55` | **`-70.82`** | `-70.82` |
-| **LFS** | `-81.09` | `-84.89` | **`-82.56`** | `-80.59` |
-| **DPR** | `-70.62` | `-60.99` | **`-60.59`** | `-60.59` |
-| **DQFD_OVERWRITE** | `-84.05` | `-71.19` | **`-68.51`** | `-68.51` |
-| **DQFD_NEW_PRIO** | `-81.77` | `-73.98` | **`-69.37`** | `-69.37` |
+| **PROPOSED** | `6.03` | `18.65` | **`19.58`** | `19.58` |
+| **DQFD** | `5.88` | `19.53` | **`20.15`** | `20.15` |
+| **LFS** | `4.95` | `17.98` | **`19.32`** | `19.32` |
+| **DPR** | `8.46` | `21.36` | **`21.36`** | `21.59` |
+| **DQFD_OVERWRITE** | `4.92` | `18.93` | **`19.84`** | `19.84` |
+| **DQFD_NEW_PRIO** | `6.35` | `18.17` | **`19.42`** | `19.42` |
 
 ## 4. Parameter Sensitivity Sweeps (Proposed vs CTD)
 
@@ -45,85 +37,73 @@
 
 | Cache size (MiB) | 5000 | 7500 | 10000 | 12500 | 15000 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **CTD** | `175` | `230` | `278` | `307` | `333` |
-| **Proposed (SMDP-DDQL)** | `211` | `258` | `298` | `320` | `333` |
+| **CTD** | `370` | `480` | `568` | `646` | `690` |
 
 ### Total utility vs cache size (Fig. 7c)
 
 | Cache size (MiB) | 5000 | 7500 | 10000 | 12500 | 15000 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **CTD** | `20.9` | `25.77` | `30.88` | `33.51` | `35.19` |
-| **Proposed (SMDP-DDQL)** | `26.26` | `29.43` | `33.5` | `34.92` | `35.59` |
+| **CTD** | `267.57` | `330.51` | `361.94` | `356.96` | `326.79` |
 
 ### Total hit count vs request rate (Fig. 6b)
 
 | Request rate lambda | 0.5 | 1.5 | 2.5 | 3.5 | 4.5 | 5.5 | 6.5 |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **CTD** | `132` | `233` | `272` | `278` | `278` | `278` | `278` |
-| **Proposed (SMDP-DDQL)** | `132` | `233` | `268` | `282` | `290` | `295` | `302` |
+| **CTD** | `274` | `477` | `550` | `568` | `568` | `568` | `568` |
 
 ### Total utility vs request rate (Fig. 7b)
 
 | Request rate lambda | 0.5 | 1.5 | 2.5 | 3.5 | 4.5 | 5.5 | 6.5 |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **CTD** | `7.73` | `16.41` | `21.89` | `25.68` | `29.34` | `32.47` | `35.24` |
-| **Proposed (SMDP-DDQL)** | `7.73` | `16.41` | `21.9` | `26.24` | `31.4` | `34.97` | `38.75` |
+| **CTD** | `131.31` | `225.82` | `275.42` | `324.3` | `352.35` | `369.49` | `380.61` |
 
 ### Total hit count vs popularity skewness (Fig. 6a)
 
 | Zipf eta | 0.2 | 0.4 | 0.6 | 0.8 | 1 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **CTD** | `168` | `159` | `204` | `239` | `278` |
-| **Proposed (SMDP-DDQL)** | `196` | `182` | `235` | `253` | `298` |
+| **CTD** | `335` | `355` | `424` | `495` | `568` |
 
 ### Total utility vs popularity skewness (Fig. 7a)
 
 | Zipf eta | 0.2 | 0.4 | 0.6 | 0.8 | 1 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **CTD** | `22.33` | `22.51` | `21.81` | `25.94` | `30.88` |
-| **Proposed (SMDP-DDQL)** | `28.86` | `27.16` | `27.87` | `28.6` | `33.5` |
+| **CTD** | `236.3` | `242.96` | `279.77` | `310.66` | `361.94` |
 
 ### Total hit count vs popular-file lifetime (Fig. 4a)
 
 | Popular file lifetime | 10 | 15 | 20 | 25 | 30 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **CTD** | `294` | `298` | `301` | `302` | `304` |
-| **Proposed (SMDP-DDQL)** | `311` | `313` | `312` | `306` | `316` |
+| **CTD** | `625` | `629` | `639` | `634` | `637` |
 
 ### Total utility vs popular-file lifetime (Fig. 5a)
 
 | Popular file lifetime | 10 | 15 | 20 | 25 | 30 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **CTD** | `31.68` | `33.33` | `35.47` | `37.52` | `39.45` |
-| **Proposed (SMDP-DDQL)** | `32.85` | `35.13` | `37.31` | `38.73` | `41.2` |
+| **CTD** | `358.23` | `363.25` | `369.95` | `373.22` | `369.59` |
 
 ### Total hit count vs popular-file size (Fig. 4b)
 
 | Popular file size (MiB) | 100 | 200 | 500 | 700 | 1000 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **CTD** | `301` | `301` | `301` | `298` | `298` |
-| **Proposed (SMDP-DDQL)** | `312` | `312` | `312` | `293` | `288` |
+| **CTD** | `639` | `639` | `639` | `617` | `617` |
 
 ### Total utility vs popular-file size (Fig. 5b)
 
 | Popular file size (MiB) | 100 | 200 | 500 | 700 | 1000 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **CTD** | `35.47` | `35.47` | `35.47` | `34.68` | `34.68` |
-| **Proposed (SMDP-DDQL)** | `37.31` | `37.31` | `37.31` | `36.36` | `36.11` |
+| **CTD** | `369.95` | `369.95` | `369.95` | `370.56` | `370.56` |
 
 ### Total hit count vs popular-file importance (Fig. 4c)
 
 | Popular file importance | 0.1 | 0.3 | 0.5 | 0.7 | 0.9 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **CTD** | `301` | `301` | `301` | `301` | `301` |
-| **Proposed (SMDP-DDQL)** | `317` | `314` | `312` | `319` | `317` |
+| **CTD** | `639` | `639` | `639` | `639` | `639` |
 
 ### Total utility vs popular-file importance (Fig. 5c)
 
 | Popular file importance | 0.1 | 0.3 | 0.5 | 0.7 | 0.9 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **CTD** | `24.76` | `30.12` | `35.47` | `40.83` | `46.19` |
-| **Proposed (SMDP-DDQL)** | `26.17` | `31.36` | `37.31` | `43.26` | `48.75` |
+| **CTD** | `271.11` | `320.53` | `369.95` | `419.36` | `468.78` |
 
 ## 5. Visual Assets & Generated Figures Catalog
 

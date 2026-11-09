@@ -64,7 +64,7 @@ func CalculateUtility(freshness, importance float64, cfg *config.Config) float64
 
 // CalculateFileUtility calculates the utility of a FileMetadata at the given simulation time.
 func CalculateFileUtility(file *FileMetadata, currentTime float64, cfg *config.Config) float64 {
-	freshness := CalculateFreshness(currentTime, file.GenTime, file.Lifetime)
+	freshness := CalculateFreshness(currentTime, file.GenTime, file.ActiveLifetime())
 	return CalculateUtility(freshness, file.Importance, cfg)
 }
 

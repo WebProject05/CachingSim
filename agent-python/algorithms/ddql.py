@@ -169,22 +169,34 @@ class DDQLAgent:
 
     def compute_expert_action(self, state: np.ndarray) -> int:
         """
-        Computes the expert admission action a_E in {0, 1} based on marginal yield density.
+        Computes the expert admission action a_E in {0, 1} based on marginal cost-utility density
+        and AdaLife-Pro probationary shielding awareness.
         Resolves the demonstration bias gap: provides balanced, high-quality demonstration
         guidance for DQfD large-margin supervised loss J_E.
         """
         if self.cfg.use_candidate_features and len(state) >= 10:
             # Candidate features: [cand_pop, cand_util, cand_size, cand_density, cand_is_cached,
             #                      min_cached_density, avg_cached_density, density_diff, can_fit_free, needed_space]
-            cand_density = float(state[3])
             cand_pop = float(state[0])
+            cand_density = float(state[3])
+            cand_is_cached = float(state[4])
+            min_cached_density = float(state[5])
             density_diff = float(state[7])
             can_fit_free = float(state[8])
 
-            if can_fit_free > 0.5:
+            if can_fit_free > 0.5 or cand_is_cached > 0.5:
                 return 1
-            # Cache is full: admit only if candidate density exceeds minimum victim density
-            if density_diff >= 0.0 or (cand_density >= 0.8 and cand_pop >= 0.05):
+            if density_diff >= 0.0:
+                return 1
+            if getattr(self.cfg, "adalife_pro", True):
+                # Under AdaLife-Pro Probationary Shield + Ghost Fast-Track:
+                # Admit promising/repeat candidates into Probation or Ghost fast-track,
+                # while rejecting low-density one-hit junk.
+                if cand_pop >= 0.08 and cand_density >= (min_cached_density * 0.5):
+                    return 1
+                return 0
+            # Part 1 single-tier strict gate
+            if cand_density >= 0.8 and cand_pop >= 0.05:
                 return 1
             return 0
         else:
@@ -195,7 +207,8 @@ class DDQLAgent:
                 cand_size = float(state[1 + 2 * f + req_idx])
                 cand_util = float(state[1 + f + req_idx])
                 cand_density = cand_util / max(0.01, cand_size)
-                if mem >= cand_size:
+                free_space_gib = mem * max(1.0, float(self.cfg.cache_capacity)) / 1000.0
+                if free_space_gib >= cand_size:
                     return 1
                 b = state[1 + 3 * f : 1 + 4 * f]
                 cached_ids = np.where(b > 0.5)[0]

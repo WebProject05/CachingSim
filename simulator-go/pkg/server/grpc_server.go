@@ -104,26 +104,14 @@ func (s *EnvServer) MDPStep(action int32, timeQuota float64) *pb.StepResponse {
 	return s.executeStepLocked(action, timeQuota)
 }
 
-// executeStepLocked handles state transition, caching, reward, and clock advance.
+// executeStepLocked handles state transition, AdaLife-Pro mechanisms, reward, and clock advance.
 func (s *EnvServer) executeStepLocked(action int32, tau float64) *pb.StepResponse {
-	// Reclaim cache capacity occupied by expired files
-	s.cache.PurgeExpired(s.cache.CurrentTime)
+	s.cache.UpdateTrafficRate(tau)
 
 	reqFile := s.currentReq
-	isHit := s.cache.CheckHit(reqFile, s.cache.CurrentTime)
+	isHit, utilityGained, _, _ := s.cache.ProcessAdaLifeStep(reqFile, int(action), s.cache.CurrentTime)
 
-	var utilityGained float64
-	if isHit && reqFile >= 0 && reqFile < len(s.cache.Files) {
-		utilityGained = s.cache.Files[reqFile].Utility(s.cache.CurrentTime, s.cfg)
-	}
-
-	// Action a(t) = 1 means cache the requested file
-	if action == 1 && !isHit && s.cache.IsValidInsert(reqFile) {
-		s.cache.EvictUntilFits(reqFile)
-		s.cache.Insert(reqFile)
-	}
-
-	// Calculate instant reward r(t) = W(t) - Mem(t) * 100
+	// Calculate instant reward r(t) = W*(t) - Mem(t) * w_mem - CounterfactualRegret(t)
 	reward := s.cache.ComputeReward()
 
 	// Advance physical simulation clock by tau

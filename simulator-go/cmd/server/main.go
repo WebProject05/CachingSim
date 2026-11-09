@@ -31,6 +31,12 @@ func main() {
 	eta := flag.Float64("eta", 1.0, "Zipf skewness eta")
 	evictStrategy := flag.String("evict", "utility_density", "eviction strategy: 'utility_density' or 'lowest_utility'")
 	memPenalty := flag.Float64("mem-penalty", 10.0, "penalty weight for unoccupied memory")
+	enableAdaLife := flag.Bool("adalife", true, "enable AdaLife dynamic lifetime lease extensions")
+	enableElastic := flag.Bool("elastic", true, "enable elastic cache capacity headroom during bursts")
+	enableProbation := flag.Bool("probation", true, "enable two-tier probationary shield for one-hit wonders")
+	enableFetchCost := flag.Bool("fetch-cost", true, "enable asymmetric origin fetch-cost weighting")
+	enableGhost := flag.Bool("ghost", true, "enable counterfactual ghost cache regret and fast-track")
+	part1Only := flag.Bool("part1-only", false, "disable all Part 2 AdaLife-Pro mechanisms (run Part 1 baseline only)")
 	flag.Parse()
 
 	cfg := config.DefaultConfig()
@@ -43,6 +49,19 @@ func main() {
 	}
 	if *memPenalty >= 0 {
 		cfg.MemPenaltyWeight = *memPenalty
+	}
+	if *part1Only {
+		cfg.EnableAdaLife = false
+		cfg.EnableElasticCapacity = false
+		cfg.EnableProbationShield = false
+		cfg.EnableFetchCost = false
+		cfg.EnableGhostCache = false
+	} else {
+		cfg.EnableAdaLife = *enableAdaLife
+		cfg.EnableElasticCapacity = *enableElastic
+		cfg.EnableProbationShield = *enableProbation
+		cfg.EnableFetchCost = *enableFetchCost
+		cfg.EnableGhostCache = *enableGhost
 	}
 
 	if *isStandalone {
@@ -102,26 +121,20 @@ func runStandaloneSimulation(cfg *config.Config, seed int64, totalTrials int) {
 		// 1. Generate Poisson arrival interval tau and advance time
 		tau := generator.NextPoissonInterval(cfg.LambdaSource)
 		cache.CurrentTime += tau
+		cache.UpdateTrafficRate(tau)
 
 		// 2. Sample incoming request f_r via Zipf distribution
 		reqFile := generator.SampleRequestedFile()
 		cache.RecordRequest(reqFile)
 
-		// 3. Check Cache Hit
-		isHit := cache.IsCached(reqFile)
+		// 3. Process full AdaLife-Pro / SMDP transition
+		isHit, u, _, _ := cache.ProcessAdaLifeStep(reqFile, 1, cache.CurrentTime)
 		if isHit {
 			hitCount++
-			totalUtility += files[reqFile].Utility(cache.CurrentTime, cfg)
+			totalUtility += u
 		}
 
-		// 4. Decision: Reactive caching with lowest-utility eviction
-		action := 1
-		if action == 1 && !isHit {
-			cache.EvictUntilFits(reqFile)
-			cache.Insert(reqFile)
-		}
-
-		// 5. Compute Reward r(t)
+		// 4. Compute Reward r(t)
 		r := cache.ComputeReward()
 		totalReward += r
 

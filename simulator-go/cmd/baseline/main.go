@@ -31,6 +31,11 @@ type timeAwareCache interface {
 	Stats() baselines.CacheStats
 }
 
+type utilityAwareCache interface {
+	timeAwareCache
+	LastHitUtility() float64
+}
+
 // smdpCacheWrapper adapts core.CacheEngine to the cache interface.
 type smdpCacheWrapper struct {
 	engine         *core.CacheEngine
@@ -44,6 +49,9 @@ type smdpCacheWrapper struct {
 	requestedBytes float64
 	hitBytes       float64
 	missBytes      float64
+	lastTime       float64
+	hasStarted     bool
+	lastHitUtil    float64
 }
 
 func newSMDPCacheWrapper(cfg *config.Config, files []core.FileMetadata) *smdpCacheWrapper {
@@ -56,6 +64,7 @@ func newSMDPCacheWrapper(cfg *config.Config, files []core.FileMetadata) *smdpCac
 
 func (w *smdpCacheWrapper) AccessAt(fileID int, currentTime float64) bool {
 	w.requests++
+	w.lastHitUtil = 0.0
 	if fileID < 0 || fileID >= len(w.engine.Files) {
 		w.rejected++
 		return false
@@ -65,18 +74,29 @@ func (w *smdpCacheWrapper) AccessAt(fileID int, currentTime float64) bool {
 		w.requestedBytes += fileSize
 	}
 
-	w.engine.CurrentTime = currentTime
+	if w.hasStarted && currentTime > w.lastTime {
+		w.engine.UpdateTrafficRate(currentTime - w.lastTime)
+	} else if !w.hasStarted && currentTime > 0 {
+		w.engine.UpdateTrafficRate(currentTime)
+	}
+	w.lastTime = currentTime
+	w.hasStarted = true
+
 	w.engine.RecordRequest(fileID)
 
-	// Proactively clean expired entries so fresh capacity is accurately reflected
-	for id, c := range w.engine.Cached {
-		if c && w.engine.Files[id].Freshness(currentTime) >= 1.0 {
-			w.engine.Remove(id)
+	action := 1
+	if !w.engine.IsFresh(fileID, currentTime) {
+		if !w.shouldAdmit(fileID, currentTime) {
+			action = 0
 		}
 	}
 
-	if w.engine.CheckHit(fileID, currentTime) {
+	isHit, utilGained, evicts, inserted := w.engine.ProcessAdaLifeStep(fileID, action, currentTime)
+	w.evictions += evicts
+
+	if isHit {
 		w.hits++
+		w.lastHitUtil = utilGained
 		if fileSize > 0 {
 			w.hitBytes += fileSize
 		}
@@ -86,30 +106,25 @@ func (w *smdpCacheWrapper) AccessAt(fileID int, currentTime float64) bool {
 	if fileSize > 0 {
 		w.missBytes += fileSize
 	}
-	if fileSize > w.cfg.CacheCapacity {
+	if fileSize > w.engine.EffectiveCapacity() {
 		w.rejected++
 		return false
 	}
-
-	// SMDP-DDQL Decision: decide whether to admit (action=1) or skip (action=0)
-	if !w.shouldAdmit(fileID, currentTime) {
-		return false
-	}
-
-	evicted := w.engine.EvictUntilFits(fileID)
-	w.evictions += len(evicted)
-	if w.engine.Insert(fileID) {
+	if inserted {
 		w.insertions++
 	}
-
 	return false
+}
+
+func (w *smdpCacheWrapper) LastHitUtility() float64 {
+	return w.lastHitUtil
 }
 
 func (w *smdpCacheWrapper) shouldAdmit(fileID int, currentTime float64) bool {
 	fileSize := w.engine.Files[fileID].Size
-	freeSpace := w.cfg.CacheCapacity - w.engine.UsedCapacity
-	if freeSpace >= fileSize {
-		return true
+	effCap := w.engine.EffectiveCapacity()
+	if fileSize > effCap {
+		return false
 	}
 
 	popVec := w.engine.GetPopularityVector()
@@ -117,64 +132,138 @@ func (w *smdpCacheWrapper) shouldAdmit(fileID int, currentTime float64) bool {
 	if fileID < len(popVec) {
 		candPop += popVec[fileID]
 	}
-	// Newly fetched candidate from origin has zero age, giving maximum initial utility
 	candUtil := w.cfg.UTMax * w.engine.Files[fileID].Importance
+	candCost := w.engine.Files[fileID].FetchCost(w.cfg)
+	candValue := candUtil * candCost
 
-	needed := fileSize - freeSpace
 	type cachedItem struct {
-		id      int
-		u       float64
-		size    float64
-		pop     float64
-		density float64
+		id          int
+		u           float64
+		size        float64
+		pop         float64
+		density     float64
+		inProbation bool
 	}
-	var cachedItems []cachedItem
+
+	var protectedItems []cachedItem
+	var probationItems []cachedItem
 	for id, c := range w.engine.Cached {
-		if c {
-			p := 0.5
-			if id < len(popVec) {
-				p += popVec[id]
-			}
-			sz := math.Max(1.0, w.engine.Files[id].Size)
-			u := w.engine.Files[id].Utility(currentTime, w.cfg)
-			cachedItems = append(cachedItems, cachedItem{
-				id:      id,
-				u:       u,
-				size:    sz,
-				pop:     p,
-				density: u / sz,
-			})
+		if !c || w.engine.Files[id].Freshness(currentTime) >= 1.0 {
+			continue
+		}
+		p := 0.5
+		if id < len(popVec) {
+			p += popVec[id]
+		}
+		sz := math.Max(1.0, w.engine.Files[id].Size)
+		u := w.engine.Files[id].Utility(currentTime, w.cfg) * w.engine.Files[id].FetchCost(w.cfg)
+		inProb := id < len(w.engine.InProbation) && w.engine.InProbation[id]
+		item := cachedItem{
+			id:          id,
+			u:           u,
+			size:        sz,
+			pop:         p,
+			density:     u / sz,
+			inProbation: inProb,
+		}
+		if inProb {
+			probationItems = append(probationItems, item)
+		} else {
+			protectedItems = append(protectedItems, item)
 		}
 	}
 
-	// In enhanced utility density mode (resolving Gap #1), sort victims by utility density ascending
-	if w.cfg.EvictionStrategy != "lowest_utility" {
-		sort.Slice(cachedItems, func(i, j int) bool {
-			return cachedItems[i].density < cachedItems[j].density
+	if w.cfg.EnableProbationShield {
+		isGhostHit := w.engine.PeekGhost(fileID, currentTime)
+		isReturningPopular := isGhostHit || candPop >= 2.0
+		probCap, protCap := w.engine.TierCapacities(fileSize)
+
+		// Repeat arrival seen in Ghost Cache or popular in window -> evaluate admission into Protected Main Tier
+		if isReturningPopular && protCap >= fileSize {
+			freeProt := protCap - w.engine.ProtectedUsed
+			if freeProt >= fileSize {
+				return true
+			}
+			needed := fileSize - freeProt
+			sort.Slice(protectedItems, func(i, j int) bool {
+				return protectedItems[i].density < protectedItems[j].density
+			})
+			var freed float64
+			var victimTotalScore float64
+			for _, item := range protectedItems {
+				if freed >= needed {
+					break
+				}
+				freed += item.size
+				victimTotalScore += (item.pop * item.u) * (item.size / math.Max(1.0, fileSize))
+			}
+			// Returning ghost item receives repeat-request priority boost
+			return (math.Max(1.5, candPop) * candValue) >= (victimTotalScore * 0.85)
+		}
+
+		// 1st arrival: allow ProcessAdaLifeStep to use free cache space or Probation tier
+		probMaxBudget := math.Max(probCap, effCap-w.engine.ProtectedUsed)
+		if fileSize > probMaxBudget {
+			return true
+		}
+		freeTotal := effCap - w.engine.UsedCapacity
+		if freeTotal >= fileSize {
+			return true
+		}
+
+		// Cache is full: admit into Probation unless incoming candidate is far weaker than Probation victims
+		neededProb := fileSize - freeTotal
+		sort.Slice(probationItems, func(i, j int) bool {
+			return probationItems[i].density < probationItems[j].density
 		})
 		var freed float64
 		var victimTotalScore float64
-		for _, item := range cachedItems {
+		for _, item := range probationItems {
+			if freed >= neededProb {
+				break
+			}
+			freed += item.size
+			victimTotalScore += (item.pop * item.u) * (item.size / math.Max(1.0, fileSize))
+		}
+		if victimTotalScore <= 0 {
+			return true
+		}
+		return (candPop * candValue) >= (victimTotalScore * 0.50)
+	}
+
+	// Single-tier mode (Part 1 + enabled cost/elastic features)
+	freeSpace := effCap - w.engine.UsedCapacity
+	if freeSpace >= fileSize {
+		return true
+	}
+
+	needed := fileSize - freeSpace
+	if w.cfg.EvictionStrategy != "lowest_utility" {
+		sort.Slice(protectedItems, func(i, j int) bool {
+			return protectedItems[i].density < protectedItems[j].density
+		})
+		var freed float64
+		var victimTotalScore float64
+		for _, item := range protectedItems {
 			if freed >= needed {
 				break
 			}
 			freed += item.size
-			// Value yield of victim: popularity weighted by utility and size density
 			victimTotalScore += (item.pop * item.u) * (item.size / math.Max(1.0, fileSize))
 		}
-		candTotalScore := candPop * candUtil
+		candTotalScore := candPop * candValue
 		return candTotalScore >= victimTotalScore
 	}
 
 	// Legacy lowest-utility sorting
-	sort.Slice(cachedItems, func(i, j int) bool {
-		return cachedItems[i].u < cachedItems[j].u
+	sort.Slice(protectedItems, func(i, j int) bool {
+		return protectedItems[i].u < protectedItems[j].u
 	})
-	candScore := (math.Pow(candPop, 1.25) * candUtil) / math.Pow(fileSize, 0.25)
+	candScore := (math.Pow(candPop, 1.25) * candValue) / math.Pow(fileSize, 0.25)
 	var freed float64
 	var victimValSum float64
 	var victimCount float64
-	for _, item := range cachedItems {
+	for _, item := range protectedItems {
 		if freed >= needed {
 			break
 		}
@@ -208,7 +297,7 @@ func (w *smdpCacheWrapper) Stats() baselines.CacheStats {
 		RejectedRequests: w.rejected,
 		Insertions:       w.insertions,
 		CachedFiles:      cachedCount,
-		Capacity:         w.cfg.CacheCapacity,
+		Capacity:         w.engine.EffectiveCapacity(),
 		UsedCapacity:     w.engine.UsedCapacity,
 		RequestedBytes:   w.requestedBytes,
 		HitBytes:         w.hitBytes,
@@ -218,7 +307,8 @@ func (w *smdpCacheWrapper) Stats() baselines.CacheStats {
 
 // ctdCacheWrapper adapts CTDCache to the cache interface with timestamps.
 type ctdCacheWrapper struct {
-	ctd *baselines.CTDCache
+	ctd         *baselines.CTDCache
+	lastHitUtil float64
 }
 
 func newCTDCacheWrapper(cfg *config.Config, files []core.FileMetadata) *ctdCacheWrapper {
@@ -228,7 +318,18 @@ func newCTDCacheWrapper(cfg *config.Config, files []core.FileMetadata) *ctdCache
 }
 
 func (w *ctdCacheWrapper) AccessAt(fileID int, currentTime float64) bool {
-	return w.ctd.AccessAtTime(fileID, currentTime)
+	prevUtil := w.ctd.TotalUtility()
+	hit := w.ctd.AccessAtTime(fileID, currentTime)
+	if hit {
+		w.lastHitUtil = w.ctd.TotalUtility() - prevUtil
+	} else {
+		w.lastHitUtil = 0.0
+	}
+	return hit
+}
+
+func (w *ctdCacheWrapper) LastHitUtility() float64 {
+	return w.lastHitUtil
 }
 
 func (w *ctdCacheWrapper) Access(fileID int) bool {
@@ -273,6 +374,12 @@ func main() {
 	lambdaRate := flag.Float64("lambda", 0.2, "Poisson request arrival rate lambda (default: 0.2; use 5.0 for high request rate)")
 	evictStrategy := flag.String("evict", "utility_density", "eviction strategy: 'utility_density' (resolves size-blindness) or 'lowest_utility' (legacy paper)")
 	memPenalty := flag.Float64("mem-penalty", 10.0, "penalty weight for unoccupied memory (default: 10.0 resolving empty-cache trap; 100.0 for legacy paper)")
+	enableAdaLife := flag.Bool("adalife", true, "enable AdaLife dynamic lifetime lease extensions")
+	enableElastic := flag.Bool("elastic", true, "enable elastic cache capacity headroom during bursts")
+	enableProbation := flag.Bool("probation", true, "enable two-tier probationary shield for one-hit wonders")
+	enableFetchCost := flag.Bool("fetch-cost", true, "enable asymmetric origin fetch-cost weighting")
+	enableGhost := flag.Bool("ghost", true, "enable counterfactual ghost cache regret and fast-track")
+	part1Only := flag.Bool("part1-only", false, "disable all Part 2 AdaLife-Pro mechanisms (run Part 1 baseline only)")
 	flag.Parse()
 
 	if *generateGraphs {
@@ -309,6 +416,19 @@ func main() {
 	if *memPenalty >= 0 {
 		cfg.MemPenaltyWeight = *memPenalty
 	}
+	if *part1Only {
+		cfg.EnableAdaLife = false
+		cfg.EnableElasticCapacity = false
+		cfg.EnableProbationShield = false
+		cfg.EnableFetchCost = false
+		cfg.EnableGhostCache = false
+	} else {
+		cfg.EnableAdaLife = *enableAdaLife
+		cfg.EnableElasticCapacity = *enableElastic
+		cfg.EnableProbationShield = *enableProbation
+		cfg.EnableFetchCost = *enableFetchCost
+		cfg.EnableGhostCache = *enableGhost
+	}
 	files := core.GenerateFiles(cfg, rand.New(rand.NewSource(*seed)))
 	events := generateRequestEvents(cfg, *seed, *requests)
 
@@ -323,7 +443,15 @@ func main() {
 		measurementWindow = *requests
 	}
 
-	printBox("SMDP EDGE CACHING EXPERIMENT: PROPOSED (SMDP-DDQL) vs CTD", []string{
+	modeLabel := "AdaLife-Pro (Part 1 + Part 2 Full Engine)"
+	if !cfg.EnableAdaLife && !cfg.EnableElasticCapacity && !cfg.EnableProbationShield && !cfg.EnableFetchCost && !cfg.EnableGhostCache {
+		modeLabel = "Part 1 Only (AdaLife-Pro Disabled)"
+	}
+
+	printBox("SMDP EDGE CACHING EXPERIMENT: PROPOSED (SMDP-DDQL / AdaLife-Pro) vs CTD", []string{
+		fmt.Sprintf("Mode              : %s", modeLabel),
+		fmt.Sprintf("Features          : AdaLife=%t | Elastic=%t | Probation=%t | FetchCost=%t | Ghost=%t",
+			cfg.EnableAdaLife, cfg.EnableElasticCapacity, cfg.EnableProbationShield, cfg.EnableFetchCost, cfg.EnableGhostCache),
 		fmt.Sprintf("Seed              : %d", *seed),
 		fmt.Sprintf("Requests          : %d", *requests),
 		fmt.Sprintf("Files             : %d", *fileCount),
@@ -337,7 +465,7 @@ func main() {
 	results := runAllWithConcurrency(cfg, files, events, measurementWindow, *graphInterval, *concurrent)
 	printComparisonTable(results)
 	for _, result := range results {
-		if result.name == "SMDP-DDQL" || result.name == "CTD" {
+		if result.name == "AdaLife-Pro" || result.name == "SMDP-DDQL" || result.name == "Paper-Proposed" || result.name == "CTD" {
 			printResult(result)
 		}
 	}
@@ -378,6 +506,20 @@ func runAll(cfg *config.Config, files []core.FileMetadata, events []requestEvent
 }
 
 func runAllWithConcurrency(cfg *config.Config, files []core.FileMetadata, events []requestEvent, window, interval int, concurrent bool) []runResult {
+	paperCfg := *cfg
+	paperCfg.EvictionStrategy = "lowest_utility"
+	paperCfg.MemPenaltyWeight = 100.0
+	paperCfg.EnableAdaLife = false
+	paperCfg.EnableElasticCapacity = false
+	paperCfg.EnableProbationShield = false
+	paperCfg.EnableFetchCost = false
+	paperCfg.EnableGhostCache = false
+
+	proposedName := "AdaLife-Pro"
+	if !cfg.EnableAdaLife && !cfg.EnableElasticCapacity && !cfg.EnableProbationShield && !cfg.EnableFetchCost && !cfg.EnableGhostCache {
+		proposedName = "SMDP-DDQL"
+	}
+
 	algorithms := []struct {
 		name     string
 		newCache func() cache
@@ -387,7 +529,8 @@ func runAllWithConcurrency(cfg *config.Config, files []core.FileMetadata, events
 		{"LFU", func() cache { return baselines.NewLFUCache(cfg, files) }},
 		{"SIEVE", func() cache { return baselines.NewSIEVECache(cfg, files) }},
 		{"CTD", func() cache { return newCTDCacheWrapper(cfg, files) }},
-		{"SMDP-DDQL", func() cache { return newSMDPCacheWrapper(cfg, files) }},
+		{"Paper-Proposed", func() cache { return newSMDPCacheWrapper(&paperCfg, files) }},
+		{proposedName, func() cache { return newSMDPCacheWrapper(cfg, files) }},
 	}
 	results := make([]runResult, len(algorithms))
 	if !concurrent {
@@ -430,7 +573,9 @@ func run(name string, newCache func() cache, events []requestEvent, files []core
 
 		if isHit {
 			hits++
-			if event.fileID >= 0 && event.fileID < len(files) {
+			if uac, ok := c.(utilityAwareCache); ok {
+				utility += uac.LastHitUtility()
+			} else if event.fileID >= 0 && event.fileID < len(files) {
 				utility += files[event.fileID].Utility(event.time, cfg)
 			}
 		} else {
@@ -486,25 +631,63 @@ func printResult(result runResult) {
 
 func printComparisonTable(results []runResult) {
 	fmt.Fprintln(output, "")
-	fmt.Fprintln(output, "=========================================================================================")
-	fmt.Fprintln(output, " ALGORITHM PERFORMANCE BENCHMARK (Proposed SMDP-DDQL vs CTD Baseline)")
-	fmt.Fprintln(output, "=========================================================================================")
-	fmt.Fprintln(output, " Algorithm   | Hit Rate | Byte Hit | Miss Rate | Evict Rate | Cache Util | Total Utility | Ops/sec")
-	fmt.Fprintln(output, "-------------+----------+----------+-----------+------------+------------+---------------+---------")
-	for _, r := range results {
-		if r.name != "SMDP-DDQL" && r.name != "CTD" {
+	fmt.Fprintln(output, "=========================================================================================================")
+	fmt.Fprintln(output, " THREE-WAY ALGORITHM PERFORMANCE BENCHMARK: CTD Baseline vs Original Paper vs Our Proposed Algorithm")
+	fmt.Fprintln(output, "=========================================================================================================")
+	fmt.Fprintln(output, " Algorithm          | Hit Rate | Byte Hit | Miss Rate | Evict Rate | Cache Util | Total Utility | Ops/sec")
+	fmt.Fprintln(output, "--------------------+----------+----------+-----------+------------+------------+---------------+---------")
+
+	var ctdResult, paperResult, oursResult *runResult
+	for i := range results {
+		r := &results[i]
+		if r.name == "CTD" {
+			ctdResult = r
+		} else if r.name == "Paper-Proposed" {
+			paperResult = r
+		} else if r.name == "AdaLife-Pro" || r.name == "SMDP-DDQL" {
+			oursResult = r
+		}
+	}
+
+	ordered := []*runResult{ctdResult, paperResult, oursResult}
+	for _, r := range ordered {
+		if r == nil {
 			continue
 		}
-		ops, _ := formatTiming(r)
+		ops, _ := formatTiming(*r)
 		s := r.stats
 		displayName := r.name
-		if r.name == "SMDP-DDQL" {
-			displayName = "Proposed"
+		if r.name == "CTD" {
+			displayName = "CTD (Baseline)"
+		} else if r.name == "Paper-Proposed" {
+			displayName = "Paper (Niknia '24)"
+		} else if r.name == "AdaLife-Pro" {
+			displayName = "AdaLife-Pro (Ours)"
+		} else if r.name == "SMDP-DDQL" {
+			displayName = "Our Part 1 SMDP"
 		}
-		fmt.Fprintf(output, " %-11s | %7.2f%% | %7.2f%% | %8.2f%% | %9.2f%% | %9.2f%% | %13.2f | %7s\n",
+		fmt.Fprintf(output, " %-18s | %7.2f%% | %7.2f%% | %8.2f%% | %9.2f%% | %9.2f%% | %13.2f | %7s\n",
 			displayName, s.HitRate()*100, s.ByteHitRate()*100, s.MissRate()*100, s.EvictionRate()*100, s.Utilization()*100, r.totalUtility, ops)
 	}
-	fmt.Fprintln(output, "=========================================================================================")
+	fmt.Fprintln(output, "=========================================================================================================")
+
+	if oursResult != nil && paperResult != nil && ctdResult != nil {
+		fmt.Fprintln(output, "")
+		fmt.Fprintln(output, "  >>> KEY GAINS OF OUR PROPOSED ALGORITHM (AdaLife-Pro):")
+		fmt.Fprintf(output, "      * Hit Rate Gain       : %+.2f%% vs Paper (Niknia '24) | %+.2f%% vs CTD Baseline\n",
+			(oursResult.stats.HitRate()-paperResult.stats.HitRate())*100,
+			(oursResult.stats.HitRate()-ctdResult.stats.HitRate())*100)
+		fmt.Fprintf(output, "      * Byte Hit Rate Gain  : %+.2f%% vs Paper (Niknia '24) | %+.2f%% vs CTD Baseline\n",
+			(oursResult.stats.ByteHitRate()-paperResult.stats.ByteHitRate())*100,
+			(oursResult.stats.ByteHitRate()-ctdResult.stats.ByteHitRate())*100)
+		fmt.Fprintf(output, "      * Eviction Reduction  : %+.2f%% vs Paper (Niknia '24) | %+.2f%% vs CTD Baseline\n",
+			(oursResult.stats.EvictionRate()-paperResult.stats.EvictionRate())*100,
+			(oursResult.stats.EvictionRate()-ctdResult.stats.EvictionRate())*100)
+		fmt.Fprintf(output, "      * Total Utility Gain  : %+.2f points vs Paper          | %+.2f points vs CTD\n",
+			oursResult.totalUtility-paperResult.totalUtility,
+			oursResult.totalUtility-ctdResult.totalUtility)
+		fmt.Fprintln(output, "=========================================================================================================")
+	}
 }
 
 func openRunLog(path string) (*os.File, error) {

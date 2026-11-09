@@ -139,7 +139,7 @@ if !PY_EXIT_CODE! EQU 0 (
     echo   - Comprehensive Report [JSON]   : data\results\experiment_report.json
     echo   - Comprehensive Report [Text]   : data\results\experiment_report.txt
     echo   - Comprehensive Report [MD]     : data\results\experiment_report.md
-    echo   - Full Replication Document     : REPLICATION_REPORT.md
+    echo   - Comprehensive Implementation  : PART2_ADALIFE_PRO_IMPLEMENTATION_REPORT.md
     echo   - All Research Paper Figures    : graphs\  [PNG + SVG]
     echo   - Recorded Raw JSON Datasets    : data\results\*.json
     echo   - Trained PyTorch Checkpoints   : agent-python\checkpoints\
