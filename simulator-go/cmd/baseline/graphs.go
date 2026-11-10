@@ -75,6 +75,11 @@ func writeGraphs(
 		return err
 	}
 
+	// 3. Write Elastic Capacity Trajectory SVG and CSV
+	if err := writeElasticCapacityArtifacts(path, results, interval, cfg.CacheCapacity); err != nil {
+		return err
+	}
+
 	specs := []sweepSpec{
 		// Fig. 6c & 7c: Cache size sweeps
 		{"hit_count_vs_cache_size.svg", "Total hit count vs cache size (Fig. 6c)", "Cache size (MiB)", "Total hit count", parseValues(cacheSizeText), false,
@@ -257,6 +262,102 @@ func downsampleSeries(x, y []float64, limit int) ([]float64, []float64) {
 		downsampledY = append(downsampledY, y[position])
 	}
 	return downsampledX, downsampledY
+}
+
+func writeElasticCapacityArtifacts(path string, results []runResult, interval int, baseCap float64) error {
+	var targetResult *runResult
+	for i := range results {
+		if results[i].name == "AdaLife-Pro" || results[i].name == "SMDP-DDQL" {
+			targetResult = &results[i]
+			break
+		}
+	}
+	if targetResult == nil || len(targetResult.capacityTrials) == 0 {
+		return nil
+	}
+
+	x := targetResult.capacityTrials
+	effY := targetResult.effectiveCapacities
+	usedY := targetResult.usedCapacities
+
+	// Build Base Capacity static line
+	baseY := make([]float64, len(x))
+	for i := range baseY {
+		baseY[i] = baseCap
+	}
+
+	xEff, yEff := downsampleSeries(x, effY, 250)
+	xUsed, yUsed := downsampleSeries(x, usedY, 250)
+	xBase, yBase := downsampleSeries(x, baseY, 250)
+
+	chartSeries := []lineSeries{
+		{
+			name: "AdaLife-Pro Dynamic Elastic Capacity M_eff(t)",
+			x:    xEff,
+			y:    yEff,
+		},
+		{
+			name: "AdaLife-Pro Cache Used Memory",
+			x:    xUsed,
+			y:    yUsed,
+		},
+		{
+			name: "Base Static Capacity M (Rigid Baseline)",
+			x:    xBase,
+			y:    yBase,
+		},
+	}
+
+	// 1. Write SVG line chart
+	svgFile := filepath.Join(path, "elastic_capacity_vs_requests.svg")
+	if err := writeLineChart(svgFile, "Elastic Cache Capacity vs Requests (M_eff dynamic scaling)", "Requests", "Capacity (MiB)", chartSeries); err != nil {
+		return err
+	}
+
+	// 2. Write CSV trajectory
+	csvFile := filepath.Join(path, "elastic_capacity_trajectory.csv")
+	file, err := os.Create(csvFile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	writer.Write([]string{"request", "effective_capacity_mib", "used_capacity_mib", "base_capacity_mib", "headroom_mib"})
+	for i := range x {
+		eff := effY[i]
+		used := usedY[i]
+		headroom := eff - baseCap
+		writer.Write([]string{
+			strconv.FormatFloat(x[i], 'f', 0, 64),
+			strconv.FormatFloat(eff, 'f', 2, 64),
+			strconv.FormatFloat(used, 'f', 2, 64),
+			strconv.FormatFloat(baseCap, 'f', 2, 64),
+			strconv.FormatFloat(headroom, 'f', 2, 64),
+		})
+	}
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return err
+	}
+
+	// Also copy to data/results folder if present
+	dataResultsDir := filepath.Join(path, "..", "..", "data", "results")
+	if _, err := os.Stat(filepath.Dir(dataResultsDir)); err == nil {
+		_ = os.MkdirAll(dataResultsDir, 0755)
+		_ = copyFile(svgFile, filepath.Join(dataResultsDir, "elastic_capacity_vs_requests.svg"))
+		_ = copyFile(csvFile, filepath.Join(dataResultsDir, "elastic_capacity_trajectory.csv"))
+	}
+
+	return nil
+}
+
+func copyFile(src, dst string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(dst, data, 0644)
 }
 
 func mostPopularFile(events []requestEvent) int {

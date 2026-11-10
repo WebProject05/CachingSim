@@ -807,3 +807,94 @@ Paper-Proposed : 62.97% | 56.90% | 37.04% | 26.35% | 99.64% | 33675.58 | 1829.5
 AdaLife-Pro : 76.48% | 70.55% | 23.52% | 12.40% | 95.81% | 56533.66 | 1754.2
 RUN END   : 2026-11-09T23:43:10+05:30
 
+RUN START : 2026-11-10T00:12:52+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=1000000 files=200 capacity=10000.00 MiB eta=0.850 window=100000 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 27.39% | 25.53% | 72.61% | 72.61% | 97.40% | 13819.28 | 108.4
+LRU        : 31.11% | 28.72% | 68.89% | 68.89% | 95.97% | 15678.71 | 25.0
+LFU        : 43.04% | 40.19% | 56.96% | 56.96% | 97.14% | 20917.40 | 52.0
+SIEVE      : 42.28% | 39.93% | 57.72% | 57.72% | 97.82% | 20878.19 | 30.7
+CTD        : 25.27% | 24.26% | 74.73% | 74.73% | 98.20% | 172546.17 | 353.2
+Paper-Proposed : 29.54% | 23.12% | 70.46% | 61.12% | 96.54% | 187235.28 | 3298.5
+AdaLife-Pro : 42.92% | 37.49% | 57.08% | 36.06% | 99.98% | 312620.43 | 2651.4
+RUN END   : 2026-11-10T00:12:52+05:30
+
+RUN START : 2026-11-10T00:13:14+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=1000000 files=150 capacity=10000.00 MiB eta=0.850 window=100000 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 31.52% | 29.80% | 68.48% | 68.47% | 96.41% | 15909.54 | 104.6
+LRU        : 35.63% | 33.39% | 64.37% | 64.37% | 96.74% | 17939.40 | 20.7
+LFU        : 49.29% | 46.68% | 50.71% | 50.71% | 96.90% | 24183.70 | 53.4
+SIEVE      : 45.93% | 43.91% | 54.07% | 54.06% | 98.22% | 22743.42 | 30.9
+CTD        : 29.21% | 28.39% | 70.79% | 70.79% | 94.53% | 198552.92 | 311.9
+Paper-Proposed : 33.59% | 26.93% | 66.41% | 58.11% | 93.83% | 208743.64 | 3184.2
+AdaLife-Pro : 47.33% | 41.89% | 52.67% | 32.19% | 96.56% | 346378.36 | 2491.5
+RUN END   : 2026-11-10T00:13:14+05:30
+
+RUN START : 2026-11-10T00:13:27+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=10000 files=100 capacity=5000.00 MiB eta=0.850 window=1000 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 23.76% | 21.71% | 76.24% | 76.18% | 82.80% | 125.08 | 170.9
+LRU        : 26.51% | 23.92% | 73.49% | 73.43% | 82.80% | 140.11 | n/a
+LFU        : 39.82% | 37.79% | 60.18% | 60.09% | 96.40% | 186.71 | 115.2
+SIEVE      : 36.49% | 32.52% | 63.51% | 63.44% | 93.10% | 188.13 | 54.2
+CTD        : 21.65% | 20.45% | 78.35% | 78.29% | 86.71% | 1552.64 | 391.0
+Paper-Proposed : 29.62% | 22.38% | 70.38% | 48.53% | 95.41% | 2020.20 | 2387.1
+AdaLife-Pro : 40.20% | 32.44% | 59.80% | 29.63% | 95.72% | 3114.75 | 1776.7
+RUN END   : 2026-11-10T00:13:27+05:30
+
+RUN START : 2026-11-10T00:13:51+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=10000 files=50 capacity=10000.00 MiB eta=1.000 window=1000 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 60.58% | 58.27% | 39.42% | 39.24% | 97.89% | 320.59 | 114.2
+LRU        : 66.32% | 63.76% | 33.68% | 33.51% | 95.29% | 348.32 | 57.3
+LFU        : 74.64% | 70.81% | 25.36% | 25.16% | 96.58% | 394.29 | 52.4
+SIEVE      : 71.36% | 69.49% | 28.64% | 28.45% | 99.24% | 372.49 | 54.2
+CTD        : 58.39% | 56.94% | 41.61% | 41.42% | 95.83% | 3615.11 | 222.8
+Paper-Proposed : 61.79% | 56.46% | 38.21% | 25.73% | 92.80% | 3239.79 | 2489.1
+AdaLife-Pro : 75.84% | 70.54% | 24.16% | 12.42% | 91.37% | 5494.44 | 1183.7
+RUN END   : 2026-11-10T00:13:51+05:30
+
+RUN START : 2026-11-10T00:14:33+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=10000000 files=50 capacity=10000.00 MiB eta=1.000 window=1000000 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 60.96% | 58.55% | 39.04% | 39.04% | 98.97% | 308015.23 | 87.3
+LRU        : 66.58% | 63.90% | 33.42% | 33.42% | 99.43% | 334056.82 | 29.0
+LFU        : 74.98% | 70.96% | 25.02% | 25.02% | 95.23% | 379046.64 | 43.4
+SIEVE      : 71.91% | 69.73% | 28.09% | 28.09% | 99.59% | 358488.08 | 27.2
+CTD        : 58.91% | 57.37% | 41.09% | 41.09% | 94.57% | 3651817.63 | 124.7
+Paper-Proposed : 62.50% | 57.18% | 37.50% | 25.01% | 95.56% | 3245459.18 | 1234.7
+AdaLife-Pro : 76.67% | 71.33% | 23.33% | 13.72% | 84.79% | 5539408.04 | 931.5
+RUN END   : 2026-11-10T00:14:33+05:30
+
+RUN START : 2026-11-10T17:56:15+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=2000 files=50 capacity=10000.00 MiB eta=1.000 window=200 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 60.05% | 57.64% | 39.95% | 39.10% | 97.87% | 76.52 | 304.5
+LRU        : 65.30% | 62.35% | 34.70% | 33.85% | 97.76% | 82.60 | 282.9
+LFU        : 74.45% | 70.69% | 25.55% | 24.60% | 98.73% | 93.34 | 283.2
+SIEVE      : 70.15% | 67.42% | 29.85% | 29.05% | 98.34% | 88.53 | n/a
+CTD        : 58.15% | 56.32% | 41.85% | 41.05% | 90.96% | 735.22 | 673.4
+Paper-Proposed : 61.35% | 55.69% | 38.65% | 26.20% | 97.12% | 656.37 | 2206.9
+AdaLife-Pro : 74.20% | 68.68% | 25.80% | 11.15% | 89.99% | 1092.95 | 1062.2
+RUN END   : 2026-11-10T17:56:15+05:30
+
+RUN START : 2026-11-10T18:04:35+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=5000 files=50 capacity=10000.00 MiB eta=1.000 window=500 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 60.74% | 58.50% | 39.26% | 38.90% | 97.34% | 168.83 | 108.6
+LRU        : 66.30% | 63.78% | 33.70% | 33.32% | 99.96% | 182.75 | n/a
+LFU        : 74.10% | 70.44% | 25.90% | 25.50% | 97.82% | 204.91 | 115.7
+SIEVE      : 70.82% | 68.94% | 29.18% | 28.80% | 99.68% | 194.97 | n/a
+CTD        : 58.70% | 57.16% | 41.30% | 40.90% | 96.08% | 1821.69 | 114.2
+Paper-Proposed : 62.10% | 56.90% | 37.90% | 24.30% | 99.66% | 1625.88 | 1515.1
+AdaLife-Pro : 75.56% | 70.31% | 24.44% | 11.00% | 96.45% | 2750.08 | 1124.1
+RUN END   : 2026-11-10T18:04:35+05:30
+

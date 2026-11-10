@@ -345,6 +345,7 @@ type runResult struct {
 	stats                                                        baselines.CacheStats
 	elapsedSeconds, warmupMissRate, steadyMissRate, totalUtility float64
 	cumulativeTrials, cumulativeMisses                           []float64
+	capacityTrials, effectiveCapacities, usedCapacities          []float64
 }
 
 type requestEvent struct {
@@ -561,6 +562,9 @@ func run(name string, newCache func() cache, events []requestEvent, files []core
 	utility := 0.0
 	cumulative := make([]float64, 0, (len(events)+interval-1)/interval)
 	cumulativeTrials := make([]float64, 0, cap(cumulative))
+	capacityTrials := make([]float64, 0, cap(cumulative))
+	effectiveCapacities := make([]float64, 0, cap(cumulative))
+	usedCapacities := make([]float64, 0, cap(cumulative))
 	start := time.Now()
 
 	for index, event := range events {
@@ -589,17 +593,24 @@ func run(name string, newCache func() cache, events []requestEvent, files []core
 		if (index+1)%interval == 0 || index == len(events)-1 {
 			cumulativeTrials = append(cumulativeTrials, float64(index+1))
 			cumulative = append(cumulative, 100-float64(hits)/float64(index+1)*100)
+			st := c.Stats()
+			capacityTrials = append(capacityTrials, float64(index+1))
+			effectiveCapacities = append(effectiveCapacities, st.Capacity)
+			usedCapacities = append(usedCapacities, st.UsedCapacity)
 		}
 	}
 	return runResult{
-		name:             name,
-		stats:            c.Stats(),
-		elapsedSeconds:   time.Since(start).Seconds(),
-		warmupMissRate:   float64(warmup) / float64(window),
-		steadyMissRate:   float64(steady) / float64(window),
-		totalUtility:     utility,
-		cumulativeTrials: cumulativeTrials,
-		cumulativeMisses: cumulative,
+		name:                name,
+		stats:               c.Stats(),
+		elapsedSeconds:      time.Since(start).Seconds(),
+		warmupMissRate:      float64(warmup) / float64(window),
+		steadyMissRate:      float64(steady) / float64(window),
+		totalUtility:        utility,
+		cumulativeTrials:    cumulativeTrials,
+		cumulativeMisses:    cumulative,
+		capacityTrials:      capacityTrials,
+		effectiveCapacities: effectiveCapacities,
+		usedCapacities:      usedCapacities,
 	}
 }
 

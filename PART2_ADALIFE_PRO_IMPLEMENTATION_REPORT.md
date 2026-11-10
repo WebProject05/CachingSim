@@ -304,8 +304,8 @@ To eliminate workflow fragmentation and provide an intuitive evaluation interfac
 # [CMD 4] Algorithm Ablation Comparison (AdaLife-Pro vs Part 1 Only baseline):
 .\bin\baseline.exe -requests 10000 -lambda 5.0 -part1-only
 
-# [CMD 5] Generate Visual Plots & Analytical Artifacts (SVGs, CSVs, and Sweeps):
-.\bin\baseline.exe -requests 5000 -lambda 5.0 -g -results-dir results
+# [CMD 5] Generate Visual Plots & Analytical Artifacts (Includes elastic_capacity_vs_requests.svg, CSVs, and Sweeps):
+.\bin\baseline.exe -requests 5000 -lambda 5.0 -g -graphs simulator-go/graphs
 
 # [CMD 6] Complete End-to-End Co-Simulation Pipeline (Go gRPC + PyTorch DDQN + Sweeps):
 .\scripts\run_full_experiment.ps1 -EvalRequests 1000 -SourceSteps 3000 -TargetSteps 1500 -EvalLambda 5.0
