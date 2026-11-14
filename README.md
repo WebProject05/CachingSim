@@ -125,15 +125,15 @@ cd ..
 
 ---
 
-## How to Use the Simulator
+## How to Use the Simulator (The 4 Core Commands)
 
-You can use the simulator in several ways, depending on what you want to test.
+To keep workflows simple and focused, all simulation, benchmark, and evaluation workflows are consolidated into **4 core commands** (strictly under 5 commands):
 
-### Option 1: One-Click Full Automated Run (Easiest)
-Run the automated script from the root directory. This compiles the Go binaries, starts the background server, trains the AI agent, runs test evaluations, and saves all results:
+### [Command 1] One-Click Full Simulation Pipeline (Entire Simulation)
+Runs the entire system end-to-end: builds Go binaries $\to$ runs Go baselines and sweeps $\to$ boots background Go gRPC server $\to$ trains Python PyTorch Dueling-DDQN neural agent $\to$ evaluates policy $\to$ runs target domain transfer learning $\to$ renders publication comparison figures (PNG/SVG) $\to$ compiles comprehensive performance reports (MD, TXT, JSON):
 
 ```powershell
-# Windows PowerShell:
+# Windows PowerShell (Recommended):
 .\scripts\run_full_experiment.ps1
 
 # Or Windows Command Prompt:
@@ -142,70 +142,93 @@ scripts\run_full_experiment.bat
 
 ---
 
-### Option 2: Running Instant 3-Way Benchmark Comparisons
-You can compare the 3 primary algorithms (**CTD Baseline** vs **Original Paper** vs **AdaLife-Pro [Our Algorithm]**) directly inside the Go engine in just a couple seconds:
+### [Command 2] Instant 3-Way Benchmark (~1-2 Seconds)
+Instantly compares **CTD Baseline** vs **Original Paper (Niknia '24 DDQL)** vs **AdaLife-Pro (Ours)** directly in the Go engine, printing the 3-Way performance table and Table III (Discrete MDP vs Continuous SMDP):
 
 ```powershell
-# Quick 3-Way Benchmark & Comparison Table (1,000 requests, ~1s):
 .\bin\baseline.exe -requests 1000 -lambda 5.0 -mdp-table
+```
 
-# High-Volume Empirical Benchmark (10,000 requests, lambda = 5.0):
-.\bin\baseline.exe -requests 10000 -lambda 5.0
+---
 
-# Severe Contention Benchmark (100 files, 5,000 MiB cache, high competition):
+### [Command 3] Severe Contention Stress Benchmark
+Tests the algorithms under extreme memory contention (100 competing files, restricted 5,000 MiB cache capacity, and flatter popularity $\eta = 0.85$):
+
+```powershell
 .\bin\baseline.exe -requests 10000 -files 100 -capacity 5000 -lambda 5.0 -eta 0.85
 ```
 
-#### Useful Settings for `baseline.exe`:
-* `-requests <int>`: Total number of requests in the test run (e.g., `5000`, `10000`, `50000`).
-* `-files <int>`: Number of unique file types in the system (e.g., `50`, `100`, `250`).
-* `-capacity <float>`: Cache storage capacity in MiB (e.g., `5000`, `10000`, `20000`).
-* `-lambda <float>`: Request arrival rate (higher means busier traffic, e.g., `0.2` for slow, `5.0` for active, `20.0` for heavy rush hours).
-* `-eta <float>`: Popularity skew parameter (e.g., `1.0` means a few files are very hot; `0.7` means requests are more spread out).
-* `-g`: Automatically generate comparison charts in the `simulator-go/graphs/` folder.
-
 ---
 
-### Option 3: Running the Python AI Agent Separately
+### [Command 4] Visual Graph & Plot Generation
+Runs parameter sweeps across cache size, request rate $\lambda$, Zipf $\eta$, file lifetimes, and file sizes, exporting vector SVG charts and raw CSV trajectories:
 
-#### Step A: Start the Go Simulation Server
-Open Terminal 1 and start the simulation server:
 ```powershell
-.\bin\server.exe -port 50051 -files 50 -capacity 10000 -lambda 5.0 -eta 1.0
+.\bin\baseline.exe -requests 5000 -lambda 5.0 -g -graphs simulator-go/graphs
 ```
-The server will start listening for caching decisions.
-
-#### Step B: Run the Python Agent
-Open Terminal 2 and run the AI agent:
-
-* **Evaluate an existing trained model on 1,000 requests:**
-  ```powershell
-  python agent-python/main.py --mode eval --eval-lambda 5.0 --eval-requests 1000
-  ```
-
-* **Train the agent from scratch:**
-  ```powershell
-  python agent-python/main.py --mode train_source --source-steps 2000 --eval-requests 1000 --eval-lambda 5.0
-  ```
-
-* **Run a full experiment (Source training + Target domain transfer learning):**
-  ```powershell
-  python agent-python/main.py --mode full_experiment --source-steps 3000 --target-steps 3000 --eval-requests 1000
-  ```
 
 ---
 
-### Option 4: Running Automated Tests
-To verify that everything is working properly on your system, run the test suites:
+## Complete Command Flags Reference
+
+All available configuration flags across both the pipeline orchestrator and the Go engine are documented below:
+
+### 1. Full Pipeline Flags (`run_full_experiment.ps1` / `.bat`)
+
+| Flag | Type | Default | Description |
+|---|:---:|:---:|---|
+| `-EvalRequests` | `int` | `1000` | Number of test requests evaluated during policy verification. |
+| `-SourceSteps` | `int` | `5000` | Number of training steps for the DDQL agent in the source domain ($\lambda_S = 5.0$). |
+| `-TargetSteps` | `int` | `6000` | Number of transfer learning steps in the target domain ($\lambda_T = 0.3$). |
+| `-Capacity` | `float` | `10000` | Base cache storage capacity in MiB ($M$). |
+| `-EvalLambda` | `float` | `5.0` | Continuous request arrival rate ($\lambda$) in requests/second. |
+| `-ZipfEta` | `float` | `1.0` | Zipf popularity skewness exponent ($\eta$). |
+| `-Files` | `int` | `50` | Total number of distinct file types in the system ($F$). |
+
+*Example with custom pipeline flags:*
+```powershell
+.\scripts\run_full_experiment.ps1 -EvalRequests 2000 -SourceSteps 3000 -TargetSteps 2000 -Capacity 10000 -EvalLambda 5.0 -ZipfEta 1.0 -Files 50
+```
+
+---
+
+### 2. Go Baseline Simulator Flags (`bin\baseline.exe`)
+
+| Flag | Type | Default | Description |
+|---|:---:|:---:|---|
+| `-requests` | `int` | `50000` | Total number of synthetic requests in the simulation trace. |
+| `-files` | `int` | `50` | Number of unique file types ($F$) generated in the system. |
+| `-capacity` | `float` | `10000` | Cache storage capacity in MiB ($M$). |
+| `-lambda` | `float` | `0.2` | Continuous Poisson request arrival rate ($\lambda$) in req/s. |
+| `-eta` | `float` | `1.0` | Zipf popularity skewness exponent ($\eta$). |
+| `-seed` | `int64` | `42` | Random seed for file generation and request sequences. |
+| `-mdp-table` | `bool` | `false` | Evaluates and prints Table III (Discrete MDP vs Continuous SMDP). |
+| `-g` | `bool` | `false` | Enables automatic SVG vector chart and parameter sweep generation. |
+| `-graphs` | `string` | `"graphs"` | Target directory where generated SVG charts and CSVs are written. |
+| `-graph-interval` | `int` | `100` | Step interval between recorded data points for convergence curves. |
+| `-window` | `int` | `0` | Sliding window for warm-up and steady-state miss rates (0 = 10% of trace). |
+| `-concurrent` | `bool` | `false` | Runs caching policies concurrently across multiple CPU threads. |
+| `-log` | `string` | `"logs/baseline_runs.log"` | Append-only execution log file path. |
+
+#### Algorithmic Feature Toggles (AdaLife-Pro Layers):
+* `-adalife=true/false`: Dynamic lifetime lease extensions on cache hits (Layer 1).
+* `-elastic=true/false`: Load-adaptive elastic cache capacity headroom up to $+35\%$ (Layer 2).
+* `-probation=true/false`: Two-tier probationary shield protecting the core cache (Layer 3).
+* `-fetch-cost=true/false`: Origin retrieval cost weighting in utility & admission (Layer 4).
+* `-ghost=true/false`: Counterfactual ghost cache metadata tracking (Layer 5).
+* `-part1-only`: Disables all Part 2 layers to isolate the Part 1 baseline.
+
+---
+
+### Running Automated Test Suites
+To verify all engine components, neural networks, and replay buffers:
 
 ```powershell
-# 1. Test the Go Simulation Engine
-cd simulator-go
-go test ./...
-cd ..
+# 1. Test Go Engine:
+cd simulator-go ; go test -count=1 ./... ; cd ..
 
-# 2. Test the Python Neural Networks and Buffers
-python -m pytest agent-python/tests
+# 2. Test Python Neural Modules:
+python -m pytest -v agent-python/tests
 ```
 
 ---

@@ -25,6 +25,7 @@ type sweepSpec struct {
 	file, title, xLabel, yLabel string
 	values                      []float64
 	isUtilityMetric             bool
+	metric                      string
 	configure                   func(*config.Config, []core.FileMetadata, float64) ([]core.FileMetadata, *config.Config)
 }
 
@@ -56,15 +57,15 @@ func writeGraphs(
 		return err
 	}
 
-	// 2. Write Convergence Line Chart (AdaLife-Pro, Paper-Proposed, CTD)
+	// 2. Write Convergence Line Chart (AdaLife-Pro vs Paper-Proposed ONLY; CTD omitted from graphs)
 	var paperResults []runResult
 	for _, r := range results {
-		if r.name == "AdaLife-Pro" || r.name == "SMDP-DDQL" || r.name == "Paper-Proposed" || r.name == "CTD" {
+		if r.name == "AdaLife-Pro" || r.name == "SMDP-DDQL" || r.name == "Paper-Proposed" {
 			displayName := r.name
-			if r.name == "SMDP-DDQL" {
-				displayName = "Proposed (SMDP-DDQL)"
+			if r.name == "SMDP-DDQL" || r.name == "AdaLife-Pro" {
+				displayName = "AdaLife-Pro (Ours)"
 			} else if r.name == "Paper-Proposed" {
-				displayName = "Paper (Niknia '24)"
+				displayName = "Paper (Niknia '24 DDQL)"
 			}
 			copyResult := r
 			copyResult.name = displayName
@@ -82,13 +83,25 @@ func writeGraphs(
 
 	specs := []sweepSpec{
 		// Fig. 6c & 7c: Cache size sweeps
-		{"hit_count_vs_cache_size.svg", "Total hit count vs cache size (Fig. 6c)", "Cache size (MiB)", "Total hit count", parseValues(cacheSizeText), false,
+		{"hit_count_vs_cache_size.svg", "Total hit count vs cache size (Fig. 6c)", "Cache size (MiB)", "Total hit count", parseValues(cacheSizeText), false, "hits",
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 				n := *c
 				n.CacheCapacity = v
 				return f, &n
 			}},
-		{"total_utility_vs_cache_size.svg", "Total utility vs cache size (Fig. 7c)", "Cache size (MiB)", "Total utility", parseValues(cacheSizeText), true,
+		{"total_utility_vs_cache_size.svg", "Total utility vs cache size (Fig. 7c)", "Cache size (MiB)", "Total utility", parseValues(cacheSizeText), true, "utility",
+			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
+				n := *c
+				n.CacheCapacity = v
+				return f, &n
+			}},
+		{"evictions_vs_cache_size.svg", "Total evictions vs cache size (Churn Analysis)", "Cache size (MiB)", "Total evictions", parseValues(cacheSizeText), false, "evictions",
+			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
+				n := *c
+				n.CacheCapacity = v
+				return f, &n
+			}},
+		{"byte_hit_rate_vs_cache_size.svg", "Byte hit rate vs cache size (Bandwidth Savings)", "Cache size (MiB)", "Byte hit rate (%)", parseValues(cacheSizeText), false, "byte_hit_rate",
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 				n := *c
 				n.CacheCapacity = v
@@ -96,13 +109,25 @@ func writeGraphs(
 			}},
 
 		// Fig. 6b & 7b: Request rate lambda sweeps
-		{"hit_count_vs_request_rate.svg", "Total hit count vs request rate (Fig. 6b)", "Request rate lambda", "Total hit count", parseValues(rateText), false,
+		{"hit_count_vs_request_rate.svg", "Total hit count vs request rate (Fig. 6b)", "Request rate lambda", "Total hit count", parseValues(rateText), false, "hits",
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 				n := *c
 				n.LambdaSource = v
 				return f, &n
 			}},
-		{"total_utility_vs_request_rate.svg", "Total utility vs request rate (Fig. 7b)", "Request rate lambda", "Total utility", parseValues(rateText), true,
+		{"total_utility_vs_request_rate.svg", "Total utility vs request rate (Fig. 7b)", "Request rate lambda", "Total utility", parseValues(rateText), true, "utility",
+			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
+				n := *c
+				n.LambdaSource = v
+				return f, &n
+			}},
+		{"evictions_vs_request_rate.svg", "Total evictions vs request rate (Load Churn)", "Request rate lambda", "Total evictions", parseValues(rateText), false, "evictions",
+			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
+				n := *c
+				n.LambdaSource = v
+				return f, &n
+			}},
+		{"byte_hit_rate_vs_request_rate.svg", "Byte hit rate vs request rate", "Request rate lambda", "Byte hit rate (%)", parseValues(rateText), false, "byte_hit_rate",
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 				n := *c
 				n.LambdaSource = v
@@ -110,13 +135,13 @@ func writeGraphs(
 			}},
 
 		// Fig. 6a & 7a: Popularity skewness eta sweeps
-		{"hit_count_vs_zipf_eta.svg", "Total hit count vs popularity skewness (Fig. 6a)", "Zipf eta", "Total hit count", parseValues(etaText), false,
+		{"hit_count_vs_zipf_eta.svg", "Total hit count vs popularity skewness (Fig. 6a)", "Zipf eta", "Total hit count", parseValues(etaText), false, "hits",
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 				n := *c
 				n.ZipfEta = v
 				return f, &n
 			}},
-		{"total_utility_vs_zipf_eta.svg", "Total utility vs popularity skewness (Fig. 7a)", "Zipf eta", "Total utility", parseValues(etaText), true,
+		{"total_utility_vs_zipf_eta.svg", "Total utility vs popularity skewness (Fig. 7a)", "Zipf eta", "Total utility", parseValues(etaText), true, "utility",
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 				n := *c
 				n.ZipfEta = v
@@ -124,31 +149,31 @@ func writeGraphs(
 			}},
 
 		// Fig. 4a & 5a: Lifetime of popular file sweeps (all other files fixed: lifetime=20, size=500, importance=0.5)
-		{"hit_count_vs_file_lifetime.svg", "Total hit count vs popular-file lifetime (Fig. 4a)", "Popular file lifetime", "Total hit count", parseValues(lifetimeText), false,
+		{"hit_count_vs_file_lifetime.svg", "Total hit count vs popular-file lifetime (Fig. 4a)", "Popular file lifetime", "Total hit count", parseValues(lifetimeText), false, "hits",
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 				return core.GenerateSweepFiles(c, v, 500.0, 0.5), c
 			}},
-		{"total_utility_vs_file_lifetime.svg", "Total utility vs popular-file lifetime (Fig. 5a)", "Popular file lifetime", "Total utility", parseValues(lifetimeText), true,
+		{"total_utility_vs_file_lifetime.svg", "Total utility vs popular-file lifetime (Fig. 5a)", "Popular file lifetime", "Total utility", parseValues(lifetimeText), true, "utility",
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 				return core.GenerateSweepFiles(c, v, 500.0, 0.5), c
 			}},
 
 		// Fig. 4b & 5b: Size of popular file sweeps (all other files fixed: size=500, lifetime=20, importance=0.5)
-		{"hit_count_vs_file_size.svg", "Total hit count vs popular-file size (Fig. 4b)", "Popular file size (MiB)", "Total hit count", parseValues(sizeText), false,
+		{"hit_count_vs_file_size.svg", "Total hit count vs popular-file size (Fig. 4b)", "Popular file size (MiB)", "Total hit count", parseValues(sizeText), false, "hits",
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 				return core.GenerateSweepFiles(c, 20.0, v, 0.5), c
 			}},
-		{"total_utility_vs_file_size.svg", "Total utility vs popular-file size (Fig. 5b)", "Popular file size (MiB)", "Total utility", parseValues(sizeText), true,
+		{"total_utility_vs_file_size.svg", "Total utility vs popular-file size (Fig. 5b)", "Popular file size (MiB)", "Total utility", parseValues(sizeText), true, "utility",
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 				return core.GenerateSweepFiles(c, 20.0, v, 0.5), c
 			}},
 
 		// Fig. 4c & 5c: Importance of popular file sweeps (all other files fixed: importance=0.5, lifetime=20, size=500)
-		{"hit_count_vs_file_importance.svg", "Total hit count vs popular-file importance (Fig. 4c)", "Popular file importance", "Total hit count", parseValues(importanceText), false,
+		{"hit_count_vs_file_importance.svg", "Total hit count vs popular-file importance (Fig. 4c)", "Popular file importance", "Total hit count", parseValues(importanceText), false, "hits",
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 				return core.GenerateSweepFiles(c, 20.0, 500.0, v), c
 			}},
-		{"total_utility_vs_file_importance.svg", "Total utility vs popular-file importance (Fig. 5c)", "Popular file importance", "Total utility", parseValues(importanceText), true,
+		{"total_utility_vs_file_importance.svg", "Total utility vs popular-file importance (Fig. 5c)", "Popular file importance", "Total utility", parseValues(importanceText), true, "utility",
 			func(c *config.Config, f []core.FileMetadata, v float64) ([]core.FileMetadata, *config.Config) {
 				return core.GenerateSweepFiles(c, 20.0, 500.0, v), c
 			}},
@@ -175,10 +200,19 @@ func writeGraphs(
 			pointResults := runAllWithConcurrency(pointCfg, pointFiles, events, maxWindow(requests), interval, concurrent)
 
 			for i, result := range pointResults {
-				if spec.isUtilityMetric {
+				switch spec.metric {
+				case "utility":
 					series[i].y[point] = result.totalUtility
-				} else {
-					series[i].y[point] = float64(result.stats.Hits)
+				case "evictions":
+					series[i].y[point] = float64(result.stats.Evictions)
+				case "byte_hit_rate":
+					series[i].y[point] = result.stats.ByteHitRate() * 100.0
+				default:
+					if spec.isUtilityMetric {
+						series[i].y[point] = result.totalUtility
+					} else {
+						series[i].y[point] = float64(result.stats.Hits)
+					}
 				}
 			}
 		}
@@ -187,12 +221,12 @@ func writeGraphs(
 
 		var chartSeries []lineSeries
 		for _, s := range series {
-			if s.name == "AdaLife-Pro" || s.name == "SMDP-DDQL" || s.name == "Paper-Proposed" || s.name == "CTD" {
+			if s.name == "AdaLife-Pro" || s.name == "SMDP-DDQL" || s.name == "Paper-Proposed" {
 				dispName := s.name
-				if s.name == "SMDP-DDQL" {
-					dispName = "Proposed (SMDP-DDQL)"
+				if s.name == "SMDP-DDQL" || s.name == "AdaLife-Pro" {
+					dispName = "AdaLife-Pro (Ours)"
 				} else if s.name == "Paper-Proposed" {
-					dispName = "Paper (Niknia '24)"
+					dispName = "Paper (Niknia '24 DDQL)"
 				}
 				chartSeries = append(chartSeries, lineSeries{
 					name: dispName,
@@ -266,10 +300,12 @@ func downsampleSeries(x, y []float64, limit int) ([]float64, []float64) {
 
 func writeElasticCapacityArtifacts(path string, results []runResult, interval int, baseCap float64) error {
 	var targetResult *runResult
+	var paperResult *runResult
 	for i := range results {
 		if results[i].name == "AdaLife-Pro" || results[i].name == "SMDP-DDQL" {
 			targetResult = &results[i]
-			break
+		} else if results[i].name == "Paper-Proposed" {
+			paperResult = &results[i]
 		}
 	}
 	if targetResult == nil || len(targetResult.capacityTrials) == 0 {
@@ -301,12 +337,22 @@ func writeElasticCapacityArtifacts(path string, results []runResult, interval in
 			x:    xUsed,
 			y:    yUsed,
 		},
-		{
-			name: "Base Static Capacity M (Rigid Baseline)",
-			x:    xBase,
-			y:    yBase,
-		},
 	}
+
+	if paperResult != nil && len(paperResult.usedCapacities) > 0 {
+		xPaper, yPaper := downsampleSeries(paperResult.capacityTrials, paperResult.usedCapacities, 250)
+		chartSeries = append(chartSeries, lineSeries{
+			name: "Paper (Niknia '24 DDQL) Used Memory",
+			x:    xPaper,
+			y:    yPaper,
+		})
+	}
+
+	chartSeries = append(chartSeries, lineSeries{
+		name: "Base Static Capacity M (Rigid Baseline)",
+		x:    xBase,
+		y:    yBase,
+	})
 
 	// 1. Write SVG line chart
 	svgFile := filepath.Join(path, "elastic_capacity_vs_requests.svg")

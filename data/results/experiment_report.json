@@ -1,9 +1,10 @@
 {
   "metadata": {
-    "report_generated_at": "2026-11-09 18:17:10 UTC",
+    "report_generated_at": "2026-11-14 17:56:49 UTC",
     "environment": "SMDP Edge Caching (Go Simulation Engine + Python PyTorch DDQL)",
     "evaluated_algorithms": [
-      "Proposed (SMDP-DDQL)",
+      "AdaLife-Pro (Our Proposed Algorithm)",
+      "Paper (Niknia et al., 2024 SMDP-DDQL)",
       "CTD (Continuous Time Delay Baseline)",
       "Proposed TL (Transfer Learning with Eq. 6 Priority & Demonstrations)",
       "DQfD (Standard Deep Q-learning from Demonstrations, Eq. 5 Priority)",
@@ -21,7 +22,7 @@
       "total_file_types": 50,
       "cache_capacity_mib": 10000.0,
       "zipf_popularity_eta": 1.0,
-      "lambda_source": 0.2,
+      "lambda_source": 5.0,
       "lambda_target": 0.3,
       "gamma_continuous": "gamma^tau (0.99^tau)",
       "neural_network": "2-Layer MLP (16-16, ReLU)",
@@ -31,78 +32,105 @@
     }
   },
   "caching_performance": {
-    "CTD": {
-      "requests": 1000,
-      "hits": 568,
-      "misses": 432,
-      "hit_rate_pct": 56.8,
-      "byte_hit_rate_pct": 54.93,
-      "miss_rate_pct": 43.2,
-      "evictions": 414,
-      "eviction_rate_pct": 41.4,
-      "cached_files": 18,
-      "used_capacity_mib": 9985.07,
-      "utilization_pct": 99.85,
-      "total_utility": 361.9367,
-      "warmup_miss_rate_pct": 47,
-      "final_miss_rate_pct": 34
+    "CTD (Baseline)": {
+      "requests": 2500,
+      "hits": 332,
+      "misses": 2168,
+      "hit_rate_pct": 13.28,
+      "byte_hit_rate_pct": 12.51,
+      "miss_rate_pct": 86.72,
+      "evictions": 2159,
+      "eviction_rate_pct": 86.36,
+      "cached_files": 9,
+      "used_capacity_mib": 4743.82,
+      "utilization_pct": 94.88,
+      "total_utility": 246.3476,
+      "warmup_miss_rate_pct": 87.2,
+      "final_miss_rate_pct": 83.6
+    },
+    "Paper (Niknia '24 DDQL)": {
+      "requests": 2500,
+      "hits": 404,
+      "misses": 2096,
+      "hit_rate_pct": 16.16,
+      "byte_hit_rate_pct": 11.22,
+      "miss_rate_pct": 83.84,
+      "evictions": 1631,
+      "eviction_rate_pct": 65.24,
+      "cached_files": 17,
+      "used_capacity_mib": 4654.26,
+      "utilization_pct": 93.09,
+      "total_utility": 321.3044,
+      "warmup_miss_rate_pct": 81.6,
+      "final_miss_rate_pct": 84
+    },
+    "AdaLife-Pro (Ours)": {
+      "requests": 2500,
+      "hits": 697,
+      "misses": 1803,
+      "hit_rate_pct": 27.88,
+      "byte_hit_rate_pct": 21.51,
+      "miss_rate_pct": 72.12,
+      "evictions": 696,
+      "eviction_rate_pct": 27.84,
+      "cached_files": 17,
+      "used_capacity_mib": 6016.73,
+      "utilization_pct": 89.14,
+      "total_utility": 571.608,
+      "warmup_miss_rate_pct": 71.6,
+      "final_miss_rate_pct": 75.6
     }
   },
-  "relative_improvements": {},
+  "relative_improvements": {
+    "vs_paper": {
+      "hit_rate_gain_pct": 11.72,
+      "byte_hit_rate_gain_pct": 10.29,
+      "eviction_reduction_pct": 57.33,
+      "total_utility_gain_pct": 77.9
+    },
+    "vs_ctd": {
+      "hit_rate_gain_pct": 14.6,
+      "byte_hit_rate_gain_pct": 9.0,
+      "eviction_reduction_pct": 67.76,
+      "total_utility_gain_pct": 132.03
+    }
+  },
   "source_domain_drl": {
-    "training_steps": 3000,
-    "final_training_average_reward": 10.1333,
+    "training_steps": 2500,
+    "final_training_average_reward": 1.9707,
     "policy_evaluation_1000_requests": {
-      "requests": 1000,
-      "hits": 330,
-      "hit_rate_pct": 33.0,
-      "total_utility": 171.63,
-      "total_reward": 14991.09,
-      "average_reward_per_step": 14.9911
+      "requests": 2500,
+      "hits": 284,
+      "hit_rate_pct": 11.36,
+      "total_utility": 138.87,
+      "total_reward": 12914.45,
+      "average_reward_per_step": 5.1658
     }
   },
   "target_domain_transfer_learning": {
-    "PROPOSED": {
-      "initial_reward_step_100": 6.0317,
-      "midpoint_reward": 18.6489,
-      "final_asymptotic_reward": 19.584,
-      "peak_reward": 19.584,
-      "recorded_steps": 1500
+    "Proposed TL (AdaLife-Pro)": {
+      "initial_reward": 0.2305,
+      "midpoint_reward": 2.5215,
+      "final_reward": 4.563,
+      "peak_reward": 4.563
     },
-    "DQFD": {
-      "initial_reward_step_100": 5.8829,
-      "midpoint_reward": 19.5327,
-      "final_asymptotic_reward": 20.1527,
-      "peak_reward": 20.1527,
-      "recorded_steps": 1500
+    "Standard DQfD (Eq. 5)": {
+      "initial_reward": -0.1434,
+      "midpoint_reward": 2.152,
+      "final_reward": 4.1875,
+      "peak_reward": 5.5401
     },
-    "LFS": {
-      "initial_reward_step_100": 4.9492,
-      "midpoint_reward": 17.9803,
-      "final_asymptotic_reward": 19.3202,
-      "peak_reward": 19.3202,
-      "recorded_steps": 1500
+    "Learning From Scratch (LFS)": {
+      "initial_reward": 0.964,
+      "midpoint_reward": 2.9129,
+      "final_reward": 4.6193,
+      "peak_reward": 4.6193
     },
-    "DPR": {
-      "initial_reward_step_100": 8.4572,
-      "midpoint_reward": 21.3595,
-      "final_asymptotic_reward": 21.3621,
-      "peak_reward": 21.5941,
-      "recorded_steps": 1500
-    },
-    "DQFD_OVERWRITE": {
-      "initial_reward_step_100": 4.9197,
-      "midpoint_reward": 18.9345,
-      "final_asymptotic_reward": 19.842,
-      "peak_reward": 19.842,
-      "recorded_steps": 1500
-    },
-    "DQFD_NEW_PRIO": {
-      "initial_reward_step_100": 6.3542,
-      "midpoint_reward": 18.1748,
-      "final_asymptotic_reward": 19.4225,
-      "peak_reward": 19.4225,
-      "recorded_steps": 1500
+    "Direct Policy Reuse (DPR)": {
+      "initial_reward": 2.9389,
+      "midpoint_reward": 6.6728,
+      "final_reward": 7.3309,
+      "peak_reward": 8.0699
     }
   },
   "parameter_sensitivity_sweeps": [
@@ -120,13 +148,33 @@
       ],
       "series": [
         {
-          "algorithm": "CTD",
+          "algorithm": "CTD (Baseline)",
           "values": [
-            370,
-            480,
-            568,
-            646,
-            690
+            332,
+            472,
+            565,
+            656,
+            747
+          ]
+        },
+        {
+          "algorithm": "Paper (Niknia '24 DDQL)",
+          "values": [
+            404,
+            621,
+            725,
+            777,
+            865
+          ]
+        },
+        {
+          "algorithm": "AdaLife-Pro (Ours)",
+          "values": [
+            697,
+            888,
+            993,
+            1056,
+            1144
           ]
         }
       ]
@@ -145,13 +193,123 @@
       ],
       "series": [
         {
-          "algorithm": "CTD",
+          "algorithm": "CTD (Baseline)",
           "values": [
-            267.57,
-            330.51,
-            361.94,
-            356.96,
-            326.79
+            246.35,
+            344.93,
+            408.63,
+            464.93,
+            519.23
+          ]
+        },
+        {
+          "algorithm": "Paper (Niknia '24 DDQL)",
+          "values": [
+            321.3,
+            467.61,
+            531.04,
+            547.16,
+            585.26
+          ]
+        },
+        {
+          "algorithm": "AdaLife-Pro (Ours)",
+          "values": [
+            571.61,
+            706.49,
+            784.59,
+            821.41,
+            882.37
+          ]
+        }
+      ]
+    },
+    {
+      "chart_file": "evictions_vs_cache_size.svg",
+      "title": "Total evictions vs cache size (Churn Analysis)",
+      "x_parameter": "Cache size (MiB)",
+      "y_metric": "Total evictions",
+      "x_values": [
+        5000,
+        7500,
+        10000,
+        12500,
+        15000
+      ],
+      "series": [
+        {
+          "algorithm": "CTD (Baseline)",
+          "values": [
+            2159,
+            2012,
+            1916,
+            1820,
+            1724
+          ]
+        },
+        {
+          "algorithm": "Paper (Niknia '24 DDQL)",
+          "values": [
+            1631,
+            1543,
+            1584,
+            1557,
+            1513
+          ]
+        },
+        {
+          "algorithm": "AdaLife-Pro (Ours)",
+          "values": [
+            696,
+            508,
+            571,
+            602,
+            574
+          ]
+        }
+      ]
+    },
+    {
+      "chart_file": "byte_hit_rate_vs_cache_size.svg",
+      "title": "Byte hit rate vs cache size (Bandwidth Savings)",
+      "x_parameter": "Cache size (MiB)",
+      "y_metric": "Byte hit rate (%)",
+      "x_values": [
+        5000,
+        7500,
+        10000,
+        12500,
+        15000
+      ],
+      "series": [
+        {
+          "algorithm": "CTD (Baseline)",
+          "values": [
+            12.51,
+            18.28,
+            21.74,
+            25.32,
+            29.23
+          ]
+        },
+        {
+          "algorithm": "Paper (Niknia '24 DDQL)",
+          "values": [
+            11.22,
+            17.57,
+            21.07,
+            22.78,
+            26.31
+          ]
+        },
+        {
+          "algorithm": "AdaLife-Pro (Ours)",
+          "values": [
+            21.51,
+            28.39,
+            32.0,
+            34.7,
+            38.58
           ]
         }
       ]
@@ -172,15 +330,39 @@
       ],
       "series": [
         {
-          "algorithm": "CTD",
+          "algorithm": "CTD (Baseline)",
           "values": [
-            274,
-            477,
-            550,
-            568,
-            568,
-            568,
-            568
+            261,
+            332,
+            332,
+            332,
+            332,
+            332,
+            332
+          ]
+        },
+        {
+          "algorithm": "Paper (Niknia '24 DDQL)",
+          "values": [
+            267,
+            415,
+            458,
+            480,
+            492,
+            487,
+            490
+          ]
+        },
+        {
+          "algorithm": "AdaLife-Pro (Ours)",
+          "values": [
+            409,
+            675,
+            724,
+            713,
+            727,
+            722,
+            701
           ]
         }
       ]
@@ -201,15 +383,145 @@
       ],
       "series": [
         {
-          "algorithm": "CTD",
+          "algorithm": "CTD (Baseline)",
           "values": [
-            131.31,
-            225.82,
-            275.42,
-            324.3,
-            352.35,
-            369.49,
-            380.61
+            134.14,
+            214.4,
+            230.26,
+            236.38,
+            239.62,
+            241.63,
+            242.99
+          ]
+        },
+        {
+          "algorithm": "Paper (Niknia '24 DDQL)",
+          "values": [
+            133.24,
+            241.54,
+            290.1,
+            313.75,
+            341.46,
+            352.13,
+            362.94
+          ]
+        },
+        {
+          "algorithm": "AdaLife-Pro (Ours)",
+          "values": [
+            202.93,
+            408.26,
+            488.15,
+            515.09,
+            545.77,
+            549.52,
+            553.81
+          ]
+        }
+      ]
+    },
+    {
+      "chart_file": "evictions_vs_request_rate.svg",
+      "title": "Total evictions vs request rate (Load Churn)",
+      "x_parameter": "Request rate lambda",
+      "y_metric": "Total evictions",
+      "x_values": [
+        0.5,
+        1.5,
+        2.5,
+        3.5,
+        4.5,
+        5.5,
+        6.5
+      ],
+      "series": [
+        {
+          "algorithm": "CTD (Baseline)",
+          "values": [
+            2182,
+            2159,
+            2159,
+            2159,
+            2159,
+            2159,
+            2159
+          ]
+        },
+        {
+          "algorithm": "Paper (Niknia '24 DDQL)",
+          "values": [
+            586,
+            1535,
+            1588,
+            1545,
+            1514,
+            1499,
+            1514
+          ]
+        },
+        {
+          "algorithm": "AdaLife-Pro (Ours)",
+          "values": [
+            529,
+            1289,
+            1200,
+            1055,
+            974,
+            913,
+            903
+          ]
+        }
+      ]
+    },
+    {
+      "chart_file": "byte_hit_rate_vs_request_rate.svg",
+      "title": "Byte hit rate vs request rate",
+      "x_parameter": "Request rate lambda",
+      "y_metric": "Byte hit rate (%)",
+      "x_values": [
+        0.5,
+        1.5,
+        2.5,
+        3.5,
+        4.5,
+        5.5,
+        6.5
+      ],
+      "series": [
+        {
+          "algorithm": "CTD (Baseline)",
+          "values": [
+            10.07,
+            12.51,
+            12.51,
+            12.51,
+            12.51,
+            12.51,
+            12.51
+          ]
+        },
+        {
+          "algorithm": "Paper (Niknia '24 DDQL)",
+          "values": [
+            10.01,
+            13.28,
+            14.02,
+            14.32,
+            14.53,
+            14.06,
+            14.05
+          ]
+        },
+        {
+          "algorithm": "AdaLife-Pro (Ours)",
+          "values": [
+            15.49,
+            23.89,
+            24.39,
+            23.12,
+            23.19,
+            22.46,
+            21.94
           ]
         }
       ]
@@ -228,13 +540,33 @@
       ],
       "series": [
         {
-          "algorithm": "CTD",
+          "algorithm": "CTD (Baseline)",
           "values": [
-            335,
-            355,
-            424,
-            495,
-            568
+            112,
+            117,
+            199,
+            338,
+            581
+          ]
+        },
+        {
+          "algorithm": "Paper (Niknia '24 DDQL)",
+          "values": [
+            198,
+            219,
+            253,
+            394,
+            728
+          ]
+        },
+        {
+          "algorithm": "AdaLife-Pro (Ours)",
+          "values": [
+            224,
+            302,
+            402,
+            695,
+            1049
           ]
         }
       ]
@@ -253,13 +585,33 @@
       ],
       "series": [
         {
-          "algorithm": "CTD",
+          "algorithm": "CTD (Baseline)",
           "values": [
-            236.3,
-            242.96,
-            279.77,
-            310.66,
-            361.94
+            83.24,
+            87.92,
+            147.17,
+            246.41,
+            434.42
+          ]
+        },
+        {
+          "algorithm": "Paper (Niknia '24 DDQL)",
+          "values": [
+            161.18,
+            183.17,
+            206.52,
+            321.07,
+            540.32
+          ]
+        },
+        {
+          "algorithm": "AdaLife-Pro (Ours)",
+          "values": [
+            206.28,
+            271.58,
+            346.09,
+            590.95,
+            853.91
           ]
         }
       ]
@@ -278,13 +630,33 @@
       ],
       "series": [
         {
-          "algorithm": "CTD",
+          "algorithm": "CTD (Baseline)",
           "values": [
-            625,
-            629,
-            639,
-            634,
-            637
+            393,
+            414,
+            431,
+            442,
+            453
+          ]
+        },
+        {
+          "algorithm": "Paper (Niknia '24 DDQL)",
+          "values": [
+            617,
+            618,
+            640,
+            624,
+            642
+          ]
+        },
+        {
+          "algorithm": "AdaLife-Pro (Ours)",
+          "values": [
+            807,
+            804,
+            816,
+            814,
+            814
           ]
         }
       ]
@@ -303,13 +675,33 @@
       ],
       "series": [
         {
-          "algorithm": "CTD",
+          "algorithm": "CTD (Baseline)",
           "values": [
-            358.23,
-            363.25,
-            369.95,
-            373.22,
-            369.59
+            289.59,
+            305.22,
+            317.64,
+            325.92,
+            334.22
+          ]
+        },
+        {
+          "algorithm": "Paper (Niknia '24 DDQL)",
+          "values": [
+            385.12,
+            376.42,
+            400.72,
+            394.28,
+            408.41
+          ]
+        },
+        {
+          "algorithm": "AdaLife-Pro (Ours)",
+          "values": [
+            588.63,
+            588.19,
+            597.73,
+            596.83,
+            597.18
           ]
         }
       ]
@@ -328,13 +720,33 @@
       ],
       "series": [
         {
-          "algorithm": "CTD",
+          "algorithm": "CTD (Baseline)",
           "values": [
-            639,
-            639,
-            639,
-            617,
-            617
+            431,
+            431,
+            431,
+            412,
+            412
+          ]
+        },
+        {
+          "algorithm": "Paper (Niknia '24 DDQL)",
+          "values": [
+            661,
+            647,
+            640,
+            512,
+            513
+          ]
+        },
+        {
+          "algorithm": "AdaLife-Pro (Ours)",
+          "values": [
+            824,
+            824,
+            816,
+            762,
+            778
           ]
         }
       ]
@@ -353,13 +765,33 @@
       ],
       "series": [
         {
-          "algorithm": "CTD",
+          "algorithm": "CTD (Baseline)",
           "values": [
-            369.95,
-            369.95,
-            369.95,
-            370.56,
-            370.56
+            317.64,
+            317.64,
+            317.64,
+            304.08,
+            304.08
+          ]
+        },
+        {
+          "algorithm": "Paper (Niknia '24 DDQL)",
+          "values": [
+            353.23,
+            349.39,
+            400.72,
+            360.57,
+            360.69
+          ]
+        },
+        {
+          "algorithm": "AdaLife-Pro (Ours)",
+          "values": [
+            603.34,
+            603.34,
+            597.73,
+            552.08,
+            562.29
           ]
         }
       ]
@@ -378,13 +810,33 @@
       ],
       "series": [
         {
-          "algorithm": "CTD",
+          "algorithm": "CTD (Baseline)",
           "values": [
-            639,
-            639,
-            639,
-            639,
-            639
+            431,
+            431,
+            431,
+            431,
+            431
+          ]
+        },
+        {
+          "algorithm": "Paper (Niknia '24 DDQL)",
+          "values": [
+            499,
+            586,
+            640,
+            659,
+            675
+          ]
+        },
+        {
+          "algorithm": "AdaLife-Pro (Ours)",
+          "values": [
+            605,
+            781,
+            816,
+            814,
+            814
           ]
         }
       ]
@@ -403,13 +855,33 @@
       ],
       "series": [
         {
-          "algorithm": "CTD",
+          "algorithm": "CTD (Baseline)",
           "values": [
-            271.11,
-            320.53,
-            369.95,
-            419.36,
-            468.78
+            224.01,
+            270.82,
+            317.64,
+            364.45,
+            411.26
+          ]
+        },
+        {
+          "algorithm": "Paper (Niknia '24 DDQL)",
+          "values": [
+            296.63,
+            316.94,
+            400.72,
+            443.26,
+            513.48
+          ]
+        },
+        {
+          "algorithm": "AdaLife-Pro (Ours)",
+          "values": [
+            412.4,
+            493.28,
+            597.73,
+            676.46,
+            756.71
           ]
         }
       ]
@@ -427,7 +899,7 @@
     {
       "figure": "Fig. 3(a)",
       "file": "fig3a_average_rewards",
-      "description": "Comparison of average rewards during DRL convergence (Proposed vs CTD)",
+      "description": "Average reward convergence (AdaLife-Pro vs Paper DDQL)",
       "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig3a_average_rewards.png",
       "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig3a_average_rewards.svg",
       "exists": true
@@ -459,7 +931,7 @@
     {
       "figure": "Fig. 4(a)",
       "file": "fig4a_hit_count_vs_lifetime",
-      "description": "Total hit count vs popular-file lifetime (Proposed vs CTD)",
+      "description": "Total hit count vs popular-file lifetime (AdaLife-Pro vs Paper DDQL)",
       "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig4a_hit_count_vs_lifetime.png",
       "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig4a_hit_count_vs_lifetime.svg",
       "exists": true
@@ -467,7 +939,7 @@
     {
       "figure": "Fig. 4(b)",
       "file": "fig4b_hit_count_vs_size",
-      "description": "Total hit count vs popular-file size (Proposed vs CTD)",
+      "description": "Total hit count vs popular-file size (AdaLife-Pro vs Paper DDQL)",
       "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig4b_hit_count_vs_size.png",
       "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig4b_hit_count_vs_size.svg",
       "exists": true
@@ -475,7 +947,7 @@
     {
       "figure": "Fig. 4(c)",
       "file": "fig4c_hit_count_vs_importance",
-      "description": "Total hit count vs popular-file importance (Proposed vs CTD)",
+      "description": "Total hit count vs popular-file importance (AdaLife-Pro vs Paper DDQL)",
       "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig4c_hit_count_vs_importance.png",
       "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig4c_hit_count_vs_importance.svg",
       "exists": true
@@ -491,7 +963,7 @@
     {
       "figure": "Fig. 5(a)",
       "file": "fig5a_total_utility_vs_lifetime",
-      "description": "Total utility vs popular-file lifetime (Proposed vs CTD)",
+      "description": "Total utility vs popular-file lifetime (AdaLife-Pro vs Paper DDQL)",
       "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig5a_total_utility_vs_lifetime.png",
       "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig5a_total_utility_vs_lifetime.svg",
       "exists": true
@@ -499,7 +971,7 @@
     {
       "figure": "Fig. 5(b)",
       "file": "fig5b_total_utility_vs_size",
-      "description": "Total utility vs popular-file size (Proposed vs CTD)",
+      "description": "Total utility vs popular-file size (AdaLife-Pro vs Paper DDQL)",
       "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig5b_total_utility_vs_size.png",
       "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig5b_total_utility_vs_size.svg",
       "exists": true
@@ -507,7 +979,7 @@
     {
       "figure": "Fig. 5(c)",
       "file": "fig5c_total_utility_vs_importance",
-      "description": "Total utility vs popular-file importance (Proposed vs CTD)",
+      "description": "Total utility vs popular-file importance (AdaLife-Pro vs Paper DDQL)",
       "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig5c_total_utility_vs_importance.png",
       "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig5c_total_utility_vs_importance.svg",
       "exists": true
@@ -523,7 +995,7 @@
     {
       "figure": "Fig. 6(a)",
       "file": "fig6a_hit_count_vs_zipf_eta",
-      "description": "Total hit count vs Zipf skewness eta (Proposed vs CTD)",
+      "description": "Total hit count vs Zipf skewness eta (AdaLife-Pro vs Paper DDQL)",
       "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig6a_hit_count_vs_zipf_eta.png",
       "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig6a_hit_count_vs_zipf_eta.svg",
       "exists": true
@@ -531,7 +1003,7 @@
     {
       "figure": "Fig. 6(b)",
       "file": "fig6b_hit_count_vs_request_rate",
-      "description": "Total hit count vs request arrival rate lambda (Proposed vs CTD)",
+      "description": "Total hit count vs request arrival rate lambda (AdaLife-Pro vs Paper DDQL)",
       "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig6b_hit_count_vs_request_rate.png",
       "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig6b_hit_count_vs_request_rate.svg",
       "exists": true
@@ -539,7 +1011,7 @@
     {
       "figure": "Fig. 6(c)",
       "file": "fig6c_hit_count_vs_cache_size",
-      "description": "Total hit count vs cache capacity M (Proposed vs CTD)",
+      "description": "Total hit count vs cache capacity M (AdaLife-Pro vs Paper DDQL)",
       "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig6c_hit_count_vs_cache_size.png",
       "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig6c_hit_count_vs_cache_size.svg",
       "exists": true
@@ -555,7 +1027,7 @@
     {
       "figure": "Fig. 7(a)",
       "file": "fig7a_total_utility_vs_zipf_eta",
-      "description": "Total utility vs Zipf skewness eta (Proposed vs CTD)",
+      "description": "Total utility vs Zipf skewness eta (AdaLife-Pro vs Paper DDQL)",
       "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig7a_total_utility_vs_zipf_eta.png",
       "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig7a_total_utility_vs_zipf_eta.svg",
       "exists": true
@@ -563,7 +1035,7 @@
     {
       "figure": "Fig. 7(b)",
       "file": "fig7b_total_utility_vs_request_rate",
-      "description": "Total utility vs request arrival rate lambda (Proposed vs CTD)",
+      "description": "Total utility vs request arrival rate lambda (AdaLife-Pro vs Paper DDQL)",
       "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig7b_total_utility_vs_request_rate.png",
       "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig7b_total_utility_vs_request_rate.svg",
       "exists": true
@@ -571,7 +1043,7 @@
     {
       "figure": "Fig. 7(c)",
       "file": "fig7c_total_utility_vs_cache_size",
-      "description": "Total utility vs cache capacity M (Proposed vs CTD)",
+      "description": "Total utility vs cache capacity M (AdaLife-Pro vs Paper DDQL)",
       "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig7c_total_utility_vs_cache_size.png",
       "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig7c_total_utility_vs_cache_size.svg",
       "exists": true
@@ -587,7 +1059,7 @@
     {
       "figure": "Fig. 8(a)",
       "file": "fig8a_target_domain_convergence",
-      "description": "Target domain transfer learning convergence (Proposed TL vs DQfD vs LFS vs DPR)",
+      "description": "Target domain transfer learning convergence (AdaLife-Pro TL vs Paper DDQL TL vs LFS vs DPR)",
       "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig8a_target_domain_convergence.png",
       "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig8a_target_domain_convergence.svg",
       "exists": true
@@ -614,6 +1086,22 @@
       "description": "3-Panel overview of transfer learning performance in target domain",
       "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig8_combined_transfer_learning.png",
       "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig8_combined_transfer_learning.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 9",
+      "file": "fig9_eviction_churn_comparison",
+      "description": "Eviction churn and cache thrashing reduction across cache sizes and request rates",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig9_eviction_churn_comparison.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig9_eviction_churn_comparison.svg",
+      "exists": true
+    },
+    {
+      "figure": "Fig. 10",
+      "file": "fig10_byte_hit_rate_comparison",
+      "description": "Byte hit rate and bandwidth savings comparison from utility-density eviction",
+      "png_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig10_byte_hit_rate_comparison.png",
+      "svg_path": "C:\\Users\\chsan\\OneDrive\\Desktop\\smdp-edge-caching-framework\\graphs\\fig10_byte_hit_rate_comparison.svg",
       "exists": true
     }
   ]

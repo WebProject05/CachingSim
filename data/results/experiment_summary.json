@@ -1,99 +1,99 @@
 {
-  "timestamp": "2026-11-09T18:16:23.474329Z",
+  "timestamp": "2026-11-14T17:55:51.044064Z",
   "experiment": "SMDP Edge Caching RL and Transfer Learning",
   "parameters": {
-    "total_files": 50,
-    "cache_capacity_mib": 10000.0,
+    "total_files": 200,
+    "cache_capacity_mib": 5000.0,
     "lambda_source": 0.2,
     "lambda_target": 0.3,
-    "zipf_eta": 1.0
+    "zipf_eta": 0.81
   },
   "source_evaluation": {
-    "requests": 1000,
-    "hits": 330,
-    "hit_rate": 33.0,
-    "byte_hit_rate": 33.304752682177444,
-    "total_utility": 171.6270878035924,
-    "total_reward": 14991.093108911604,
-    "avg_reward": 14.991093108911604,
-    "benchmark_lambda": 5.0,
-    "benchmark_hits": 766,
-    "benchmark_hit_rate": 76.6,
-    "benchmark_byte_hit_rate": 74.04932889204406,
-    "benchmark_total_utility": 567.6896353584752,
-    "benchmark_avg_reward": 61.91584381013914,
+    "requests": 2500,
+    "hits": 284,
+    "hit_rate": 11.360000000000001,
+    "byte_hit_rate": 11.032021202736,
+    "total_utility": 138.87437189283898,
+    "total_reward": 12914.449487358268,
+    "avg_reward": 5.165779794943307,
+    "benchmark_lambda": 12.0,
+    "benchmark_hits": 560,
+    "benchmark_hit_rate": 22.400000000000002,
+    "benchmark_byte_hit_rate": 15.388847066094517,
+    "benchmark_total_utility": 514.229845665118,
+    "benchmark_avg_reward": 23.581622832144834,
     "multi_lambda_eval": {
       "0.2": {
-        "requests": 1000,
-        "hits": 330,
-        "hit_rate": 33.0,
-        "byte_hit_rate": 33.304752682177444,
-        "total_utility": 171.6270878035924,
-        "total_reward": 14991.093108911604,
-        "avg_reward": 14.991093108911604
+        "requests": 2500,
+        "hits": 284,
+        "hit_rate": 11.360000000000001,
+        "byte_hit_rate": 11.032021202736,
+        "total_utility": 138.87437189283898,
+        "total_reward": 12914.449487358268,
+        "avg_reward": 5.165779794943307
       },
       "0.5": {
-        "requests": 1000,
-        "hits": 531,
-        "hit_rate": 53.1,
-        "byte_hit_rate": 52.825751355142245,
-        "total_utility": 301.8587645416203,
-        "total_reward": 29374.98194760918,
-        "avg_reward": 29.37498194760918
+        "requests": 2500,
+        "hits": 571,
+        "hit_rate": 22.84,
+        "byte_hit_rate": 21.889044108689983,
+        "total_utility": 303.41551877438354,
+        "total_reward": 39812.22773244958,
+        "avg_reward": 15.924891092979832
       },
       "1.0": {
-        "requests": 1000,
-        "hits": 626,
-        "hit_rate": 62.6,
-        "byte_hit_rate": 61.4867311281544,
-        "total_utility": 394.4005329113388,
-        "total_reward": 41110.1168512942,
-        "avg_reward": 41.1101168512942
+        "requests": 2500,
+        "hits": 709,
+        "hit_rate": 28.360000000000003,
+        "byte_hit_rate": 26.46341711597526,
+        "total_utility": 435.485409608773,
+        "total_reward": 60694.48313553844,
+        "avg_reward": 24.277793254215375
       },
       "1.66": {
-        "requests": 1000,
-        "hits": 700,
-        "hit_rate": 70.0,
-        "byte_hit_rate": 68.69750521365724,
-        "total_utility": 455.93687643851473,
-        "total_reward": 50384.31563701336,
-        "avg_reward": 50.38431563701336
+        "requests": 2500,
+        "hits": 733,
+        "hit_rate": 29.32,
+        "byte_hit_rate": 26.447557144622703,
+        "total_utility": 508.15517796169604,
+        "total_reward": 69573.10673653908,
+        "avg_reward": 27.82924269461563
       },
       "2.5": {
-        "requests": 1000,
-        "hits": 745,
-        "hit_rate": 74.5,
-        "byte_hit_rate": 73.69557568571533,
-        "total_utility": 505.2044285983989,
-        "total_reward": 56444.71270970376,
-        "avg_reward": 56.44471270970376
+        "requests": 2500,
+        "hits": 650,
+        "hit_rate": 26.0,
+        "byte_hit_rate": 21.577299226043152,
+        "total_utility": 502.48426177929383,
+        "total_reward": 69010.48428351944,
+        "avg_reward": 27.604193713407778
       },
       "5.0": {
-        "requests": 1000,
-        "hits": 766,
-        "hit_rate": 76.6,
-        "byte_hit_rate": 74.04932889204406,
-        "total_utility": 567.6896353584752,
-        "total_reward": 61915.84381013914,
-        "avg_reward": 61.91584381013914
+        "requests": 2500,
+        "hits": 610,
+        "hit_rate": 24.4,
+        "byte_hit_rate": 18.4955876854639,
+        "total_utility": 525.5075529478257,
+        "total_reward": 68019.9588819948,
+        "avg_reward": 27.20798355279792
       },
       "6.5": {
-        "requests": 1000,
-        "hits": 757,
-        "hit_rate": 75.7,
-        "byte_hit_rate": 72.61807914372447,
-        "total_utility": 577.3327665185584,
-        "total_reward": 62733.331276488716,
-        "avg_reward": 62.73333127648871
+        "requests": 2500,
+        "hits": 593,
+        "hit_rate": 23.72,
+        "byte_hit_rate": 17.327692219236944,
+        "total_utility": 526.610225020895,
+        "total_reward": 65937.2733042304,
+        "avg_reward": 26.37490932169216
       }
     }
   },
   "transfer_learning_final_rewards": {
-    "PROPOSED": 19.58404487671204,
-    "DQFD": 20.152684780862092,
-    "LFS": 19.32023865628664,
-    "DPR": 21.362134980167326,
-    "DQFD_OVERWRITE": 19.841958604733318,
-    "DQFD_NEW_PRIO": 19.422517975598907
+    "PROPOSED": 4.56297858218325,
+    "DQFD": 4.187496688486581,
+    "LFS": 4.6192641153973595,
+    "DPR": 7.330932009107916,
+    "DQFD_OVERWRITE": 4.489204846480268,
+    "DQFD_NEW_PRIO": 4.298814396096731
   }
 }

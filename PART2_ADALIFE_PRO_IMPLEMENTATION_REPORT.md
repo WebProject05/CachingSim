@@ -287,29 +287,61 @@ cd simulator-go ; go test -count=1 ./... ; cd .. ; python -m pytest -v agent-pyt
 
 ---
 
-## 8. Consolidated Master Command Reference (Top 6 Purpose-Driven Commands)
+## 8. Consolidated Master Command Reference (The 4 Core Commands)
 
-To eliminate workflow fragmentation and provide an intuitive evaluation interface, the command set has been consolidated into **6 purpose-driven commands** covering all benchmark and research needs:
+To eliminate workflow fragmentation and provide an intuitive evaluation interface, all commands have been consolidated into **4 core commands** (strictly under 5 commands):
 
 ```powershell
-# [CMD 1] Quick 3-Way Benchmark & MDP Table (1k trials, executes in ~1 second):
+# [CMD 1] One-Click Full Simulation Pipeline (Entire Simulation):
+# Runs Go build -> Go baselines/sweeps -> Background gRPC server -> PyTorch DDQN agent -> Evaluation -> Target TL -> 2-way PNG/SVG graphs -> Comprehensive reports (MD/JSON/TXT)
+.\scripts\run_full_experiment.ps1
+
+# [CMD 2] Instant 3-Way Benchmark (~1-2 seconds):
+# Prints side-by-side 3-Way Benchmark (CTD vs Paper DDQL vs AdaLife-Pro) and Table III (Discrete MDP vs Continuous SMDP)
 .\bin\baseline.exe -requests 1000 -lambda 5.0 -mdp-table
 
-# [CMD 2] High-Volume 3-Way Benchmark (10k requests, lambda = 5.0, Paper Standard Config):
-.\bin\baseline.exe -requests 10000 -lambda 5.0
-
-# [CMD 3] Severe Contention Stress Benchmark (100 files, M = 5,000 MiB, eta = 0.85):
+# [CMD 3] Severe Contention Stress Benchmark:
+# Tests extreme memory pressure (100 files, M = 5,000 MiB, eta = 0.85)
 .\bin\baseline.exe -requests 10000 -files 100 -capacity 5000 -lambda 5.0 -eta 0.85
 
-# [CMD 4] Algorithm Ablation Comparison (AdaLife-Pro vs Part 1 Only baseline):
-.\bin\baseline.exe -requests 10000 -lambda 5.0 -part1-only
-
-# [CMD 5] Generate Visual Plots & Analytical Artifacts (Includes elastic_capacity_vs_requests.svg, CSVs, and Sweeps):
+# [CMD 4] Visual Graph & Plot Generation:
+# Executes full parameter sweeps across cache size, arrival rate, Zipf skew, lifetimes, and sizes; exports vector SVGs and CSV trajectories
 .\bin\baseline.exe -requests 5000 -lambda 5.0 -g -graphs simulator-go/graphs
-
-# [CMD 6] Complete End-to-End Co-Simulation Pipeline (Go gRPC + PyTorch DDQN + Sweeps):
-.\scripts\run_full_experiment.ps1 -EvalRequests 1000 -SourceSteps 3000 -TargetSteps 1500 -EvalLambda 5.0
 ```
+
+### Complete Command Flags Documentation:
+
+#### 1. Pipeline Flags (`run_full_experiment.ps1` / `.bat`)
+* `-EvalRequests <int>`: Total test requests evaluated during policy verification (default: `1000`).
+* `-SourceSteps <int>`: Steps to train the DDQL agent in source domain ($\lambda_S = 5.0$) (default: `5000`).
+* `-TargetSteps <int>`: Steps to train the transfer learning agent in target domain ($\lambda_T = 0.3$) (default: `6000`).
+* `-Capacity <float>`: Cache storage capacity $M$ in MiB (default: `10000`).
+* `-EvalLambda <float>`: Continuous request arrival rate $\lambda$ in req/s (default: `5.0`).
+* `-ZipfEta <float>`: Zipf popularity skewness exponent $\eta$ (default: `1.0`).
+* `-Files <int>`: Total distinct file catalog size $F$ (default: `50`).
+
+#### 2. Go Engine Simulator Flags (`bin\baseline.exe`)
+* `-requests <int>`: Number of requests in trace (default: `50000`).
+* `-files <int>`: Total unique file catalog $F$ (default: `50`).
+* `-capacity <float>`: Cache capacity $M$ in MiB (default: `10000`).
+* `-lambda <float>`: Poisson request arrival rate $\lambda$ in req/s (default: `0.2`).
+* `-eta <float>`: Zipf popularity skewness exponent $\eta$ (default: `1.0`).
+* `-seed <int>`: Random seed for file attributes and request sequence (default: `42`).
+* `-mdp-table`: Flag to evaluate and print Table III comparing Discrete MDP vs Continuous SMDP (default: `false`).
+* `-g`: Flag to generate graphs and sweeps (default: `false`).
+* `-graphs <string>`: Directory where generated SVG charts and CSVs are written (default: `"graphs"`).
+* `-graph-interval <int>`: Step frequency for convergence data points (default: `100`).
+* `-window <int>`: Window size for warm-up and final miss rate calculation (default: 10% of requests).
+* `-concurrent`: Runs caching policies concurrently across CPU cores (default: `false`).
+* `-adalife=true/false`: Toggle AdaLife Dynamic Lifetime lease renewal on hits (default: `true`).
+* `-elastic=true/false`: Toggle dynamic elastic cache capacity headroom (default: `true`).
+* `-probation=true/false`: Toggle two-tier probationary shield (default: `true`).
+* `-fetch-cost=true/false`: Toggle origin fetch cost weighting (default: `true`).
+* `-ghost=true/false`: Toggle counterfactual ghost cache tracking (default: `true`).
+* `-part1-only`: Disables all Part 2 layers to isolate the Part 1 baseline (default: `false`).
+
+> [!NOTE]
+> **Two-Way Graph Standard:** In accordance with rigorous evaluation against the state of the art, all plotted curves (`.png` and `.svg`) exclusively compare **Paper Proposed (Niknia '24 DDQL)** against **AdaLife-Pro (Ours)**. CTD curves have been removed from the graph lines to maintain clean focus on our direct advances over the paper, while CTD's exact numerical values continue to be recorded in all raw CSV/JSON benchmark artifacts.
 
 ---
 
