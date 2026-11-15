@@ -381,6 +381,9 @@ func main() {
 	enableFetchCost := flag.Bool("fetch-cost", true, "enable asymmetric origin fetch-cost weighting")
 	enableGhost := flag.Bool("ghost", true, "enable counterfactual ghost cache regret and fast-track")
 	part1Only := flag.Bool("part1-only", false, "disable all Part 2 AdaLife-Pro mechanisms (run Part 1 baseline only)")
+	fileMin := flag.Float64("file-min", 100.0, "minimum file size in MiB (default: 100.0)")
+	fileMax := flag.Float64("file-max", 1000.0, "maximum file size in MiB (default: 1000.0)")
+	fileDist := flag.String("file-dist", "uniform", "file size distribution: 'uniform' or 'heavy-tailed' (70% in 1-100 MiB, 30% in 100-1000 MiB)")
 	flag.Parse()
 
 	if *generateGraphs {
@@ -408,6 +411,15 @@ func main() {
 
 	cfg := config.DefaultConfig()
 	cfg.TotalFileTypes, cfg.CacheCapacity, cfg.ZipfEta = *fileCount, *capacity, *eta
+	if *fileMin > 0 {
+		cfg.FileSizeMin = *fileMin
+	}
+	if *fileMax >= *fileMin {
+		cfg.FileSizeMax = *fileMax
+	}
+	if *fileDist != "" {
+		cfg.FileSizeDist = *fileDist
+	}
 	if *lambdaRate > 0 {
 		cfg.LambdaSource = *lambdaRate
 	}
@@ -457,6 +469,7 @@ func main() {
 		fmt.Sprintf("Requests          : %d", *requests),
 		fmt.Sprintf("Files             : %d", *fileCount),
 		fmt.Sprintf("Capacity          : %.2f MiB", *capacity),
+		fmt.Sprintf("File distribution : %s", cfg.FileSizeDist),
 		fmt.Sprintf("Zipf eta          : %.3f", cfg.ZipfEta),
 		fmt.Sprintf("Lambda source     : %.3f", cfg.LambdaSource),
 		fmt.Sprintf("Measurement window: %d", measurementWindow),

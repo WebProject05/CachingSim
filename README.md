@@ -184,10 +184,13 @@ All available configuration flags across both the pipeline orchestrator and the 
 | `-EvalLambda` | `float` | `5.0` | Continuous request arrival rate ($\lambda$) in requests/second. |
 | `-ZipfEta` | `float` | `1.0` | Zipf popularity skewness exponent ($\eta$). |
 | `-Files` | `int` | `50` | Total number of distinct file types in the system ($F$). |
+| `-FileMin` | `float` | `100.0` | Minimum file size bound in MiB ($z_f^{\min}$). |
+| `-FileMax` | `float` | `1000.0` | Maximum file size bound in MiB ($z_f^{\max}$). |
+| `-FileDist` | `string` | `"uniform"` | File size distribution: `"uniform"` or `"heavy-tailed"` (70% in 1-100 MiB, 30% in 100-1000 MiB). |
 
 *Example with custom pipeline flags:*
 ```powershell
-.\scripts\run_full_experiment.ps1 -EvalRequests 2000 -SourceSteps 3000 -TargetSteps 2000 -Capacity 10000 -EvalLambda 5.0 -ZipfEta 1.0 -Files 50
+.\scripts\run_full_experiment.ps1 -EvalRequests 2000 -SourceSteps 3000 -TargetSteps 2000 -Capacity 10000 -EvalLambda 5.0 -ZipfEta 1.0 -Files 50 -FileDist heavy-tailed
 ```
 
 ---
@@ -199,6 +202,9 @@ All available configuration flags across both the pipeline orchestrator and the 
 | `-requests` | `int` | `50000` | Total number of synthetic requests in the simulation trace. |
 | `-files` | `int` | `50` | Number of unique file types ($F$) generated in the system. |
 | `-capacity` | `float` | `10000` | Cache storage capacity in MiB ($M$). |
+| `-file-min` | `float` | `100.0` | Minimum file size in MiB (e.g. `1.0` for web assets). |
+| `-file-max` | `float` | `1000.0` | Maximum file size in MiB (e.g. `1000.0` for 4K video chunks). |
+| `-file-dist` | `string` | `"uniform"` | File distribution: `"uniform"` or `"heavy-tailed"` (70% in 1-100 MiB, 30% in 100-1000 MiB). |
 | `-lambda` | `float` | `0.2` | Continuous Poisson request arrival rate ($\lambda$) in req/s. |
 | `-eta` | `float` | `1.0` | Zipf popularity skewness exponent ($\eta$). |
 | `-seed` | `int64` | `42` | Random seed for file generation and request sequences. |

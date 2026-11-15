@@ -36,7 +36,10 @@ param(
     [double]$Capacity = 10000,
     [double]$EvalLambda = 5.0,
     [double]$ZipfEta = 1.0,
-    [int]$Files = 50
+    [int]$Files = 50,
+    [double]$FileMin = 100.0,
+    [double]$FileMax = 1000.0,
+    [string]$FileDist = "uniform"
 )
 
 $ErrorActionPreference = "Stop"
@@ -73,7 +76,7 @@ Write-Host "====================================================================
 
 Push-Location (Join-Path $RootDir "simulator-go")
 try {
-    & $BaselineBin -requests $EvalRequests -files $Files -capacity $Capacity -eta $ZipfEta -lambda $EvalLambda -g -mdp-table
+    & $BaselineBin -requests $EvalRequests -files $Files -capacity $Capacity -eta $ZipfEta -lambda $EvalLambda -file-min $FileMin -file-max $FileMax -file-dist $FileDist -g -mdp-table
     if ($LASTEXITCODE -ne 0) {
         Write-Error "[!] Baseline runner failed with exit code $LASTEXITCODE"
         exit $LASTEXITCODE
@@ -91,7 +94,7 @@ Write-Host "====================================================================
 Get-Process -Name "server" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Milliseconds 500
 
-$ServerProc = Start-Process -FilePath $ServerBin -ArgumentList "-port 50051 -capacity $Capacity -files $Files -eta $ZipfEta" -PassThru -WindowStyle Hidden
+$ServerProc = Start-Process -FilePath $ServerBin -ArgumentList "-port 50051 -capacity $Capacity -files $Files -eta $ZipfEta -file-min $FileMin -file-max $FileMax -file-dist $FileDist" -PassThru -WindowStyle Hidden
 Start-Sleep -Seconds 2
 
 # 4. Run Python DRL and Transfer Learning Pipeline

@@ -33,9 +33,32 @@ func GenerateFiles(cfg *config.Config, r *rand.Rand) []FileMetadata {
 	}
 	files := make([]FileMetadata, cfg.TotalFileTypes)
 	for i := 0; i < cfg.TotalFileTypes; i++ {
+		var size float64
+		if cfg.FileSizeDist == "heavy_tailed" || cfg.FileSizeDist == "heavy-tailed" || cfg.FileSizeDist == "pareto" {
+			if r.Float64() < 0.70 {
+				// 70% small/medium files: [FileSizeMin, 100.0] MiB (web assets, thumbnails, docs)
+				sMin := cfg.FileSizeMin
+				sMax := 100.0
+				if sMax <= sMin {
+					sMax = sMin + 10.0
+				}
+				size = sMin + r.Float64()*(sMax-sMin)
+			} else {
+				// 30% large files: [100.0, FileSizeMax] MiB (high-res images, video chunks)
+				lMin := 100.0
+				lMax := cfg.FileSizeMax
+				if lMax <= lMin {
+					lMax = lMin + 100.0
+				}
+				size = lMin + r.Float64()*(lMax-lMin)
+			}
+		} else {
+			size = cfg.FileSizeMin + r.Float64()*(cfg.FileSizeMax-cfg.FileSizeMin)
+		}
+
 		files[i] = FileMetadata{
 			ID:         i,
-			Size:       cfg.FileSizeMin + r.Float64()*(cfg.FileSizeMax-cfg.FileSizeMin),
+			Size:       size,
 			Lifetime:   cfg.LifetimeMin + r.Float64()*(cfg.LifetimeMax-cfg.LifetimeMin),
 			Importance: cfg.ImportanceMin + r.Float64()*(cfg.ImportanceMax-cfg.ImportanceMin),
 			GenTime:    0.0,

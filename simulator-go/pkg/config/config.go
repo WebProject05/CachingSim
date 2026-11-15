@@ -28,6 +28,7 @@ type Config struct {
 	ImportanceMax float64 // Max file importance i_f (default: 0.9)
 	FileSizeMin   float64 // Min file size z_f in MiB (default: 100.0)
 	FileSizeMax   float64 // Max file size z_f in MiB (default: 1000.0)
+	FileSizeDist  string  // File size distribution: "uniform" (default) or "heavy_tailed" (70% in [min, 100], 30% in [100, max])
 
 	// --- Arrival & Popularity Parameters (Table II) ---
 	ZipfEta      float64 // eta: Zipf distribution skewness parameter in [0, 1] (default: 1.0)
@@ -101,6 +102,7 @@ func DefaultConfig() *Config {
 		ImportanceMax:    0.9,
 		FileSizeMin:      100.0,
 		FileSizeMax:      1000.0,
+		FileSizeDist:     "uniform",
 		ZipfEta:          1.0,
 		LambdaSource:     0.2,
 		LambdaTarget:     0.3,
