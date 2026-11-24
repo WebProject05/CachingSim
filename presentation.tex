@@ -532,7 +532,57 @@
 \end{frame}
 
 % ------------------------------------------------------------------------------
-% SLIDE 13: References
+% SLIDE 13: Future Work & Technical Roadmap
+% ------------------------------------------------------------------------------
+\begin{frame}
+    \frametitle{Future Work \& Technical Roadmap}
+    \framesubtitle{Engineering next-generation performance breakthroughs and production deployment}
+
+    \vspace{0.15cm}
+    \begin{columns}[T, onlytextwidth]
+        \column{0.48\textwidth}
+        \begin{tikzpicture}[baseline=(f1.north)]
+            \node (f1) [draw=EmeraldGreen, fill=LightTealBg, rounded corners=6pt, line width=0.9pt, inner sep=8pt, text width=\linewidth-16pt, anchor=north] at (0,0) {
+                {\color{EmeraldGreen}\textbf{1. Real-World CDN Trace Replay}}\\[3pt]
+                \scriptsize
+                $\bullet$ Ingesting multi-gigabyte production traces from \textbf{Wikimedia / Wikipedia, Akamai, and SNIA}.\\[2pt]
+                $\bullet$ Evaluating AdaLife against real human browsing patterns, bot scans, and viral breaking news.
+            };
+        \end{tikzpicture}
+
+        \vspace{0.2cm}
+        \begin{tikzpicture}[baseline=(f2.north)]
+            \node (f2) [draw=TealAccent, fill=LightBlueBg, rounded corners=6pt, line width=0.9pt, inner sep=8pt, text width=\linewidth-16pt, anchor=north] at (0,0) {
+                {\color{TealAccent}\textbf{2. D3QN Neural Integration}}\\[3pt]
+                \scriptsize
+                $\bullet$ Decoupling State-Value $V(s)$ and Advantage $A(s,a)$ to push Hit Rate beyond \textbf{81.5\%}.\\[2pt]
+                $\bullet$ Accelerating training convergence by 30\%--40\%.
+            };
+        \end{tikzpicture}
+
+        \column{0.48\textwidth}
+        \begin{tikzpicture}[baseline=(f3.north)]
+            \node (f3) [draw=NavyPrimary, fill=CardBg, rounded corners=6pt, line width=0.9pt, inner sep=8pt, text width=\linewidth-16pt, anchor=north] at (0,0) {
+                {\color{NavyPrimary}\textbf{3. Scale-Invariant $O(1)$ State Space}}\\[3pt]
+                \scriptsize
+                $\bullet$ Replacing $5F+1$ state vectors with a \textbf{24-dim candidate-centric representation} via Decaying Count-Min Sketches.\\[2pt]
+                $\bullet$ Scales to millions of files with zero GPU overhead.
+            };
+        \end{tikzpicture}
+
+        \vspace{0.2cm}
+        \begin{tikzpicture}[baseline=(f4.north)]
+            \node (f4) [draw=SlateDark, fill=CardBg, rounded corners=6pt, line width=0.9pt, inner sep=8pt, text width=\linewidth-16pt, anchor=north] at (0,0) {
+                {\color{SlateDark}\textbf{4. Multi-Agent Collaborative Caching}}\\[3pt]
+                \scriptsize
+                $\bullet$ Inter-base-station fiber links (X2/Xn) for peer-to-peer MEC cooperative sharing (-40\% core backhaul load).
+            };
+        \end{tikzpicture}
+    \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------------------
+% SLIDE 14: References
 % ------------------------------------------------------------------------------
 \begin{frame}
     \frametitle{References}
