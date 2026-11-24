@@ -47,7 +47,7 @@ type CacheEngine struct {
 	windowLen     int
 	evictor       Evictor
 
-	// Elastic scaling & Ghost Cache telemetry (AdaLife-Pro)
+	// Elastic scaling & Ghost Cache telemetry (AdaLife)
 	TauEMA          float64
 	LambdaEMA       float64
 	RecentEvictions float64
@@ -121,7 +121,7 @@ func (c *CacheEngine) IsCached(fileID int) bool {
 	return fileID >= 0 && fileID < len(c.Cached) && c.Cached[fileID]
 }
 
-// EffectiveCapacity returns the dynamic elastic capacity M_eff(t) (AdaLife-Pro Layer 2).
+// EffectiveCapacity returns the dynamic elastic capacity M_eff(t) (AdaLife Layer 2).
 func (c *CacheEngine) EffectiveCapacity() float64 {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -548,7 +548,7 @@ func (c *CacheEngine) evictProtectedLocked(needed float64, currentTime float64, 
 	return evictions
 }
 
-// ProcessAdaLifeStep executes one full cache transition with all 5 AdaLife-Pro mechanisms enabled:
+// ProcessAdaLifeStep executes one full cache transition with all 5 AdaLife mechanisms enabled:
 // 1. Dynamic Lifetime lease extensions on hit
 // 2. Elastic Capacity headroom during surges
 // 3. Two-Tier Probationary Shield filtering one-hit wonders
@@ -746,7 +746,7 @@ func (c *CacheEngine) getWorthLocked() float64 {
 	return worth
 }
 
-// ComputeReward computes the instant reward r(t) (Eq. 2 & Enhanced AdaLife-Pro Reward):
+// ComputeReward computes the instant reward r(t) (Eq. 2 & Enhanced AdaLife Reward):
 // r(t) = W*(t) - Mem(t) * w_mem - CounterfactualRegret(t)
 func (c *CacheEngine) ComputeReward() float64 {
 	c.mu.RLock()

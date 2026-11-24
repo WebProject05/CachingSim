@@ -8,12 +8,12 @@ import (
 
 // FileMetadata represents the static and dynamic characteristics of a file type f
 // as formulated in Section III-A and Table II of the research paper, extended with
-// AdaLife-Pro dynamic lease tracking and fetch-cost attributes.
+// AdaLife dynamic lease tracking and fetch-cost attributes.
 type FileMetadata struct {
 	ID                int     // Index f (0 to F-1)
 	Size              float64 // z_f: File size in MiB, uniformly sampled in [100, 1000]
 	Lifetime          float64 // w_l^f: Base validity lifetime, uniformly sampled in [10, 30]
-	EffectiveLifetime float64 // Dynamic TTL adapted by AdaLife-Pro lease extensions
+	EffectiveLifetime float64 // Dynamic TTL adapted by AdaLife lease extensions
 	Importance        float64 // i_f: File importance coefficient, uniformly sampled in [0.1, 0.9]
 	GenTime           float64 // w_g^f: Timestamp when the file was fetched or renewed
 	HitCount          int     // Number of cache hits during the current resident residency
@@ -127,7 +127,7 @@ func (f *FileMetadata) ResetLease(currentTime, scale float64) {
 }
 
 // RenewLease extends the file's validity lifetime on a cache hit based on importance and hit frequency
-// (AdaLife-Pro Layer 1: Dynamic Lifetime).
+// (AdaLife Layer 1: Dynamic Lifetime).
 func (f *FileMetadata) RenewLease(currentTime float64, cfg *config.Config) {
 	if cfg == nil || !cfg.EnableAdaLife {
 		return

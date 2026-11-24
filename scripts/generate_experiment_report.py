@@ -2,7 +2,7 @@
 Comprehensive Experiment Report Generator for SMDP Edge Caching Framework.
 
 Extracts and compiles all recorded metrics and numerical values from:
-- data/results/baseline_results.json (AdaLife-Pro vs Paper DDQL vs CTD)
+- data/results/baseline_results.json (AdaLife vs Paper DDQL vs CTD)
 - data/results/parameter_sweeps.json (Sensitivity sweeps)
 - data/results/drl_source_training.json (DDQL Source domain training & evaluation)
 - data/results/transfer_learning_comparison.json (Target domain TL trajectories)
@@ -69,7 +69,7 @@ def generate_reports():
         "report_generated_at": timestamp,
         "environment": "SMDP Edge Caching (Go Simulation Engine + Python PyTorch DDQL)",
         "evaluated_algorithms": [
-            "AdaLife-Pro (Our Proposed Algorithm)",
+            "AdaLife (Our Proposed Algorithm)",
             "Paper (Niknia et al., 2024 SMDP-DDQL)",
             "CTD (Continuous Time Delay Baseline)",
             "Proposed TL (Transfer Learning with Eq. 6 Priority & Demonstrations)",
@@ -95,16 +95,16 @@ def generate_reports():
     }
 
     # =========================================================================
-    # 2. Comparative Caching Metrics (AdaLife-Pro vs Paper DDQL vs CTD)
+    # 2. Comparative Caching Metrics (AdaLife vs Paper DDQL vs CTD)
     # =========================================================================
     caching_metrics = {}
     if baseline_data and "algorithms" in baseline_data:
         for algo in baseline_data["algorithms"]:
             name = algo.get("name", "")
-            if name in ["AdaLife-Pro", "SMDP-DDQL", "Paper-Proposed", "CTD"]:
+            if name in ["AdaLife", "SMDP-DDQL", "Paper-Proposed", "CTD"]:
                 display_name = name
-                if name in ["AdaLife-Pro", "SMDP-DDQL"]:
-                    display_name = "AdaLife-Pro (Ours)"
+                if name in ["AdaLife", "SMDP-DDQL"]:
+                    display_name = "AdaLife (Ours)"
                 elif name == "Paper-Proposed":
                     display_name = "Paper (Niknia '24 DDQL)"
                 elif name == "CTD":
@@ -129,7 +129,7 @@ def generate_reports():
 
     # Calculate relative gains
     relative_gains = {}
-    ada = caching_metrics.get("AdaLife-Pro (Ours)")
+    ada = caching_metrics.get("AdaLife (Ours)")
     paper = caching_metrics.get("Paper (Niknia '24 DDQL)")
     ctd = caching_metrics.get("CTD (Baseline)")
 
@@ -176,7 +176,7 @@ def generate_reports():
     if tl_comparison_data and "trajectories" in tl_comparison_data:
         trajs = tl_comparison_data["trajectories"]
         for method_key, d_name in [
-            ("PROPOSED", "Proposed TL (AdaLife-Pro)"),
+            ("PROPOSED", "Proposed TL (AdaLife)"),
             ("DQFD", "Standard DQfD (Eq. 5)"),
             ("LFS", "Learning From Scratch (LFS)"),
             ("DPR", "Direct Policy Reuse (DPR)")
@@ -192,7 +192,7 @@ def generate_reports():
                 }
 
     # =========================================================================
-    # 5. Parameter Sweeps (AdaLife-Pro vs Paper DDQL vs CTD)
+    # 5. Parameter Sweeps (AdaLife vs Paper DDQL vs CTD)
     # =========================================================================
     filtered_sweeps = []
     if sweeps_data and "sweeps" in sweeps_data:
@@ -200,10 +200,10 @@ def generate_reports():
             paper_series = []
             for s in sw.get("series", []):
                 algo_name = s.get("algorithm", "")
-                if algo_name in ["AdaLife-Pro", "SMDP-DDQL", "Paper-Proposed", "CTD"]:
+                if algo_name in ["AdaLife", "SMDP-DDQL", "Paper-Proposed", "CTD"]:
                     d_name = algo_name
-                    if algo_name in ["AdaLife-Pro", "SMDP-DDQL"]:
-                        d_name = "AdaLife-Pro (Ours)"
+                    if algo_name in ["AdaLife", "SMDP-DDQL"]:
+                        d_name = "AdaLife (Ours)"
                     elif algo_name == "Paper-Proposed":
                         d_name = "Paper (Niknia '24 DDQL)"
                     elif algo_name == "CTD":
@@ -226,27 +226,27 @@ def generate_reports():
     # =========================================================================
     figures_catalog = [
         {"figure": "Fig. 1", "file": "fig1_utility_curves", "description": "Non-linear utility curve y_f(t) vs freshness h^f(t) across importance levels"},
-        {"figure": "Fig. 3(a)", "file": "fig3a_average_rewards", "description": "Average reward convergence (AdaLife-Pro vs Paper DDQL)"},
+        {"figure": "Fig. 3(a)", "file": "fig3a_average_rewards", "description": "Average reward convergence (AdaLife vs Paper DDQL)"},
         {"figure": "Fig. 3(b)", "file": "fig3b_cache_worth", "description": "Average worth of cached files W(t) over trials"},
         {"figure": "Fig. 3(c)", "file": "fig3c_unoccupied_cache", "description": "Average unoccupied cache proportion Mem(t) over trials"},
         {"figure": "Fig. 3", "file": "fig3_combined_performance", "description": "3-Panel overview of DRL performance (Reward, Worth, Unoccupied Cache)"},
-        {"figure": "Fig. 4(a)", "file": "fig4a_hit_count_vs_lifetime", "description": "Total hit count vs popular-file lifetime (AdaLife-Pro vs Paper DDQL)"},
-        {"figure": "Fig. 4(b)", "file": "fig4b_hit_count_vs_size", "description": "Total hit count vs popular-file size (AdaLife-Pro vs Paper DDQL)"},
-        {"figure": "Fig. 4(c)", "file": "fig4c_hit_count_vs_importance", "description": "Total hit count vs popular-file importance (AdaLife-Pro vs Paper DDQL)"},
+        {"figure": "Fig. 4(a)", "file": "fig4a_hit_count_vs_lifetime", "description": "Total hit count vs popular-file lifetime (AdaLife vs Paper DDQL)"},
+        {"figure": "Fig. 4(b)", "file": "fig4b_hit_count_vs_size", "description": "Total hit count vs popular-file size (AdaLife vs Paper DDQL)"},
+        {"figure": "Fig. 4(c)", "file": "fig4c_hit_count_vs_importance", "description": "Total hit count vs popular-file importance (AdaLife vs Paper DDQL)"},
         {"figure": "Fig. 4", "file": "fig4_combined_hit_counts", "description": "3-Panel hit count under varying popular-file features"},
-        {"figure": "Fig. 5(a)", "file": "fig5a_total_utility_vs_lifetime", "description": "Total utility vs popular-file lifetime (AdaLife-Pro vs Paper DDQL)"},
-        {"figure": "Fig. 5(b)", "file": "fig5b_total_utility_vs_size", "description": "Total utility vs popular-file size (AdaLife-Pro vs Paper DDQL)"},
-        {"figure": "Fig. 5(c)", "file": "fig5c_total_utility_vs_importance", "description": "Total utility vs popular-file importance (AdaLife-Pro vs Paper DDQL)"},
+        {"figure": "Fig. 5(a)", "file": "fig5a_total_utility_vs_lifetime", "description": "Total utility vs popular-file lifetime (AdaLife vs Paper DDQL)"},
+        {"figure": "Fig. 5(b)", "file": "fig5b_total_utility_vs_size", "description": "Total utility vs popular-file size (AdaLife vs Paper DDQL)"},
+        {"figure": "Fig. 5(c)", "file": "fig5c_total_utility_vs_importance", "description": "Total utility vs popular-file importance (AdaLife vs Paper DDQL)"},
         {"figure": "Fig. 5", "file": "fig5_combined_utilities", "description": "3-Panel total utility under varying popular-file features"},
-        {"figure": "Fig. 6(a)", "file": "fig6a_hit_count_vs_zipf_eta", "description": "Total hit count vs Zipf skewness eta (AdaLife-Pro vs Paper DDQL)"},
-        {"figure": "Fig. 6(b)", "file": "fig6b_hit_count_vs_request_rate", "description": "Total hit count vs request arrival rate lambda (AdaLife-Pro vs Paper DDQL)"},
-        {"figure": "Fig. 6(c)", "file": "fig6c_hit_count_vs_cache_size", "description": "Total hit count vs cache capacity M (AdaLife-Pro vs Paper DDQL)"},
+        {"figure": "Fig. 6(a)", "file": "fig6a_hit_count_vs_zipf_eta", "description": "Total hit count vs Zipf skewness eta (AdaLife vs Paper DDQL)"},
+        {"figure": "Fig. 6(b)", "file": "fig6b_hit_count_vs_request_rate", "description": "Total hit count vs request arrival rate lambda (AdaLife vs Paper DDQL)"},
+        {"figure": "Fig. 6(c)", "file": "fig6c_hit_count_vs_cache_size", "description": "Total hit count vs cache capacity M (AdaLife vs Paper DDQL)"},
         {"figure": "Fig. 6", "file": "fig6_combined_hit_counts", "description": "3-Panel hit count under varying system parameters"},
-        {"figure": "Fig. 7(a)", "file": "fig7a_total_utility_vs_zipf_eta", "description": "Total utility vs Zipf skewness eta (AdaLife-Pro vs Paper DDQL)"},
-        {"figure": "Fig. 7(b)", "file": "fig7b_total_utility_vs_request_rate", "description": "Total utility vs request arrival rate lambda (AdaLife-Pro vs Paper DDQL)"},
-        {"figure": "Fig. 7(c)", "file": "fig7c_total_utility_vs_cache_size", "description": "Total utility vs cache capacity M (AdaLife-Pro vs Paper DDQL)"},
+        {"figure": "Fig. 7(a)", "file": "fig7a_total_utility_vs_zipf_eta", "description": "Total utility vs Zipf skewness eta (AdaLife vs Paper DDQL)"},
+        {"figure": "Fig. 7(b)", "file": "fig7b_total_utility_vs_request_rate", "description": "Total utility vs request arrival rate lambda (AdaLife vs Paper DDQL)"},
+        {"figure": "Fig. 7(c)", "file": "fig7c_total_utility_vs_cache_size", "description": "Total utility vs cache capacity M (AdaLife vs Paper DDQL)"},
         {"figure": "Fig. 7", "file": "fig7_combined_utilities", "description": "3-Panel total utility under varying system parameters"},
-        {"figure": "Fig. 8(a)", "file": "fig8a_target_domain_convergence", "description": "Target domain transfer learning convergence (AdaLife-Pro TL vs Paper DDQL TL vs LFS vs DPR)"},
+        {"figure": "Fig. 8(a)", "file": "fig8a_target_domain_convergence", "description": "Target domain transfer learning convergence (AdaLife TL vs Paper DDQL TL vs LFS vs DPR)"},
         {"figure": "Fig. 8(b)", "file": "fig8b_impact_of_overwriting", "description": "Impact of overwriting demonstration data (With vs Without overwriting)"},
         {"figure": "Fig. 8(c)", "file": "fig8c_impact_of_priorities", "description": "Impact of assigning priorities with proposed Eq. (6) vs standard Eq. (5)"},
         {"figure": "Fig. 8", "file": "fig8_combined_transfer_learning", "description": "3-Panel overview of transfer learning performance in target domain"},
@@ -284,18 +284,18 @@ def generate_reports():
     txt_lines.append(header_title)
     txt_lines.append("=" * 80)
     txt_lines.append(f"Generated at: {timestamp}")
-    txt_lines.append("Targeted Algorithms : CTD (Baseline), Paper (Niknia '24 DDQL), AdaLife-Pro (Ours)")
+    txt_lines.append("Targeted Algorithms : CTD (Baseline), Paper (Niknia '24 DDQL), AdaLife (Ours)")
     txt_lines.append("Excluded Baselines  : FIFO, LIFO, LRU, LFU, SIEVE (omitted per research specification)")
     txt_lines.append("-" * 80)
 
     md_lines.append(f"# {header_title}\n")
-    md_lines.append(f"> **Generated at**: `{timestamp}`  \n> **Targeted Algorithms**: `CTD (Baseline)`, `Paper (Niknia '24 DDQL)`, `AdaLife-Pro (Ours)`  \n> **Excluded Baselines**: `FIFO`, `LIFO`, `LRU`, `LFU`, `SIEVE` (omitted per user configuration)\n")
+    md_lines.append(f"> **Generated at**: `{timestamp}`  \n> **Targeted Algorithms**: `CTD (Baseline)`, `Paper (Niknia '24 DDQL)`, `AdaLife (Ours)`  \n> **Excluded Baselines**: `FIFO`, `LIFO`, `LRU`, `LFU`, `SIEVE` (omitted per user configuration)\n")
 
     # Section 1: Caching Metrics Table
     txt_lines.append("\n1. THREE-WAY CACHING PERFORMANCE (CTD vs PAPER DDQL vs ADALIFE-PRO)\n" + "-" * 80)
-    md_lines.append("\n## 1. Three-Way Caching Performance (CTD vs Paper DDQL vs AdaLife-Pro)\n")
+    md_lines.append("\n## 1. Three-Way Caching Performance (CTD vs Paper DDQL vs AdaLife)\n")
 
-    caching_headers = ["Metric", "CTD Baseline", "Paper (Niknia '24)", "AdaLife-Pro (Ours)", "Gain vs Paper", "Gain vs CTD"]
+    caching_headers = ["Metric", "CTD Baseline", "Paper (Niknia '24)", "AdaLife (Ours)", "Gain vs Paper", "Gain vs CTD"]
     caching_rows = []
     
     if ada and paper and ctd:
@@ -311,7 +311,7 @@ def generate_reports():
     caching_table_str = format_table(caching_headers, caching_rows)
     txt_lines.append(caching_table_str)
 
-    md_lines.append("| Metric | CTD Baseline | Paper (Niknia '24) | AdaLife-Pro (Ours) | Gain vs Paper | Gain vs CTD |")
+    md_lines.append("| Metric | CTD Baseline | Paper (Niknia '24) | AdaLife (Ours) | Gain vs Paper | Gain vs CTD |")
     md_lines.append("| :--- | :--- | :--- | :--- | :--- | :--- |")
     for row in caching_rows:
         md_lines.append(f"| **{row[0]}** | `{row[1]}` | `{row[2]}` | **`{row[3]}`** | **{row[4]}** | **{row[5]}** |")

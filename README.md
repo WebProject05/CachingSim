@@ -143,7 +143,7 @@ scripts\run_full_experiment.bat
 ---
 
 ### [Command 2] Instant 3-Way Benchmark (~1-2 Seconds)
-Instantly compares **CTD Baseline** vs **Original Paper (Niknia '24 DDQL)** vs **AdaLife-Pro (Ours)** directly in the Go engine, printing the 3-Way performance table and Table III (Discrete MDP vs Continuous SMDP):
+Instantly compares **CTD Baseline** vs **Original Paper (Niknia '24 DDQL)** vs **AdaLife (Ours)** directly in the Go engine, printing the 3-Way performance table and Table III (Discrete MDP vs Continuous SMDP):
 
 ```powershell
 .\bin\baseline.exe -requests 1000 -lambda 5.0 -mdp-table
@@ -216,7 +216,7 @@ All available configuration flags across both the pipeline orchestrator and the 
 | `-concurrent` | `bool` | `false` | Runs caching policies concurrently across multiple CPU threads. |
 | `-log` | `string` | `"logs/baseline_runs.log"` | Append-only execution log file path. |
 
-#### Algorithmic Feature Toggles (AdaLife-Pro Layers):
+#### Algorithmic Feature Toggles (AdaLife Layers):
 * `-adalife=true/false`: Dynamic lifetime lease extensions on cache hits (Layer 1).
 * `-elastic=true/false`: Load-adaptive elastic cache capacity headroom up to $+35\%$ (Layer 2).
 * `-probation=true/false`: Two-tier probationary shield protecting the core cache (Layer 3).

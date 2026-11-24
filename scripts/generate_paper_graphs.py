@@ -1,11 +1,11 @@
 """
 Comprehensive Research Evaluation Graph Generator for:
 "Edge Caching Based on Deep Reinforcement Learning and Transfer Learning"
-(Niknia et al., 2024 DDQL vs AdaLife-Pro Proposed Algorithm)
+(Niknia et al., 2024 DDQL vs AdaLife Proposed Algorithm)
 
 Generates publication-quality comparison figures between:
 - Paper Proposed: SMDP-DDQL (Niknia et al., 2024)
-- Our Proposed Algorithm: AdaLife-Pro (Part 1 + Part 2 Architecture)
+- Our Proposed Algorithm: AdaLife (Part 1 + Part 2 Architecture)
 
 Note: CTD numerical values are preserved in raw JSON/CSV data files, but excluded
 from plotted curve lines per experimental evaluation design.
@@ -35,9 +35,9 @@ plt.rcParams.update({
     'lines.markersize': 6,
 })
 
-# Two-Way Comparison Color Palette (Paper DDQL vs AdaLife-Pro)
+# Two-Way Comparison Color Palette (Paper DDQL vs AdaLife)
 COLOR_PAPER = '#e76f51'      # Terracotta / Coral (Paper Proposed: Niknia et al. 2024 DDQL)
-COLOR_ADALIFE = '#006d77'    # Deep Teal (AdaLife-Pro: Our Proposed Algorithm)
+COLOR_ADALIFE = '#006d77'    # Deep Teal (AdaLife: Our Proposed Algorithm)
 COLOR_DQFD = '#ae2012'       # Crimson (Standard DQfD)
 COLOR_LFS = '#2b9348'        # Emerald Green (Learning From Scratch)
 COLOR_DPR = '#6a4c93'        # Purple (Direct Policy Reuse)
@@ -87,9 +87,11 @@ def get_sweep_series(sweeps_dict, filename):
                 alg = item.get("algorithm", "")
                 if alg == "Paper-Proposed":
                     paper_y = np.array(item.get("y_values", []))
-                elif alg in ("AdaLife-Pro", "SMDP-DDQL"):
+                elif alg in ("AdaLife", "AdaLife-Pro", "SMDP-DDQL"):
                     adalife_y = np.array(item.get("y_values", []))
-            return x_vals, paper_y, adalife_y
+            if x_vals is not None and paper_y is not None and adalife_y is not None:
+                return x_vals, paper_y, adalife_y
+            return None, None, None
     return None, None, None
 
 
@@ -119,14 +121,14 @@ def generate_figure_1(output_dirs):
 
 
 # =====================================================================
-# FIGURE 3: Performance of DRL Caching (DDQL vs AdaLife-Pro)
+# FIGURE 3: Performance of DRL Caching (DDQL vs AdaLife)
 # =====================================================================
 def generate_figure_3(output_dirs, root_dir):
     np.random.seed(42)
     trials = np.linspace(0, 10000, 101)
 
     # 3(a): Average Reward Convergence
-    # Paper DDQL has -100*Mem cliff penalty; AdaLife-Pro has regularized reward
+    # Paper DDQL has -100*Mem cliff penalty; AdaLife has regularized reward
     r_paper = 10.2 - 28.0 * np.exp(-trials / 2200.0) + np.random.normal(0, 0.20, len(trials))
     r_paper[0] = -18.5
     r_adalife = 18.5 - 22.0 * np.exp(-trials / 1200.0) + np.random.normal(0, 0.12, len(trials))
@@ -135,7 +137,7 @@ def generate_figure_3(output_dirs, root_dir):
     fig, ax = plt.subplots(figsize=(6.5, 4.8))
     markevery = max(1, len(trials) // 10)
     ax.plot(trials, r_paper, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s', markevery=markevery)
-    ax.plot(trials, r_adalife, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o', markevery=markevery)
+    ax.plot(trials, r_adalife, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o', markevery=markevery)
     ax.set_xlabel("Trial")
     ax.set_ylabel("Average reward")
     ax.set_title("Fig. 3(a): Comparison of average rewards")
@@ -148,7 +150,7 @@ def generate_figure_3(output_dirs, root_dir):
 
     fig, ax = plt.subplots(figsize=(6.5, 4.8))
     ax.plot(trials, w_paper, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s', markevery=10)
-    ax.plot(trials, w_adalife, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o', markevery=10)
+    ax.plot(trials, w_adalife, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o', markevery=10)
     ax.set_xlabel("Trial")
     ax.set_ylabel("Average worth of cached files")
     ax.set_title("Fig. 3(b): Average worth of cached files")
@@ -163,7 +165,7 @@ def generate_figure_3(output_dirs, root_dir):
 
     fig, ax = plt.subplots(figsize=(6.5, 4.8))
     ax.plot(trials, m_paper, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s', markevery=10)
-    ax.plot(trials, m_adalife, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o', markevery=10)
+    ax.plot(trials, m_adalife, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o', markevery=10)
     ax.set_xlabel("Trial")
     ax.set_ylabel("Average unoccupied portion of the cache")
     ax.set_title("Fig. 3(c): Average unoccupied portion of the cache")
@@ -173,27 +175,27 @@ def generate_figure_3(output_dirs, root_dir):
     # Combined 3-Panel Figure
     fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))
     axes[0].plot(trials, r_paper, label="Paper DDQL", color=COLOR_PAPER, marker='s', markevery=10)
-    axes[0].plot(trials, r_adalife, label="AdaLife-Pro", color=COLOR_ADALIFE, marker='o', markevery=10)
+    axes[0].plot(trials, r_adalife, label="AdaLife", color=COLOR_ADALIFE, marker='o', markevery=10)
     axes[0].set_xlabel("Trial")
     axes[0].set_ylabel("Average reward")
     axes[0].set_title("(a) Average rewards")
     axes[0].legend(loc="lower right")
 
     axes[1].plot(trials, w_paper, label="Paper DDQL", color=COLOR_PAPER, marker='s', markevery=10)
-    axes[1].plot(trials, w_adalife, label="AdaLife-Pro", color=COLOR_ADALIFE, marker='o', markevery=10)
+    axes[1].plot(trials, w_adalife, label="AdaLife", color=COLOR_ADALIFE, marker='o', markevery=10)
     axes[1].set_xlabel("Trial")
     axes[1].set_ylabel("Average worth of cached files")
     axes[1].set_title("(b) Average worth of cached files")
     axes[1].legend(loc="lower right")
 
     axes[2].plot(trials, m_paper, label="Paper DDQL", color=COLOR_PAPER, marker='s', markevery=10)
-    axes[2].plot(trials, m_adalife, label="AdaLife-Pro", color=COLOR_ADALIFE, marker='o', markevery=10)
+    axes[2].plot(trials, m_adalife, label="AdaLife", color=COLOR_ADALIFE, marker='o', markevery=10)
     axes[2].set_xlabel("Trial")
     axes[2].set_ylabel("Average unoccupied cache ratio")
     axes[2].set_title("(c) Average unoccupied portion of cache")
     axes[2].legend(loc="upper right")
 
-    fig.suptitle("Fig. 3: Performance comparison of Paper SMDP-DDQL vs AdaLife-Pro (Ours)", fontsize=15, y=1.03)
+    fig.suptitle("Fig. 3: Performance comparison of Paper SMDP-DDQL vs AdaLife (Ours)", fontsize=15, y=1.03)
     plt.tight_layout()
     save_fig(fig, output_dirs, "fig3_combined_performance")
 
@@ -211,7 +213,7 @@ def generate_figure_4(output_dirs, sweeps):
 
     fig, ax = plt.subplots(figsize=(6.5, 4.8))
     ax.plot(x_life, y_paper_life, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s')
-    ax.plot(x_life, y_ada_life, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o')
+    ax.plot(x_life, y_ada_life, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o')
     ax.set_xlabel("Lifetime of the most popular file")
     ax.set_ylabel("Total hit count")
     ax.set_title("Fig. 4(a): Total hit count vs popular-file lifetime")
@@ -227,7 +229,7 @@ def generate_figure_4(output_dirs, sweeps):
 
     fig, ax = plt.subplots(figsize=(6.5, 4.8))
     ax.plot(x_size, y_paper_size, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s')
-    ax.plot(x_size, y_ada_size, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o')
+    ax.plot(x_size, y_ada_size, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o')
     ax.set_xlabel("Size of the most popular file (MiB)")
     ax.set_ylabel("Total hit count")
     ax.set_title("Fig. 4(b): Total hit count vs popular-file size")
@@ -243,7 +245,7 @@ def generate_figure_4(output_dirs, sweeps):
 
     fig, ax = plt.subplots(figsize=(6.5, 4.8))
     ax.plot(x_imp, y_paper_imp, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s')
-    ax.plot(x_imp, y_ada_imp, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o')
+    ax.plot(x_imp, y_ada_imp, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o')
     ax.set_xlabel("Importance of the most popular file")
     ax.set_ylabel("Total hit count")
     ax.set_title("Fig. 4(c): Total hit count vs popular-file importance")
@@ -253,21 +255,21 @@ def generate_figure_4(output_dirs, sweeps):
     # Combined 3-Panel Figure 4
     fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))
     axes[0].plot(x_life, y_paper_life, label="Paper DDQL", color=COLOR_PAPER, marker='s')
-    axes[0].plot(x_life, y_ada_life, label="AdaLife-Pro", color=COLOR_ADALIFE, marker='o')
+    axes[0].plot(x_life, y_ada_life, label="AdaLife", color=COLOR_ADALIFE, marker='o')
     axes[0].set_xlabel("Popular-file lifetime")
     axes[0].set_ylabel("Total hit count")
     axes[0].set_title("(a) Varying lifetime")
     axes[0].legend(loc="lower right")
 
     axes[1].plot(x_size, y_paper_size, label="Paper DDQL", color=COLOR_PAPER, marker='s')
-    axes[1].plot(x_size, y_ada_size, label="AdaLife-Pro", color=COLOR_ADALIFE, marker='o')
+    axes[1].plot(x_size, y_ada_size, label="AdaLife", color=COLOR_ADALIFE, marker='o')
     axes[1].set_xlabel("Popular-file size (MiB)")
     axes[1].set_ylabel("Total hit count")
     axes[1].set_title("(b) Varying size")
     axes[1].legend(loc="lower left")
 
     axes[2].plot(x_imp, y_paper_imp, label="Paper DDQL", color=COLOR_PAPER, marker='s')
-    axes[2].plot(x_imp, y_ada_imp, label="AdaLife-Pro", color=COLOR_ADALIFE, marker='o')
+    axes[2].plot(x_imp, y_ada_imp, label="AdaLife", color=COLOR_ADALIFE, marker='o')
     axes[2].set_xlabel("Popular-file importance")
     axes[2].set_ylabel("Total hit count")
     axes[2].set_title("(c) Varying importance")
@@ -291,7 +293,7 @@ def generate_figure_5(output_dirs, sweeps):
 
     fig, ax = plt.subplots(figsize=(6.5, 4.8))
     ax.plot(x_life, y_paper_life, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s')
-    ax.plot(x_life, y_ada_life, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o')
+    ax.plot(x_life, y_ada_life, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o')
     ax.set_xlabel("Lifetime of the most popular file")
     ax.set_ylabel("Total utility")
     ax.set_title("Fig. 5(a): Total utility vs popular-file lifetime")
@@ -307,7 +309,7 @@ def generate_figure_5(output_dirs, sweeps):
 
     fig, ax = plt.subplots(figsize=(6.5, 4.8))
     ax.plot(x_size, y_paper_size, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s')
-    ax.plot(x_size, y_ada_size, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o')
+    ax.plot(x_size, y_ada_size, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o')
     ax.set_xlabel("Size of the most popular file (MiB)")
     ax.set_ylabel("Total utility")
     ax.set_title("Fig. 5(b): Total utility vs popular-file size")
@@ -323,7 +325,7 @@ def generate_figure_5(output_dirs, sweeps):
 
     fig, ax = plt.subplots(figsize=(6.5, 4.8))
     ax.plot(x_imp, y_paper_imp, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s')
-    ax.plot(x_imp, y_ada_imp, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o')
+    ax.plot(x_imp, y_ada_imp, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o')
     ax.set_xlabel("Importance of the most popular file")
     ax.set_ylabel("Total utility")
     ax.set_title("Fig. 5(c): Total utility vs popular-file importance")
@@ -333,21 +335,21 @@ def generate_figure_5(output_dirs, sweeps):
     # Combined 3-Panel Figure 5
     fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))
     axes[0].plot(x_life, y_paper_life, label="Paper DDQL", color=COLOR_PAPER, marker='s')
-    axes[0].plot(x_life, y_ada_life, label="AdaLife-Pro", color=COLOR_ADALIFE, marker='o')
+    axes[0].plot(x_life, y_ada_life, label="AdaLife", color=COLOR_ADALIFE, marker='o')
     axes[0].set_xlabel("Popular-file lifetime")
     axes[0].set_ylabel("Total utility")
     axes[0].set_title("(a) Varying lifetime")
     axes[0].legend(loc="lower right")
 
     axes[1].plot(x_size, y_paper_size, label="Paper DDQL", color=COLOR_PAPER, marker='s')
-    axes[1].plot(x_size, y_ada_size, label="AdaLife-Pro", color=COLOR_ADALIFE, marker='o')
+    axes[1].plot(x_size, y_ada_size, label="AdaLife", color=COLOR_ADALIFE, marker='o')
     axes[1].set_xlabel("Popular-file size (MiB)")
     axes[1].set_ylabel("Total utility")
     axes[1].set_title("(b) Varying size")
     axes[1].legend(loc="lower left")
 
     axes[2].plot(x_imp, y_paper_imp, label="Paper DDQL", color=COLOR_PAPER, marker='s')
-    axes[2].plot(x_imp, y_ada_imp, label="AdaLife-Pro", color=COLOR_ADALIFE, marker='o')
+    axes[2].plot(x_imp, y_ada_imp, label="AdaLife", color=COLOR_ADALIFE, marker='o')
     axes[2].set_xlabel("Popular-file importance")
     axes[2].set_ylabel("Total utility")
     axes[2].set_title("(c) Varying importance")
@@ -371,7 +373,7 @@ def generate_figure_6(output_dirs, sweeps):
 
     fig, ax = plt.subplots(figsize=(6.5, 4.8))
     ax.plot(x_eta, y_paper_eta, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s')
-    ax.plot(x_eta, y_ada_eta, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o')
+    ax.plot(x_eta, y_ada_eta, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o')
     ax.set_xlabel(r"Zipf parameter $\eta$")
     ax.set_ylabel("Total hit count")
     ax.set_title(r"Fig. 6(a): Total hit count vs popularity skewness $\eta$")
@@ -387,7 +389,7 @@ def generate_figure_6(output_dirs, sweeps):
 
     fig, ax = plt.subplots(figsize=(6.5, 4.8))
     ax.plot(x_lam, y_paper_lam, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s')
-    ax.plot(x_lam, y_ada_lam, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o')
+    ax.plot(x_lam, y_ada_lam, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o')
     ax.set_xlabel(r"Request rate $\lambda$ (req/s)")
     ax.set_ylabel("Total hit count")
     ax.set_title(r"Fig. 6(b): Total hit count vs request rate $\lambda$")
@@ -403,7 +405,7 @@ def generate_figure_6(output_dirs, sweeps):
 
     fig, ax = plt.subplots(figsize=(6.5, 4.8))
     ax.plot(x_cap, y_paper_cap, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s')
-    ax.plot(x_cap, y_ada_cap, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o')
+    ax.plot(x_cap, y_ada_cap, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o')
     ax.set_xlabel("Cache size $M$ (MiB)")
     ax.set_ylabel("Total hit count")
     ax.set_title("Fig. 6(c): Total hit count vs cache size $M$")
@@ -413,21 +415,21 @@ def generate_figure_6(output_dirs, sweeps):
     # Combined 3-Panel Figure 6
     fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))
     axes[0].plot(x_eta, y_paper_eta, label="Paper DDQL", color=COLOR_PAPER, marker='s')
-    axes[0].plot(x_eta, y_ada_eta, label="AdaLife-Pro", color=COLOR_ADALIFE, marker='o')
+    axes[0].plot(x_eta, y_ada_eta, label="AdaLife", color=COLOR_ADALIFE, marker='o')
     axes[0].set_xlabel(r"Zipf parameter $\eta$")
     axes[0].set_ylabel("Total hit count")
     axes[0].set_title(r"(a) Varying $\eta$")
     axes[0].legend(loc="lower right")
 
     axes[1].plot(x_lam, y_paper_lam, label="Paper DDQL", color=COLOR_PAPER, marker='s')
-    axes[1].plot(x_lam, y_ada_lam, label="AdaLife-Pro", color=COLOR_ADALIFE, marker='o')
+    axes[1].plot(x_lam, y_ada_lam, label="AdaLife", color=COLOR_ADALIFE, marker='o')
     axes[1].set_xlabel(r"Request rate $\lambda$")
     axes[1].set_ylabel("Total hit count")
     axes[1].set_title(r"(b) Varying $\lambda$")
     axes[1].legend(loc="lower right")
 
     axes[2].plot(x_cap, y_paper_cap, label="Paper DDQL", color=COLOR_PAPER, marker='s')
-    axes[2].plot(x_cap, y_ada_cap, label="AdaLife-Pro", color=COLOR_ADALIFE, marker='o')
+    axes[2].plot(x_cap, y_ada_cap, label="AdaLife", color=COLOR_ADALIFE, marker='o')
     axes[2].set_xlabel("Cache size $M$ (MiB)")
     axes[2].set_ylabel("Total hit count")
     axes[2].set_title("(c) Varying cache size $M$")
@@ -451,7 +453,7 @@ def generate_figure_7(output_dirs, sweeps):
 
     fig, ax = plt.subplots(figsize=(6.5, 4.8))
     ax.plot(x_eta, y_paper_eta, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s')
-    ax.plot(x_eta, y_ada_eta, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o')
+    ax.plot(x_eta, y_ada_eta, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o')
     ax.set_xlabel(r"Zipf parameter $\eta$")
     ax.set_ylabel("Total utility")
     ax.set_title(r"Fig. 7(a): Total utility vs popularity skewness $\eta$")
@@ -467,7 +469,7 @@ def generate_figure_7(output_dirs, sweeps):
 
     fig, ax = plt.subplots(figsize=(6.5, 4.8))
     ax.plot(x_lam, y_paper_lam, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s')
-    ax.plot(x_lam, y_ada_lam, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o')
+    ax.plot(x_lam, y_ada_lam, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o')
     ax.set_xlabel(r"Request rate $\lambda$ (req/s)")
     ax.set_ylabel("Total utility")
     ax.set_title(r"Fig. 7(b): Total utility vs request rate $\lambda$")
@@ -483,7 +485,7 @@ def generate_figure_7(output_dirs, sweeps):
 
     fig, ax = plt.subplots(figsize=(6.5, 4.8))
     ax.plot(x_cap, y_paper_cap, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s')
-    ax.plot(x_cap, y_ada_cap, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o')
+    ax.plot(x_cap, y_ada_cap, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o')
     ax.set_xlabel("Cache size $M$ (MiB)")
     ax.set_ylabel("Total utility")
     ax.set_title("Fig. 7(c): Total utility vs cache size $M$")
@@ -493,21 +495,21 @@ def generate_figure_7(output_dirs, sweeps):
     # Combined 3-Panel Figure 7
     fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))
     axes[0].plot(x_eta, y_paper_eta, label="Paper DDQL", color=COLOR_PAPER, marker='s')
-    axes[0].plot(x_eta, y_ada_eta, label="AdaLife-Pro", color=COLOR_ADALIFE, marker='o')
+    axes[0].plot(x_eta, y_ada_eta, label="AdaLife", color=COLOR_ADALIFE, marker='o')
     axes[0].set_xlabel(r"Zipf parameter $\eta$")
     axes[0].set_ylabel("Total utility")
     axes[0].set_title(r"(a) Varying $\eta$")
     axes[0].legend(loc="lower right")
 
     axes[1].plot(x_lam, y_paper_lam, label="Paper DDQL", color=COLOR_PAPER, marker='s')
-    axes[1].plot(x_lam, y_ada_lam, label="AdaLife-Pro", color=COLOR_ADALIFE, marker='o')
+    axes[1].plot(x_lam, y_ada_lam, label="AdaLife", color=COLOR_ADALIFE, marker='o')
     axes[1].set_xlabel(r"Request rate $\lambda$")
     axes[1].set_ylabel("Total utility")
     axes[1].set_title(r"(b) Varying $\lambda$")
     axes[1].legend(loc="lower right")
 
     axes[2].plot(x_cap, y_paper_cap, label="Paper DDQL", color=COLOR_PAPER, marker='s')
-    axes[2].plot(x_cap, y_ada_cap, label="AdaLife-Pro", color=COLOR_ADALIFE, marker='o')
+    axes[2].plot(x_cap, y_ada_cap, label="AdaLife", color=COLOR_ADALIFE, marker='o')
     axes[2].set_xlabel("Cache size $M$ (MiB)")
     axes[2].set_ylabel("Total utility")
     axes[2].set_title("(c) Varying cache size $M$")
@@ -533,7 +535,7 @@ def generate_figure_8(output_dirs):
 
     fig, ax = plt.subplots(figsize=(6.8, 4.8))
     markevery = max(1, len(trials) // 10)
-    ax.plot(trials, r_ada_tl, label="AdaLife-Pro TL (Ours)", color=COLOR_ADALIFE, marker='o', markevery=markevery)
+    ax.plot(trials, r_ada_tl, label="AdaLife TL (Ours)", color=COLOR_ADALIFE, marker='o', markevery=markevery)
     ax.plot(trials, r_paper_tl, label="Paper DDQL TL", color=COLOR_PAPER, marker='s', markevery=markevery)
     ax.plot(trials, r_dqfd, label="DQfD [38]", color=COLOR_DQFD, marker='d', markevery=markevery, linewidth=1.8)
     ax.plot(trials, r_lfs, label="LFS", color=COLOR_LFS, marker='^', markevery=markevery, linewidth=1.8)
@@ -551,7 +553,7 @@ def generate_figure_8(output_dirs):
     r_without_ow[-1] = 21.56
 
     fig, ax = plt.subplots(figsize=(6.8, 4.8))
-    ax.plot(trials, r_with_ow, label="With overwriting (AdaLife-Pro)", color=COLOR_ADALIFE, marker='o', markevery=markevery)
+    ax.plot(trials, r_with_ow, label="With overwriting (AdaLife)", color=COLOR_ADALIFE, marker='o', markevery=markevery)
     ax.plot(trials, r_without_ow, label="Without overwriting", color=COLOR_WITHOUT_OW, marker='v', markevery=markevery)
     ax.set_xlabel("Trial")
     ax.set_ylabel("Average reward")
@@ -576,7 +578,7 @@ def generate_figure_8(output_dirs):
 
     # Combined 3-Panel Figure 8
     fig, axes = plt.subplots(1, 3, figsize=(16, 4.5))
-    axes[0].plot(trials, r_ada_tl, label="AdaLife-Pro TL", color=COLOR_ADALIFE, marker='o', markevery=10)
+    axes[0].plot(trials, r_ada_tl, label="AdaLife TL", color=COLOR_ADALIFE, marker='o', markevery=10)
     axes[0].plot(trials, r_paper_tl, label="Paper DDQL TL", color=COLOR_PAPER, marker='s', markevery=10)
     axes[0].plot(trials, r_dqfd, label="DQfD", color=COLOR_DQFD, marker='d', markevery=10)
     axes[0].plot(trials, r_lfs, label="LFS", color=COLOR_LFS, marker='^', markevery=10)
@@ -622,20 +624,20 @@ def generate_figure_9(output_dirs, sweeps):
 
     fig, axes = plt.subplots(1, 2, figsize=(13, 4.8))
     axes[0].plot(x_cap, y_paper_cap, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s')
-    axes[0].plot(x_cap, y_ada_cap, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o')
+    axes[0].plot(x_cap, y_ada_cap, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o')
     axes[0].set_xlabel("Cache size $M$ (MiB)")
     axes[0].set_ylabel("Total evictions")
     axes[0].set_title("(a) Eviction count vs cache size $M$")
     axes[0].legend(loc="upper right")
 
     axes[1].plot(x_lam, y_paper_lam, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s')
-    axes[1].plot(x_lam, y_ada_lam, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o')
+    axes[1].plot(x_lam, y_ada_lam, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o')
     axes[1].set_xlabel(r"Request arrival rate $\lambda$ (req/s)")
     axes[1].set_ylabel("Total evictions")
     axes[1].set_title(r"(b) Eviction count vs request rate $\lambda$")
     axes[1].legend(loc="upper left")
 
-    fig.suptitle("Fig. 9: Eviction churn reduction (AdaLife-Pro cuts cache thrashing by 50%+)", fontsize=14, y=1.02)
+    fig.suptitle("Fig. 9: Eviction churn reduction (AdaLife cuts cache thrashing by 50%+)", fontsize=14, y=1.02)
     plt.tight_layout()
     save_fig(fig, output_dirs, "fig9_eviction_churn_comparison")
 
@@ -658,14 +660,14 @@ def generate_figure_10(output_dirs, sweeps):
 
     fig, axes = plt.subplots(1, 2, figsize=(13, 4.8))
     axes[0].plot(x_cap, y_paper_cap, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s')
-    axes[0].plot(x_cap, y_ada_cap, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o')
+    axes[0].plot(x_cap, y_ada_cap, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o')
     axes[0].set_xlabel("Cache size $M$ (MiB)")
     axes[0].set_ylabel("Byte hit rate (%)")
     axes[0].set_title("(a) Byte hit rate vs cache size $M$")
     axes[0].legend(loc="lower right")
 
     axes[1].plot(x_lam, y_paper_lam, label="Paper (Niknia '24 DDQL)", color=COLOR_PAPER, marker='s')
-    axes[1].plot(x_lam, y_ada_lam, label="AdaLife-Pro (Ours)", color=COLOR_ADALIFE, marker='o')
+    axes[1].plot(x_lam, y_ada_lam, label="AdaLife (Ours)", color=COLOR_ADALIFE, marker='o')
     axes[1].set_xlabel(r"Request arrival rate $\lambda$ (req/s)")
     axes[1].set_ylabel("Byte hit rate (%)")
     axes[1].set_title(r"(b) Byte hit rate vs request rate $\lambda$")
@@ -688,7 +690,7 @@ def main():
     sweeps = load_sweep_data(root_dir)
 
     print("=" * 70)
-    print(" Generating Paper-Proposed DDQL vs AdaLife-Pro Comparison Graphs")
+    print(" Generating Paper-Proposed DDQL vs AdaLife Comparison Graphs")
     print(f" Target directories: {graphs_dir} & {sim_graphs_dir}")
     print("=" * 70)
 
@@ -702,7 +704,7 @@ def main():
     generate_figure_9(output_dirs, sweeps)
     generate_figure_10(output_dirs, sweeps)
 
-    print("\n[+] Successfully generated all DDQL vs AdaLife-Pro comparison figures in PNG and SVG formats!")
+    print("\n[+] Successfully generated all DDQL vs AdaLife comparison figures in PNG and SVG formats!")
 
 
 if __name__ == "__main__":

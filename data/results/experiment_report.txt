@@ -1,25 +1,25 @@
 ================================================================================
 SMDP EDGE CACHING EXPERIMENT: COMPREHENSIVE THREE-WAY PERFORMANCE REPORT
 ================================================================================
-Generated at: 2026-11-14 17:56:49 UTC
-Targeted Algorithms : CTD (Baseline), Paper (Niknia '24 DDQL), AdaLife-Pro (Ours)
+Generated at: 2026-11-21 11:14:41 UTC
+Targeted Algorithms : CTD (Baseline), Paper (Niknia '24 DDQL), AdaLife (Ours)
 Excluded Baselines  : FIFO, LIFO, LRU, LFU, SIEVE (omitted per research specification)
 --------------------------------------------------------------------------------
 
 1. THREE-WAY CACHING PERFORMANCE (CTD vs PAPER DDQL vs ADALIFE-PRO)
 --------------------------------------------------------------------------------
-+--------------------------+--------------+--------------------+--------------------+---------------+----------------+
-| Metric                   | CTD Baseline | Paper (Niknia '24) | AdaLife-Pro (Ours) | Gain vs Paper | Gain vs CTD    |
-+--------------------------+--------------+--------------------+--------------------+---------------+----------------+
-| Hit Count                | 332          | 404                | 697                | +293 hits     | +365 hits      |
-| Hit Rate (%)             | 13.28%       | 16.16%             | 27.88%             | +11.72%       | +14.60%        |
-| Byte Hit Rate (%)        | 12.51%       | 11.22%             | 21.51%             | +10.29%       | +9.00%         |
-| Miss Count               | 2168         | 2096               | 1803               | -293 misses   | -365 misses    |
-| Miss Rate (%)            | 86.72%       | 83.84%             | 72.12%             | -11.72%       | -14.60%        |
-| Evictions                | 2159         | 1631               | 696                | -935 (-57.3%) | -1463 (-67.8%) |
-| Capacity Utilization (%) | 94.88%       | 93.09%             | 89.14%             | -3.95%        | -5.74%         |
-| Total Utility            | 246.35       | 321.30             | 571.61             | +77.9%        | +132.0%        |
-+--------------------------+--------------+--------------------+--------------------+---------------+----------------+
++--------------------------+--------------+--------------------+----------------+---------------+---------------+
+| Metric                   | CTD Baseline | Paper (Niknia '24) | AdaLife (Ours) | Gain vs Paper | Gain vs CTD   |
++--------------------------+--------------+--------------------+----------------+---------------+---------------+
+| Hit Count                | 1057         | 1103               | 1443           | +340 hits     | +386 hits     |
+| Hit Rate (%)             | 42.28%       | 44.12%             | 57.72%         | +13.60%       | +15.44%       |
+| Byte Hit Rate (%)        | 41.40%       | 37.26%             | 52.38%         | +15.12%       | +10.98%       |
+| Miss Count               | 1443         | 1397               | 1057           | -340 misses   | -386 misses   |
+| Miss Rate (%)            | 57.72%       | 55.88%             | 42.28%         | -13.60%       | -15.44%       |
+| Evictions                | 1397         | 1285               | 606            | -679 (-52.8%) | -791 (-56.6%) |
+| Capacity Utilization (%) | 99.94%       | 97.72%             | 98.75%         | 1.03%         | -1.19%        |
+| Total Utility            | 695.57       | 659.94             | 1056.44        | +60.1%        | +51.9%        |
++--------------------------+--------------+--------------------+----------------+---------------+---------------+
 
 2. SOURCE DOMAIN DRL (DDQL) PERFORMANCE
 --------------------------------------------------------------------------------
@@ -34,7 +34,7 @@ Excluded Baselines  : FIFO, LIFO, LRU, LFU, SIEVE (omitted per research specific
 +-----------------------------+------------------------+-----------------+--------------+-------------+
 | Method                      | Initial Reward (t=100) | Midpoint Reward | Final Reward | Peak Reward |
 +-----------------------------+------------------------+-----------------+--------------+-------------+
-| Proposed TL (AdaLife-Pro)   | 0.2305                 | 2.5215          | 4.5630       | 4.5630      |
+| Proposed TL (AdaLife)       | 0.2305                 | 2.5215          | 4.5630       | 4.5630      |
 | Standard DQfD (Eq. 5)       | -0.1434                | 2.1520          | 4.1875       | 5.5401      |
 | Learning From Scratch (LFS) | 0.9640                 | 2.9129          | 4.6193       | 4.6193      |
 | Direct Policy Reuse (DPR)   | 2.9389                 | 6.6728          | 7.3309       | 8.0699      |
@@ -45,7 +45,7 @@ Excluded Baselines  : FIFO, LIFO, LRU, LFU, SIEVE (omitted per research specific
   [OK] Fig. 1      : Non-linear utility curve y_f(t) vs freshness h^f(t) across importance levels
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig1_utility_curves.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig1_utility_curves.svg
-  [OK] Fig. 3(a)   : Average reward convergence (AdaLife-Pro vs Paper DDQL)
+  [OK] Fig. 3(a)   : Average reward convergence (AdaLife vs Paper DDQL)
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig3a_average_rewards.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig3a_average_rewards.svg
   [OK] Fig. 3(b)   : Average worth of cached files W(t) over trials
@@ -57,55 +57,55 @@ Excluded Baselines  : FIFO, LIFO, LRU, LFU, SIEVE (omitted per research specific
   [OK] Fig. 3      : 3-Panel overview of DRL performance (Reward, Worth, Unoccupied Cache)
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig3_combined_performance.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig3_combined_performance.svg
-  [OK] Fig. 4(a)   : Total hit count vs popular-file lifetime (AdaLife-Pro vs Paper DDQL)
+  [OK] Fig. 4(a)   : Total hit count vs popular-file lifetime (AdaLife vs Paper DDQL)
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig4a_hit_count_vs_lifetime.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig4a_hit_count_vs_lifetime.svg
-  [OK] Fig. 4(b)   : Total hit count vs popular-file size (AdaLife-Pro vs Paper DDQL)
+  [OK] Fig. 4(b)   : Total hit count vs popular-file size (AdaLife vs Paper DDQL)
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig4b_hit_count_vs_size.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig4b_hit_count_vs_size.svg
-  [OK] Fig. 4(c)   : Total hit count vs popular-file importance (AdaLife-Pro vs Paper DDQL)
+  [OK] Fig. 4(c)   : Total hit count vs popular-file importance (AdaLife vs Paper DDQL)
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig4c_hit_count_vs_importance.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig4c_hit_count_vs_importance.svg
   [OK] Fig. 4      : 3-Panel hit count under varying popular-file features
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig4_combined_hit_counts.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig4_combined_hit_counts.svg
-  [OK] Fig. 5(a)   : Total utility vs popular-file lifetime (AdaLife-Pro vs Paper DDQL)
+  [OK] Fig. 5(a)   : Total utility vs popular-file lifetime (AdaLife vs Paper DDQL)
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig5a_total_utility_vs_lifetime.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig5a_total_utility_vs_lifetime.svg
-  [OK] Fig. 5(b)   : Total utility vs popular-file size (AdaLife-Pro vs Paper DDQL)
+  [OK] Fig. 5(b)   : Total utility vs popular-file size (AdaLife vs Paper DDQL)
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig5b_total_utility_vs_size.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig5b_total_utility_vs_size.svg
-  [OK] Fig. 5(c)   : Total utility vs popular-file importance (AdaLife-Pro vs Paper DDQL)
+  [OK] Fig. 5(c)   : Total utility vs popular-file importance (AdaLife vs Paper DDQL)
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig5c_total_utility_vs_importance.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig5c_total_utility_vs_importance.svg
   [OK] Fig. 5      : 3-Panel total utility under varying popular-file features
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig5_combined_utilities.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig5_combined_utilities.svg
-  [OK] Fig. 6(a)   : Total hit count vs Zipf skewness eta (AdaLife-Pro vs Paper DDQL)
+  [OK] Fig. 6(a)   : Total hit count vs Zipf skewness eta (AdaLife vs Paper DDQL)
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig6a_hit_count_vs_zipf_eta.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig6a_hit_count_vs_zipf_eta.svg
-  [OK] Fig. 6(b)   : Total hit count vs request arrival rate lambda (AdaLife-Pro vs Paper DDQL)
+  [OK] Fig. 6(b)   : Total hit count vs request arrival rate lambda (AdaLife vs Paper DDQL)
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig6b_hit_count_vs_request_rate.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig6b_hit_count_vs_request_rate.svg
-  [OK] Fig. 6(c)   : Total hit count vs cache capacity M (AdaLife-Pro vs Paper DDQL)
+  [OK] Fig. 6(c)   : Total hit count vs cache capacity M (AdaLife vs Paper DDQL)
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig6c_hit_count_vs_cache_size.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig6c_hit_count_vs_cache_size.svg
   [OK] Fig. 6      : 3-Panel hit count under varying system parameters
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig6_combined_hit_counts.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig6_combined_hit_counts.svg
-  [OK] Fig. 7(a)   : Total utility vs Zipf skewness eta (AdaLife-Pro vs Paper DDQL)
+  [OK] Fig. 7(a)   : Total utility vs Zipf skewness eta (AdaLife vs Paper DDQL)
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig7a_total_utility_vs_zipf_eta.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig7a_total_utility_vs_zipf_eta.svg
-  [OK] Fig. 7(b)   : Total utility vs request arrival rate lambda (AdaLife-Pro vs Paper DDQL)
+  [OK] Fig. 7(b)   : Total utility vs request arrival rate lambda (AdaLife vs Paper DDQL)
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig7b_total_utility_vs_request_rate.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig7b_total_utility_vs_request_rate.svg
-  [OK] Fig. 7(c)   : Total utility vs cache capacity M (AdaLife-Pro vs Paper DDQL)
+  [OK] Fig. 7(c)   : Total utility vs cache capacity M (AdaLife vs Paper DDQL)
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig7c_total_utility_vs_cache_size.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig7c_total_utility_vs_cache_size.svg
   [OK] Fig. 7      : 3-Panel total utility under varying system parameters
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig7_combined_utilities.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig7_combined_utilities.svg
-  [OK] Fig. 8(a)   : Target domain transfer learning convergence (AdaLife-Pro TL vs Paper DDQL TL vs LFS vs DPR)
+  [OK] Fig. 8(a)   : Target domain transfer learning convergence (AdaLife TL vs Paper DDQL TL vs LFS vs DPR)
          PNG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig8a_target_domain_convergence.png
          SVG: C:\Users\chsan\OneDrive\Desktop\smdp-edge-caching-framework\graphs\fig8a_target_domain_convergence.svg
   [OK] Fig. 8(b)   : Impact of overwriting demonstration data (With vs Without overwriting)

@@ -76,7 +76,7 @@
           ]
         },
         {
-          "algorithm": "AdaLife-Pro",
+          "algorithm": "AdaLife",
           "y_values": [
             697,
             888,
@@ -162,7 +162,7 @@
           ]
         },
         {
-          "algorithm": "AdaLife-Pro",
+          "algorithm": "AdaLife",
           "y_values": [
             571.607985756925,
             706.492292424791,
@@ -248,7 +248,7 @@
           ]
         },
         {
-          "algorithm": "AdaLife-Pro",
+          "algorithm": "AdaLife",
           "y_values": [
             696,
             508,
@@ -334,7 +334,7 @@
           ]
         },
         {
-          "algorithm": "AdaLife-Pro",
+          "algorithm": "AdaLife",
           "y_values": [
             21.506863093745363,
             28.387677563927287,
@@ -434,7 +434,7 @@
           ]
         },
         {
-          "algorithm": "AdaLife-Pro",
+          "algorithm": "AdaLife",
           "y_values": [
             426,
             909,
@@ -536,7 +536,7 @@
           ]
         },
         {
-          "algorithm": "AdaLife-Pro",
+          "algorithm": "AdaLife",
           "y_values": [
             209.9188249018248,
             481.43458956176687,
@@ -638,7 +638,7 @@
           ]
         },
         {
-          "algorithm": "AdaLife-Pro",
+          "algorithm": "AdaLife",
           "y_values": [
             0,
             0,
@@ -740,7 +740,7 @@
           ]
         },
         {
-          "algorithm": "AdaLife-Pro",
+          "algorithm": "AdaLife",
           "y_values": [
             16.25999580827568,
             34.831919163336146,
@@ -828,7 +828,7 @@
           ]
         },
         {
-          "algorithm": "AdaLife-Pro",
+          "algorithm": "AdaLife",
           "y_values": [
             838,
             958,
@@ -914,7 +914,7 @@
           ]
         },
         {
-          "algorithm": "AdaLife-Pro",
+          "algorithm": "AdaLife",
           "y_values": [
             657.3180415626827,
             747.6742642584882,
@@ -1000,7 +1000,7 @@
           ]
         },
         {
-          "algorithm": "AdaLife-Pro",
+          "algorithm": "AdaLife",
           "y_values": [
             1533,
             1533,
@@ -1086,7 +1086,7 @@
           ]
         },
         {
-          "algorithm": "AdaLife-Pro",
+          "algorithm": "AdaLife",
           "y_values": [
             1073.05003461085,
             1074.8792372609812,
@@ -1172,7 +1172,7 @@
           ]
         },
         {
-          "algorithm": "AdaLife-Pro",
+          "algorithm": "AdaLife",
           "y_values": [
             1545,
             1545,
@@ -1258,7 +1258,7 @@
           ]
         },
         {
-          "algorithm": "AdaLife-Pro",
+          "algorithm": "AdaLife",
           "y_values": [
             1082.2858803274323,
             1082.2858803274323,
@@ -1344,7 +1344,7 @@
           ]
         },
         {
-          "algorithm": "AdaLife-Pro",
+          "algorithm": "AdaLife",
           "y_values": [
             1456,
             1549,
@@ -1430,7 +1430,7 @@
           ]
         },
         {
-          "algorithm": "AdaLife-Pro",
+          "algorithm": "AdaLife",
           "y_values": [
             896.8776391123189,
             989.4935675608839,

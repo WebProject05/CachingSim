@@ -170,7 +170,7 @@ class DDQLAgent:
     def compute_expert_action(self, state: np.ndarray) -> int:
         """
         Computes the expert admission action a_E in {0, 1} based on marginal cost-utility density
-        and AdaLife-Pro probationary shielding awareness.
+        and AdaLife probationary shielding awareness.
         Resolves the demonstration bias gap: provides balanced, high-quality demonstration
         guidance for DQfD large-margin supervised loss J_E.
         """
@@ -189,7 +189,7 @@ class DDQLAgent:
             if density_diff >= 0.0:
                 return 1
             if getattr(self.cfg, "adalife_pro", True):
-                # Under AdaLife-Pro Probationary Shield + Ghost Fast-Track:
+                # Under AdaLife Probationary Shield + Ghost Fast-Track:
                 # Admit promising/repeat candidates into Probation or Ghost fast-track,
                 # while rejecting low-density one-hit junk.
                 if cand_pop >= 0.08 and cand_density >= (min_cached_density * 0.5):

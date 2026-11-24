@@ -57,13 +57,13 @@ func writeGraphs(
 		return err
 	}
 
-	// 2. Write Convergence Line Chart (AdaLife-Pro vs Paper-Proposed ONLY; CTD omitted from graphs)
+	// 2. Write Convergence Line Chart (AdaLife vs Paper-Proposed ONLY; CTD omitted from graphs)
 	var paperResults []runResult
 	for _, r := range results {
-		if r.name == "AdaLife-Pro" || r.name == "SMDP-DDQL" || r.name == "Paper-Proposed" {
+		if r.name == "AdaLife" || r.name == "SMDP-DDQL" || r.name == "Paper-Proposed" {
 			displayName := r.name
-			if r.name == "SMDP-DDQL" || r.name == "AdaLife-Pro" {
-				displayName = "AdaLife-Pro (Ours)"
+			if r.name == "SMDP-DDQL" || r.name == "AdaLife" {
+				displayName = "AdaLife (Ours)"
 			} else if r.name == "Paper-Proposed" {
 				displayName = "Paper (Niknia '24 DDQL)"
 			}
@@ -221,10 +221,10 @@ func writeGraphs(
 
 		var chartSeries []lineSeries
 		for _, s := range series {
-			if s.name == "AdaLife-Pro" || s.name == "SMDP-DDQL" || s.name == "Paper-Proposed" {
+			if s.name == "AdaLife" || s.name == "SMDP-DDQL" || s.name == "Paper-Proposed" {
 				dispName := s.name
-				if s.name == "SMDP-DDQL" || s.name == "AdaLife-Pro" {
-					dispName = "AdaLife-Pro (Ours)"
+				if s.name == "SMDP-DDQL" || s.name == "AdaLife" {
+					dispName = "AdaLife (Ours)"
 				} else if s.name == "Paper-Proposed" {
 					dispName = "Paper (Niknia '24 DDQL)"
 				}
@@ -302,7 +302,7 @@ func writeElasticCapacityArtifacts(path string, results []runResult, interval in
 	var targetResult *runResult
 	var paperResult *runResult
 	for i := range results {
-		if results[i].name == "AdaLife-Pro" || results[i].name == "SMDP-DDQL" {
+		if results[i].name == "AdaLife" || results[i].name == "SMDP-DDQL" {
 			targetResult = &results[i]
 		} else if results[i].name == "Paper-Proposed" {
 			paperResult = &results[i]
@@ -328,12 +328,12 @@ func writeElasticCapacityArtifacts(path string, results []runResult, interval in
 
 	chartSeries := []lineSeries{
 		{
-			name: "AdaLife-Pro Dynamic Elastic Capacity M_eff(t)",
+			name: "AdaLife Dynamic Elastic Capacity M_eff(t)",
 			x:    xEff,
 			y:    yEff,
 		},
 		{
-			name: "AdaLife-Pro Cache Used Memory",
+			name: "AdaLife Cache Used Memory",
 			x:    xUsed,
 			y:    yUsed,
 		},

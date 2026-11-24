@@ -104,7 +104,7 @@ func (s *EnvServer) MDPStep(action int32, timeQuota float64) *pb.StepResponse {
 	return s.executeStepLocked(action, timeQuota)
 }
 
-// executeStepLocked handles state transition, AdaLife-Pro mechanisms, reward, and clock advance.
+// executeStepLocked handles state transition, AdaLife mechanisms, reward, and clock advance.
 func (s *EnvServer) executeStepLocked(action int32, tau float64) *pb.StepResponse {
 	s.cache.UpdateTrafficRate(tau)
 

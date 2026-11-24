@@ -36,7 +36,7 @@ func main() {
 	enableProbation := flag.Bool("probation", true, "enable two-tier probationary shield for one-hit wonders")
 	enableFetchCost := flag.Bool("fetch-cost", true, "enable asymmetric origin fetch-cost weighting")
 	enableGhost := flag.Bool("ghost", true, "enable counterfactual ghost cache regret and fast-track")
-	part1Only := flag.Bool("part1-only", false, "disable all Part 2 AdaLife-Pro mechanisms (run Part 1 baseline only)")
+	part1Only := flag.Bool("part1-only", false, "disable all Part 2 AdaLife mechanisms (run Part 1 baseline only)")
 	fileMin := flag.Float64("file-min", 100.0, "minimum file size in MiB (default: 100.0)")
 	fileMax := flag.Float64("file-max", 1000.0, "maximum file size in MiB (default: 1000.0)")
 	fileDist := flag.String("file-dist", "uniform", "file size distribution: 'uniform' or 'heavy-tailed' (70% in 1-100 MiB, 30% in 100-1000 MiB)")
@@ -139,7 +139,7 @@ func runStandaloneSimulation(cfg *config.Config, seed int64, totalTrials int) {
 		reqFile := generator.SampleRequestedFile()
 		cache.RecordRequest(reqFile)
 
-		// 3. Process full AdaLife-Pro / SMDP transition
+		// 3. Process full AdaLife / SMDP transition
 		isHit, u, _, _ := cache.ProcessAdaLifeStep(reqFile, 1, cache.CurrentTime)
 		if isHit {
 			hitCount++

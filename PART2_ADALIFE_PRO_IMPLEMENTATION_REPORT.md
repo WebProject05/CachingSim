@@ -1,19 +1,19 @@
-# Part 2 Implementation & Verification Report: AdaLife-Pro Architecture
+# Part 2 Implementation & Verification Report: AdaLife Architecture
 
 **Project:** SMDP Edge Caching Deep Reinforcement Learning & Transfer Learning Framework  
-**Scope:** Part 1 Foundation Fixes + Part 2 (`AdaLife-Pro`) Single-Node Edge Caching Innovations  
+**Scope:** Part 1 Foundation Fixes + Part 2 (`AdaLife`) Single-Node Edge Caching Innovations  
 **Date:** November 9, 2026  
 
 ---
 
 ## 1. Executive Summary
 
-This report documents the end-to-end engineering implementation, bug resolutions, CLI toggles, unit tests, and empirical benchmarks for **Part 2 (`AdaLife-Pro`)**, implemented cleanly across both the Go discrete-event / SMDP simulation engine (`simulator-go`) and the Python Dueling-DDQN / Transfer Learning agent (`agent-python`).
+This report documents the end-to-end engineering implementation, bug resolutions, CLI toggles, unit tests, and empirical benchmarks for **Part 2 (`AdaLife`)**, implemented cleanly across both the Go discrete-event / SMDP simulation engine (`simulator-go`) and the Python Dueling-DDQN / Transfer Learning agent (`agent-python`).
 
 ### Scope Boundary
 * **Implemented (Part 1 + Part 2):**
   * **Part 1 Fixes:** Size-aware Utility-Density Eviction (`UtilityDensityEvictor`), Regularized Unoccupied Memory Penalty ($\omega_{\text{mem}} = 10.0$), 10-dim Candidate-Centric Feature Vector (`state_dim = 261`), Dueling Double-DQN (`hidden_dim = 64`), and Selective Yield-Oracle Expert Demonstrations.
-  * **Part 2 (`AdaLife-Pro`) Innovations:**
+  * **Part 2 (`AdaLife`) Innovations:**
     1. **Layer 1 — Dynamic Lifetime (`AdaLife` Lease Extensions on Hit)**
     2. **Layer 2 — Elastic Capacity Headroom (Load-Adaptive $M_{\text{eff}}(t)$)**
     3. **Layer 3 — Two-Tier Probationary Shield (Probation / Protected Split + Idle Overdraft)**
@@ -24,10 +24,10 @@ This report documents the end-to-end engineering implementation, bug resolutions
 
 ### Key Measured Impact (Verified Engine Runs)
 * **Strict Contention (`F=100, M=5,000 MiB, lambda=5.0 req/s, eta=0.85, 10k reqs`):**
-  * Go Native Engine: Hit rate rose from **21.65% (`CTD`)** and **32.08% (`Part 1 Only`)** to **40.20% (`AdaLife-Pro`)** (and **41.25%** without `FetchCost` size bias), cutting final window miss rate from **78.10%** (`CTD`) / **67.30%** (`Part 1`) down to **57.40%** and doubling total utility (`3,114.75` vs `1,552.64` `CTD`).
-  * Python Live gRPC Dueling-DDQN (`lambda=1.00 req/s`): Hit rate jumped from **27.40%** (`Part 1 Only`) to **40.40%** (`AdaLife-Pro`), and at `lambda=5.00 req/s` from **25.70%** to **33.50%**.
+  * Go Native Engine: Hit rate rose from **21.65% (`CTD`)** and **32.08% (`Part 1 Only`)** to **40.20% (`AdaLife`)** (and **41.25%** without `FetchCost` size bias), cutting final window miss rate from **78.10%** (`CTD`) / **67.30%** (`Part 1`) down to **57.40%** and doubling total utility (`3,114.75` vs `1,552.64` `CTD`).
+  * Python Live gRPC Dueling-DDQN (`lambda=1.00 req/s`): Hit rate jumped from **27.40%** (`Part 1 Only`) to **40.40%** (`AdaLife`), and at `lambda=5.00 req/s` from **25.70%** to **33.50%**.
 * **Table III Benchmark (`F=50, M=10,000 MiB, lambda=5.0 req/s, eta=1.0, 10k reqs`):**
-  * Go Native Engine: Hit rate climbed from **58.39% (`CTD`)** and **62.67% (`Part 1 Only`)** to **75.84% (`AdaLife-Pro`)**, Byte Hit Rate reached **70.54%** (vs `56.94%`), and Total Utility surged from **3,615.11** to **5,494.44**.
+  * Go Native Engine: Hit rate climbed from **58.39% (`CTD`)** and **62.67% (`Part 1 Only`)** to **75.84% (`AdaLife`)**, Byte Hit Rate reached **70.54%** (vs `56.94%`), and Total Utility surged from **3,615.11** to **5,494.44**.
   * Python Live gRPC Dueling-DDQN (`3,000 train steps, 1,000 eval reqs`): Achieved **74.10% Hit Rate** / **71.36% BHR** / **556.90 Utility** at $\lambda=5.0\text{ req/s}$, and **33.00% Hit Rate** at $\lambda=0.2\text{ req/s}$.
 * **Low-Rate Source Domain (`F=50, M=10,000 MiB, lambda=0.2 req/s, eta=1.0, 10k reqs`):**
   * Go Native Engine: Broke the **15.94%** parity ceiling between `CTD` and `Part 1 Only`, lifting hit rate to **23.89%** (**+7.95 percentage points**, **+49.9% relative gain**) with `0.00%` evictions via lease renewals on active files.
@@ -101,9 +101,9 @@ Solves the RL **Action-0 Blindspot**, where skipping a file previously produced 
 ### Python DRL & Transfer Learning Agent (`agent-python`)
 1. [`agent-python/config.py`](file:///c:/Users/chsan/OneDrive/Desktop/smdp-edge-caching-framework/agent-python/config.py#L24): Added `adalife_pro: bool = True` to `AgentConfig`.
 2. [`agent-python/client/grpc_env_client.py`](file:///c:/Users/chsan/OneDrive/Desktop/smdp-edge-caching-framework/agent-python/client/grpc_env_client.py#L13-L98): Added `cache_capacity` parameter to `GrpcEnvClient` and `state_response_to_numpy`; fixed unit alignment for `can_fit_free` and `needed_space`.
-3. [`agent-python/algorithms/ddql.py`](file:///c:/Users/chsan/OneDrive/Desktop/smdp-edge-caching-framework/agent-python/algorithms/ddql.py#L170-L221): Updated `compute_expert_action` to adapt between AdaLife-Pro Probationary/Ghost admission and strict Part 1 mode, and fixed the fallback non-candidate-feature branch capacity unit math.
+3. [`agent-python/algorithms/ddql.py`](file:///c:/Users/chsan/OneDrive/Desktop/smdp-edge-caching-framework/agent-python/algorithms/ddql.py#L170-L221): Updated `compute_expert_action` to adapt between AdaLife Probationary/Ghost admission and strict Part 1 mode, and fixed the fallback non-candidate-feature branch capacity unit math.
 4. [`agent-python/main.py`](file:///c:/Users/chsan/OneDrive/Desktop/smdp-edge-caching-framework/agent-python/main.py#L86-L280): Added `--part1-only` CLI flag, passed `cache_capacity=cfg.cache_capacity` to `GrpcEnvClient`, propagated `-part1-only` to auto-launched Go gRPC servers, and displayed active architecture in the startup banner.
-5. [`agent-python/tests/test_adalife_agent.py`](file:///c:/Users/chsan/OneDrive/Desktop/smdp-edge-caching-framework/agent-python/tests/test_adalife_agent.py): New test file verifying capacity-scaled `can_fit_free` / `needed_space` feature math and `compute_expert_action` behavior across AdaLife-Pro vs Part 1 modes.
+5. [`agent-python/tests/test_adalife_agent.py`](file:///c:/Users/chsan/OneDrive/Desktop/smdp-edge-caching-framework/agent-python/tests/test_adalife_agent.py): New test file verifying capacity-scaled `can_fit_free` / `needed_space` feature math and `compute_expert_action` behavior across AdaLife vs Part 1 modes.
 
 ---
 
@@ -141,20 +141,20 @@ Solves the RL **Action-0 Blindspot**, where skipping a file previously produced 
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Contention**<br>`F=100, M=5k, lambda=5.0, eta=0.85` | `CTD` Baseline | 21.65% | 20.45% | 78.29% | 86.71% | 1,552.64 | 78.10% |
 | **Contention** | `Part 1 Only` (`-part1-only`) | 32.08% | 27.17% | 19.21% | 93.16% | 1,851.63 | 67.30% |
-| **Contention** | **`AdaLife-Pro` (All 5 Layers)** | **40.20%** | **32.44%** | 29.63% | **95.72%** | **3,114.75** | **57.40%** |
-| **Contention** | `AdaLife-Pro` (`FetchCost=false`) | **41.25%** | **32.89%** | 28.12% | **99.44%** | **3,165.04** | **57.40%** |
+| **Contention** | **`AdaLife` (All 5 Layers)** | **40.20%** | **32.44%** | 29.63% | **95.72%** | **3,114.75** | **57.40%** |
+| **Contention** | `AdaLife` (`FetchCost=false`) | **41.25%** | **32.89%** | 28.12% | **99.44%** | **3,165.04** | **57.40%** |
 | **Table III**<br>`F=50, M=10k, lambda=5.0, eta=1.0` | `CTD` Baseline | 58.39% | 56.94% | 41.42% | 95.83% | 3,615.11 | 42.70% |
 | **Table III** | `Part 1 Only` (`-part1-only`) | 62.67% | 58.52% | 17.41% | 98.08% | 3,123.05 | 38.40% |
-| **Table III** | **`AdaLife-Pro` (All 5 Layers)** | **75.84%** | **70.54%** | **12.42%** | 91.37% | **5,494.44** | **25.10%** |
-| **Table III** | `AdaLife-Pro` (`FetchCost=false`) | **76.55%** | **70.99%** | **12.06%** | **99.99%** | **5,525.37** | **25.00%** |
+| **Table III** | **`AdaLife` (All 5 Layers)** | **75.84%** | **70.54%** | **12.42%** | 91.37% | **5,494.44** | **25.10%** |
+| **Table III** | `AdaLife` (`FetchCost=false`) | **76.55%** | **70.99%** | **12.06%** | **99.99%** | **5,525.37** | **25.00%** |
 | **Low-Rate Source**<br>`F=50, M=10k, lambda=0.2, eta=1.0` | `CTD` Baseline | 15.94% | 15.15% | 65.45% | 94.81% | 733.64 | 82.90% |
 | **Low-Rate Source** | `Part 1 Only` (`-part1-only`) | 15.94% | 15.15% | 0.00% | 19.66% | 733.64 | 82.90% |
-| **Low-Rate Source** | **`AdaLife-Pro` (All 5 Layers)** | **23.89%** | **22.46%** | **0.00%** | 19.66% | **1,202.55** | **74.60%** |
+| **Low-Rate Source** | **`AdaLife` (All 5 Layers)** | **23.89%** | **22.46%** | **0.00%** | 19.66% | **1,202.55** | **74.60%** |
 
 #### Table III Discrete MDP vs. Continuous SMDP Hit Count (1,000 Trials, `F=50, M=10,000`)
-* **`lambda = 5.00 req/s`:** Part 1 SMDP = **599 hits** $\rightarrow$ **`AdaLife-Pro` SMDP = 664 hits** (MDP `0.20s` quota = 675 hits).
-* **`lambda = 1.66 req/s`:** Part 1 SMDP = **484 hits** $\rightarrow$ **`AdaLife-Pro` SMDP = 489 hits**.
-* **`lambda = 1.00 req/s`:** Part 1 SMDP = **398 hits** $\rightarrow$ **`AdaLife-Pro` SMDP = 401 hits**.
+* **`lambda = 5.00 req/s`:** Part 1 SMDP = **599 hits** $\rightarrow$ **`AdaLife` SMDP = 664 hits** (MDP `0.20s` quota = 675 hits).
+* **`lambda = 1.66 req/s`:** Part 1 SMDP = **484 hits** $\rightarrow$ **`AdaLife` SMDP = 489 hits**.
+* **`lambda = 1.00 req/s`:** Part 1 SMDP = **398 hits** $\rightarrow$ **`AdaLife` SMDP = 401 hits**.
 
 ### 6.3 Single-Feature Ablation Analysis (Contention: `F=100, M=5k, lambda=5.0, eta=0.85`)
 
@@ -169,7 +169,7 @@ Solves the RL **Action-0 Blindspot**, where skipping a file previously produced 
 
 ### 6.4 Python Live gRPC Dueling-DDQN & Transfer Learning Results
 
-#### Multi-Rate Evaluation (`F=50, M=10,000, eta=1.0`, `3,000 train steps`, `1,000 eval reqs`, `AdaLife-Pro`)
+#### Multi-Rate Evaluation (`F=50, M=10,000, eta=1.0`, `3,000 train steps`, `1,000 eval reqs`, `AdaLife`)
 | Arrival Rate ($\lambda$) | Hits / 1,000 | Hit Rate | Byte Hit Rate | Total Utility | Avg Reward |
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | `0.20 req/s` | 330 | **33.00%** | 33.30% | 171.63 | 14.90 |
@@ -181,7 +181,7 @@ Solves the RL **Action-0 Blindspot**, where skipping a file previously produced 
 | `6.50 req/s` | 741 | **74.10%** | 71.18% | 571.31 | 61.83 |
 
 #### Multi-Rate Contention Comparison (`F=100, M=5,000, eta=0.85`, `2,000 train steps`, `1,000 eval reqs`)
-| Arrival Rate ($\lambda$) | `Part 1 Only` HR | `AdaLife-Pro` HR | Absolute Gain | `Part 1 Only` Util | `AdaLife-Pro` Util |
+| Arrival Rate ($\lambda$) | `Part 1 Only` HR | `AdaLife` HR | Absolute Gain | `Part 1 Only` Util | `AdaLife` Util |
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | `0.20 req/s` | 12.90% | **19.20%** | **+6.30%** | 61.16 | **97.38** |
 | `0.50 req/s` | 22.60% | **32.70%** | **+10.10%** | 113.09 | **185.10** |
@@ -212,15 +212,15 @@ Quick side-by-side execution against CTD baseline in ~1 second:
 
 ```powershell
 # --- Standard Table III Setup (F=50, M=10,000 MiB, eta=1.0, lambda=5.0) ---
-# 1. Full AdaLife-Pro (Part 1 + Part 2 full engine)
+# 1. Full AdaLife (Part 1 + Part 2 full engine)
 .\bin\baseline.exe -requests 10000 -files 50 -capacity 10000 -lambda 5.0 -eta 1.0 -mdp-table
 
-# 2. Part 1 Baseline Only (AdaLife-Pro disabled)
+# 2. Part 1 Baseline Only (AdaLife disabled)
 .\bin\baseline.exe -requests 10000 -files 50 -capacity 10000 -lambda 5.0 -eta 1.0 -part1-only -mdp-table
 
 
 # --- Strict Memory Contention Stress Test (F=100, M=5,000 MiB, eta=0.85, lambda=5.0) ---
-# 1. Full AdaLife-Pro
+# 1. Full AdaLife
 .\bin\baseline.exe -requests 10000 -files 100 -capacity 5000 -lambda 5.0 -eta 0.85
 
 # 2. Part 1 Baseline Only
@@ -246,7 +246,7 @@ Isolate each Part 2 architectural layer independently under memory contention:
 # 5. Probation + Counterfactual Ghost Cache together (Fast-track promotion)
 .\bin\baseline.exe -requests 10000 -files 100 -capacity 5000 -lambda 5.0 -eta 0.85 -adalife=false -elastic=false -probation=true -fetch-cost=false -ghost=true
 
-# 6. AdaLife-Pro tuned for maximum Object Hit Rate (FetchCost disabled)
+# 6. AdaLife tuned for maximum Object Hit Rate (FetchCost disabled)
 .\bin\baseline.exe -requests 10000 -files 100 -capacity 5000 -lambda 5.0 -eta 0.85 -fetch-cost=false
 ```
 
@@ -258,14 +258,14 @@ The Python runner automatically boots `bin\server.exe` in the background if port
 python agent-python/main.py --mode eval --eval-lambda 5.0 --eval-requests 1000
 
 # B. Train and evaluate at lambda = 5.0 on Standard Config (F=50, M=10,000 MiB):
-# AdaLife-Pro (Part 1 + Part 2)
+# AdaLife (Part 1 + Part 2)
 python agent-python/main.py --mode train_source --files 50 --capacity 10000 --eta 1.0 --lambda-source 5.0 --eval-lambda 5.0 --source-steps 3000 --eval-requests 1000
 
 # Part 1 Only baseline
 python agent-python/main.py --mode train_source --files 50 --capacity 10000 --eta 1.0 --lambda-source 5.0 --eval-lambda 5.0 --source-steps 3000 --eval-requests 1000 --part1-only
 
 # C. Train and evaluate at lambda = 5.0 under Contention (F=100, M=5,000 MiB, eta=0.85):
-# AdaLife-Pro
+# AdaLife
 python agent-python/main.py --mode train_source --files 100 --capacity 5000 --eta 0.85 --lambda-source 5.0 --eval-lambda 5.0 --source-steps 2000 --eval-requests 1000
 
 # Part 1 Only
@@ -297,7 +297,7 @@ To eliminate workflow fragmentation and provide an intuitive evaluation interfac
 .\scripts\run_full_experiment.ps1
 
 # [CMD 2] Instant 3-Way Benchmark (~1-2 seconds):
-# Prints side-by-side 3-Way Benchmark (CTD vs Paper DDQL vs AdaLife-Pro) and Table III (Discrete MDP vs Continuous SMDP)
+# Prints side-by-side 3-Way Benchmark (CTD vs Paper DDQL vs AdaLife) and Table III (Discrete MDP vs Continuous SMDP)
 .\bin\baseline.exe -requests 1000 -lambda 5.0 -mdp-table
 
 # [CMD 3] Severe Contention Stress Benchmark:
@@ -341,7 +341,7 @@ To eliminate workflow fragmentation and provide an intuitive evaluation interfac
 * `-part1-only`: Disables all Part 2 layers to isolate the Part 1 baseline (default: `false`).
 
 > [!NOTE]
-> **Two-Way Graph Standard:** In accordance with rigorous evaluation against the state of the art, all plotted curves (`.png` and `.svg`) exclusively compare **Paper Proposed (Niknia '24 DDQL)** against **AdaLife-Pro (Ours)**. CTD curves have been removed from the graph lines to maintain clean focus on our direct advances over the paper, while CTD's exact numerical values continue to be recorded in all raw CSV/JSON benchmark artifacts.
+> **Two-Way Graph Standard:** In accordance with rigorous evaluation against the state of the art, all plotted curves (`.png` and `.svg`) exclusively compare **Paper Proposed (Niknia '24 DDQL)** against **AdaLife (Ours)**. CTD curves have been removed from the graph lines to maintain clean focus on our direct advances over the paper, while CTD's exact numerical values continue to be recorded in all raw CSV/JSON benchmark artifacts.
 
 ---
 
@@ -350,7 +350,7 @@ To eliminate workflow fragmentation and provide an intuitive evaluation interfac
 To maintain a focused codebase for ongoing research and publication, redundant pre-implementation drafts have been cleaned up. The repository root retains 5 authoritative documents:
 
 1. [`README.md`](file:///c:/Users/chsan/OneDrive/Desktop/smdp-edge-caching-framework/README.md) - Plain English user guide, architecture summary, installation, and quickstart.
-2. [`PART2_ADALIFE_PRO_IMPLEMENTATION_REPORT.md`](file:///c:/Users/chsan/OneDrive/Desktop/smdp-edge-caching-framework/PART2_ADALIFE_PRO_IMPLEMENTATION_REPORT.md) - Authoritative Part 1 + Part 2 engineering implementation report, mathematical formulations, and 3-way benchmark results.
+2. [`PART2_ADALIFE_IMPLEMENTATION_REPORT.md`](file:///c:/Users/chsan/OneDrive/Desktop/smdp-edge-caching-framework/PART2_ADALIFE_IMPLEMENTATION_REPORT.md) - Authoritative Part 1 + Part 2 engineering implementation report, mathematical formulations, and 3-way benchmark results.
 3. [`DATA_FLOW.md`](file:///c:/Users/chsan/OneDrive/Desktop/smdp-edge-caching-framework/DATA_FLOW.md) - Deep architectural breakdown of the Go IPC server, Python DRL agent, and memory telemetry.
 4. [`RESEARCH_GAPS_AND_IMPROVEMENTS.md`](file:///c:/Users/chsan/OneDrive/Desktop/smdp-edge-caching-framework/RESEARCH_GAPS_AND_IMPROVEMENTS.md) - Formal identification of research gaps in Niknia et al. (2024) and foundational thesis for improvements.
 5. [`REAL_WORLD_TRACE_EXPERIMENTATION_PROPOSAL.md`](file:///c:/Users/chsan/OneDrive/Desktop/smdp-edge-caching-framework/REAL_WORLD_TRACE_EXPERIMENTATION_PROPOSAL.md) - Roadmap for Part 3 evaluation against real-world production CDN traces (Akamai, Wikimedia).

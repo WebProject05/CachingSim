@@ -56,7 +56,7 @@ type Config struct {
 	EvictionStrategy string  // "utility_density" (default enhanced) or "lowest_utility" (legacy paper)
 	MemPenaltyWeight float64 // Penalty weight for unoccupied memory (default: 10.0 enhanced, 100.0 legacy paper)
 
-	// --- AdaLife-Pro Strategy Parameters (Part 2 Innovations) ---
+	// --- AdaLife Strategy Parameters (Part 2 Innovations) ---
 	EnableAdaLife         bool    // Dynamic lifetime lease extensions on cache hit
 	LeaseImportanceWeight float64 // alpha: Importance weight for TTL lease extension (default: 0.5)
 	LeaseHitWeight        float64 // beta: Repeat hit weight for TTL lease extension (default: 0.1)

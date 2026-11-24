@@ -86,7 +86,7 @@ def parse_args():
     parser.add_argument(
         "--part1-only",
         action="store_true",
-        help="Disable Part 2 AdaLife-Pro mechanisms when auto-launching Go server (Part 1 baseline only)",
+        help="Disable Part 2 AdaLife mechanisms when auto-launching Go server (Part 1 baseline only)",
     )
     return parser.parse_args()
 
@@ -276,7 +276,7 @@ def main():
         "SMDP Edge Caching Reinforcement Learning & Transfer Learning System",
         details={
             "Execution Mode": args.mode,
-            "Engine Architecture": "AdaLife-Pro (Part 1 + Part 2)" if cfg.adalife_pro else "Part 1 Baseline Only",
+            "Engine Architecture": "AdaLife (Part 1 + Part 2)" if cfg.adalife_pro else "Part 1 Baseline Only",
             "gRPC Server Target": f"{args.host}:{args.port}",
             "Random Seed": args.seed,
             "File Types (F)": cfg.total_files,

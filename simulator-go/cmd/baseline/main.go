@@ -380,7 +380,7 @@ func main() {
 	enableProbation := flag.Bool("probation", true, "enable two-tier probationary shield for one-hit wonders")
 	enableFetchCost := flag.Bool("fetch-cost", true, "enable asymmetric origin fetch-cost weighting")
 	enableGhost := flag.Bool("ghost", true, "enable counterfactual ghost cache regret and fast-track")
-	part1Only := flag.Bool("part1-only", false, "disable all Part 2 AdaLife-Pro mechanisms (run Part 1 baseline only)")
+	part1Only := flag.Bool("part1-only", false, "disable all Part 2 AdaLife mechanisms (run Part 1 baseline only)")
 	fileMin := flag.Float64("file-min", 100.0, "minimum file size in MiB (default: 100.0)")
 	fileMax := flag.Float64("file-max", 1000.0, "maximum file size in MiB (default: 1000.0)")
 	fileDist := flag.String("file-dist", "uniform", "file size distribution: 'uniform' or 'heavy-tailed' (70% in 1-100 MiB, 30% in 100-1000 MiB)")
@@ -456,12 +456,12 @@ func main() {
 		measurementWindow = *requests
 	}
 
-	modeLabel := "AdaLife-Pro (Part 1 + Part 2 Full Engine)"
+	modeLabel := "AdaLife (Part 1 + Part 2 Full Engine)"
 	if !cfg.EnableAdaLife && !cfg.EnableElasticCapacity && !cfg.EnableProbationShield && !cfg.EnableFetchCost && !cfg.EnableGhostCache {
-		modeLabel = "Part 1 Only (AdaLife-Pro Disabled)"
+		modeLabel = "Part 1 Only (AdaLife Disabled)"
 	}
 
-	printBox("SMDP EDGE CACHING EXPERIMENT: PROPOSED (SMDP-DDQL / AdaLife-Pro) vs CTD", []string{
+	printBox("SMDP EDGE CACHING EXPERIMENT: PROPOSED (SMDP-DDQL / AdaLife) vs CTD", []string{
 		fmt.Sprintf("Mode              : %s", modeLabel),
 		fmt.Sprintf("Features          : AdaLife=%t | Elastic=%t | Probation=%t | FetchCost=%t | Ghost=%t",
 			cfg.EnableAdaLife, cfg.EnableElasticCapacity, cfg.EnableProbationShield, cfg.EnableFetchCost, cfg.EnableGhostCache),
@@ -479,7 +479,7 @@ func main() {
 	results := runAllWithConcurrency(cfg, files, events, measurementWindow, *graphInterval, *concurrent)
 	printComparisonTable(results)
 	for _, result := range results {
-		if result.name == "AdaLife-Pro" || result.name == "SMDP-DDQL" || result.name == "Paper-Proposed" || result.name == "CTD" {
+		if result.name == "AdaLife" || result.name == "SMDP-DDQL" || result.name == "Paper-Proposed" || result.name == "CTD" {
 			printResult(result)
 		}
 	}
@@ -529,7 +529,7 @@ func runAllWithConcurrency(cfg *config.Config, files []core.FileMetadata, events
 	paperCfg.EnableFetchCost = false
 	paperCfg.EnableGhostCache = false
 
-	proposedName := "AdaLife-Pro"
+	proposedName := "AdaLife"
 	if !cfg.EnableAdaLife && !cfg.EnableElasticCapacity && !cfg.EnableProbationShield && !cfg.EnableFetchCost && !cfg.EnableGhostCache {
 		proposedName = "SMDP-DDQL"
 	}
@@ -668,7 +668,7 @@ func printComparisonTable(results []runResult) {
 			ctdResult = r
 		} else if r.name == "Paper-Proposed" {
 			paperResult = r
-		} else if r.name == "AdaLife-Pro" || r.name == "SMDP-DDQL" {
+		} else if r.name == "AdaLife" || r.name == "SMDP-DDQL" {
 			oursResult = r
 		}
 	}
@@ -685,8 +685,8 @@ func printComparisonTable(results []runResult) {
 			displayName = "CTD (Baseline)"
 		} else if r.name == "Paper-Proposed" {
 			displayName = "Paper (Niknia '24)"
-		} else if r.name == "AdaLife-Pro" {
-			displayName = "AdaLife-Pro (Ours)"
+		} else if r.name == "AdaLife" {
+			displayName = "AdaLife (Ours)"
 		} else if r.name == "SMDP-DDQL" {
 			displayName = "Our Part 1 SMDP"
 		}
@@ -697,7 +697,7 @@ func printComparisonTable(results []runResult) {
 
 	if oursResult != nil && paperResult != nil && ctdResult != nil {
 		fmt.Fprintln(output, "")
-		fmt.Fprintln(output, "  >>> KEY GAINS OF OUR PROPOSED ALGORITHM (AdaLife-Pro):")
+		fmt.Fprintln(output, "  >>> KEY GAINS OF OUR PROPOSED ALGORITHM (AdaLife):")
 		fmt.Fprintf(output, "      * Hit Rate Gain       : %+.2f%% vs Paper (Niknia '24) | %+.2f%% vs CTD Baseline\n",
 			(oursResult.stats.HitRate()-paperResult.stats.HitRate())*100,
 			(oursResult.stats.HitRate()-ctdResult.stats.HitRate())*100)

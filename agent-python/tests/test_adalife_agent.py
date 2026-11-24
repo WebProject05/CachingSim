@@ -1,5 +1,5 @@
 """
-Unit tests for AdaLife-Pro agent integration, unit-exact candidate features,
+Unit tests for AdaLife agent integration, unit-exact candidate features,
 and yield-oracle expert action logic.
 """
 

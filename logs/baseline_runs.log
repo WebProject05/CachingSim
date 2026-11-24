@@ -1080,3 +1080,16 @@ Paper-Proposed : 66.18% | 46.60% | 33.82% | 22.41% | 99.95% | 22431459.16 | 2606
 AdaLife-Pro : 78.81% | 61.27% | 21.19% | 14.28% | 99.81% | 37244712.96 | 20224.0
 RUN END   : 2026-11-15T16:45:54+05:30
 
+RUN START : 2026-11-21T16:45:13+05:30
+LOG FILE  : logs/baseline_runs.log
+CONFIG    : seed=42 requests=500 files=50 capacity=10000.00 MiB eta=1.000 window=50 concurrent=false
+METRICS   : hit_rate | byte_hit_rate | miss_rate | eviction_rate | utilization | total_utility | avg_ns/request
+FIFO       : 57.40% | 55.06% | 42.60% | 39.20% | 91.23% | 15.12 | n/a
+LRU        : 62.40% | 59.49% | 37.60% | 33.80% | 95.81% | 16.16 | n/a
+LFU        : 71.00% | 67.84% | 29.00% | 25.20% | 99.47% | 18.12 | n/a
+SIEVE      : 70.60% | 65.77% | 29.40% | 25.40% | 98.85% | 18.12 | n/a
+CTD        : 12.80% | 12.39% | 87.20% | 62.00% | 99.68% | 31.17 | n/a
+Paper-Proposed : 12.80% | 12.39% | 87.20% | 0.00% | 19.04% | 31.17 | 2823.2
+AdaLife    : 22.60% | 21.73% | 77.40% | 0.00% | 26.56% | 50.52 | 3251.2
+RUN END   : 2026-11-21T16:45:13+05:30
+
