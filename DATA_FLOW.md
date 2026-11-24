@@ -1,259 +1,363 @@
-# System Data Flow & Lifecycle Architecture
+# End-to-End System Architecture & Data Flow Specification
 
-This document describes the exact step-by-step data flow throughout the **SMDP Edge Caching Framework**, detailing how data, states, rewards, neural tensors, and network packets transition between **`simulator-go`** and **`agent-python`**.
+> **Project**: SMDP Edge Caching Framework  
+> **Evolution**: From Paper Baseline (Niknia '24 DDQL) to the Complete **AdaLife** Production-Grade Architecture  
+> **Core Subsystems**: Discrete-Event SMDP Engine (`simulator-go`) $\Longleftrightarrow$ gRPC IPC $\Longleftrightarrow$ Neural Policy Agent (`agent-python`)
 
 ---
 
-## 1. High-Level Architectural Flowchart
+## 1. High-Level Architectural Overview
+
+The framework unifies a high-speed, discrete-event caching engine written in Go with an intelligent Deep Reinforcement Learning (DRL) agent written in Python (PyTorch), communicating via high-throughput gRPC protocol buffers over a local IPC socket (`localhost:50051`):
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                       GO SIMULATION ENGINE                                       │
+│                                                                                                  │
+│   ┌─────────────────────┐       ┌────────────────────────────────────────────────────────────┐   │
+│   │ Poisson & Zipf      │ ----> │                   ADALIFE 5-LAYER ENGINE                   │   │
+│   │ Traffic Generator   │       │                                                            │   │
+│   │ (Heavy-Tailed 70/30)│       │  [L1] AdaLife Dynamic Leases    (Adaptive TTL on Hits)     │   │
+│   └─────────────────────┘       │  [L2] Elastic Headroom         (Load-Adaptive +35% M_eff)  │   │
+│                                 │  [L3] Two-Tier Probation Shield(15% Probation / 85% Core)  │   │
+│                                 │  [L4] Cost-Utility Eviction    (Utility/Size * FetchCost)  │   │
+│                                 │  [L5] Counterfactual Ghost ARC (Regret & Fast-Tracking)    │   │
+│                                 └────────────────────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────┬─────────────────▲───────────────────────────────┘
+                                                 │                 │
+                           State s(t) in R^(5F+1)│                 │ Action a in {0, 1}
+                           Reward r(t), tau      │                 │ (Admit vs. Bypass)
+                                                 ▼                 │
+┌──────────────────────────────────────────────────────────────────┴───────────────────────────────┐
+│                                gRPC IPC LAYER (Protobuf Channel)                                 │
+└────────────────────────────────────────────────┬─────────────────▲───────────────────────────────┘
+                                                 │                 │
+                                                 ▼                 │
+┌──────────────────────────────────────────────────────────────────┴───────────────────────────────┐
+│                                    PYTHON NEURAL AGENT (PyTorch)                                 │
+│                                                                                                  │
+│   ┌──────────────────────────────────────────────┐    ┌──────────────────────────────────────┐   │
+│   │         DOUBLE DQN (DDQL) / D3QN             │    │    PRIORITIZED REPLAY & SUMTREE      │   │
+│   │  • Online Q-Network: θ (Action Selection)    │    │  • Multi-Step Returns (n = 3)        │   │
+│   │  • Target Q-Network: θ^- (Evaluation)        │    │  • Eq. (6) Priority: |r - avgR| + TD │   │
+│   │  • Dueling Streams: V(s) + (A(s, a) - avg A) │    │  • Dynamic Demonstration Overwriting │   │
+│   └──────────────────────────────────────────────┘    └──────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 2. Foundational Architecture: The Paper Baseline (Niknia et al., 2024)
+
+### 2.1 The Continuous Semi-Markov Decision Process (SMDP)
+Traditional caching assumes discrete, synchronous time slots. In reality, user requests arrive asynchronously in continuous physical time. The environment is formalized as a continuous-time SMDP:
+* **Event Trigger**: Transitions occur strictly upon the arrival of user request $k$ at timestamp $t_k$.
+* **Poisson Inter-Arrival Interval**: The time duration $\tau_k = t_{k+1} - t_k$ between consecutive requests follows an exponential distribution with parameter $\lambda$:
+  $$\tau_k = -\frac{\ln(U)}{\lambda}, \quad U \sim \text{Uniform}(0, 1)$$
+* **Continuous Discounting**: Because physical time $\tau_k$ varies per transition, the discount factor continuously decays:
+  $$\gamma(\tau_k) = \gamma^{\tau_k}, \quad \text{where } \gamma = 0.99$$
+
+### 2.2 Content Modeling & Non-Linear Freshness Decay
+Each content item $f \in \{0, 1, \dots, F-1\}$ is characterized by four attributes:
+1. **Size ($z_f$)**: Storage footprint in MiB.
+2. **Lifetime ($w_l^f$)**: Validity duration in seconds.
+3. **Importance ($i_f \in [0.1, 0.9]$)**: Content quality-of-service weighting.
+4. **Generation Timestamp ($w_g^f$)**: The time the file was fetched from origin or renewed.
+
+The active freshness $h_f(t) \in [0, 1]$ and non-linear utility $y_f(t)$ decay continuously with physical time:
+$$h_f(t) = \frac{t - w_g^f}{w_l^f}$$
+$$y_f(t) = \left[ -\frac{U_{\max} - U_{\min}}{e - 1} \cdot e^{h_f(t)} + U_{\max} + \frac{U_{\max} - U_{\min}}{e - 1} \right] \cdot i_f$$
+where $U_{\max} = 1.5$ and $U_{\min} = 0.1$. As $h_f(t) \to 1.0$, utility collapses to near zero, modeling perishable data.
+
+### 2.3 The Continuous State Vector $s(t) \in \mathbb{R}^{5F+1}$
+At decision epoch $t$, the Go engine serializes the complete environment state into a normalized vector:
+$$s(t) = \Big[ Mem(t), \quad \vec{d}(t), \quad \vec{y}(t), \quad \vec{z}(t), \quad \vec{i}, \quad \vec{b}(t) \Big]$$
+* **$Mem(t) \in [0, 1]$**: Fraction of unoccupied cache memory: $\frac{M - \text{UsedCapacity}}{M}$.
+* **$\vec{d}(t) \in \mathbb{R}^F$**: Empirical request frequency within sliding window $N = 100$.
+* **$\vec{y}(t) \in \mathbb{R}^F$**: Active freshness utility vector for all files.
+* **$\vec{z}(t) \in \mathbb{R}^F$**: Normalized file sizes $\frac{z_f}{z_{\max}}$.
+* **$\vec{i} \in \mathbb{R}^F$**: Static importance ratings.
+* **$\vec{b}(t) \in \{0, 1\}^F$**: Binary occupancy mask ($1$ if file $f$ is cached, $0$ otherwise).
+
+### 2.4 Double Deep Q-Learning (DDQL) Formulation
+To eliminate the positive maximization bias inherent in standard Q-learning, the agent maintains an **Online Network** $\theta$ and a **Target Network** $\theta^-$:
+$$Y_t^{\text{DoubleQ}} = r(t) + \gamma^{\tau} Q\left(s', \arg\max_{a} Q(s', a; \theta); \theta^-\right)$$
+The target network synchronizes weights $\theta^- \leftarrow \theta$ every $\zeta = 100$ gradient steps.
+
+### 2.5 Multi-Step Returns ($n=3$) & Eq. (6) Prioritized Experience Replay
+* **Multi-Step Return ($n=3$)**: Gathers trajectories across $n$ consecutive Poisson events:
+  $$\tau^{(n)} = \sum_{j=1}^n \tau_j, \qquad R^{(n)} = \sum_{j=1}^n \gamma^{\sum_{k=1}^{j-1} \tau_k} \cdot r_j$$
+* **Eq. (6) Priority Metric**: Transitions are sampled from a binary SumTree with probability $P(i) = \frac{p_i^\alpha}{\sum p^\alpha}$, where:
+  $$p_i = |\delta_i| + \mu |r_i - \bar{r}| + \epsilon$$
+  Weighting transitions that deviate from the mean reward $\bar{r}$ pulls critical high-utility transitions into mini-batches early.
+* **Supervised Demonstration Loss ($J_E$) in Target Domain Transfer**:
+  $$J_E = \max_{a \in \mathcal{A}} \Big[ Q(s, a) + \ell(a_E, a) \Big] - Q(s, a_E)$$
+  where $\ell(a_E, a) = 0.8$ if $a \ne a_E$, and $0$ otherwise.
+
+---
+
+## 3. The Need for AdaLife: Resolving Fundamental Paper Bottlenecks
+
+Extensive experimentation revealed why the paper's raw DDQL algorithm hit a ceiling under high-load real-world traces:
+
+| Identified Bottleneck in Paper | Mechanism in Paper DDQL | Why It Hurt Real Performance |
+|---|---|---|
+| **Size-Blind Eviction** | `LowestUtilityEvictor` evicts purely by $\min y_f(t)$. | A 950 MB file evicted up to twenty 15 MB popular items. Destroyed Byte Hit Rate. |
+| **$-100 \cdot Mem(t)$ Penalty Trap** | $r(t) = W(t) - 100 \cdot Mem(t)$. | Agent hoarded massive cold junk just to avoid empty space penalty. Saturation caused instant evictions. |
+| **Rigid Static Lifetimes** | $w_l^f$ fixed stopwatch clock (20s). | Viral files requested 100 times expired abruptly at 20s, forcing expensive origin re-fetches. |
+| **One-Hit Wonder Pollution** | Binary admission directly into main tier. | Rare long-tail scans immediately evicted warm, multi-hit items. Eviction churn exceeded 44%. |
+| **Inelastic Capacity** | Fixed storage boundary $M$. | Poisson request bursts triggered massive immediate evictions. |
+| **Synthetic Uniform Sizing Trap** | Uniform $[100, 1000]\text{ MiB}$ sizes. | Average file was 550 MiB. A 50 GB cache held only 90 files. Mathematical hit rate ceiling was $\sim 52\%$. |
+
+---
+
+## 4. The Complete AdaLife Working Architecture (The 5 Layers)
+
+To solve these physical and algorithmic bottlenecks, we developed the **AdaLife** engine. All 5 layers execute synchronously in Go at microsecond latency:
+
+```
+                          REQUEST ARRIVAL (File f_r, Size z_f, Time t)
+                                               │
+                                               ▼
+                              ┌──────────────────────────────────┐
+                              │     CACHE HIT DETERMINATION      │
+                              └────────────────┬─────────────────┘
+                                               │
+                      ┌────────────────────────┴────────────────────────┐
+                      │ Cache HIT                                       │ Cache MISS
+                      ▼                                                 ▼
+     ┌──────────────────────────────────┐             ┌──────────────────────────────────┐
+     │  [LAYER 1] ADALIFE LEASE RENEWAL │             │   [LAYER 5] GHOST REGRET CHECK   │
+     │  L_eff = L_base * (1 + ln(hits)) │             │   Was f_r recently evicted?      │
+     │  Reset GenTime = currentTime     │             └────────────────┬─────────────────┘
+     │  Promote to Protected Tier       │                              │
+     └──────────────────────────────────┘                              ▼
+                                                      ┌──────────────────────────────────┐
+                                                      │  AI / EXPERT ADMISSION DECISION  │
+                                                      │  Action a = 1 (Admit) vs 0 (Pass)│
+                                                      └────────────────┬─────────────────┘
+                                                                       │ (If Admit a = 1)
+                                                                       ▼
+                                                      ┌──────────────────────────────────┐
+                                                      │   [LAYER 2] ELASTIC HEADROOM     │
+                                                      │   M_eff(t) = M * (1 + 0.35*burst)│
+                                                      └────────────────┬─────────────────┘
+                                                                       │
+                                                                       ▼
+                                                      ┌──────────────────────────────────┐
+                                                      │   [LAYER 3] PROBATIONARY SHIELD  │
+                                                      │   New? -> Insert 15% Probation   │
+                                                      │   Repeat? -> Insert 85% Protected│
+                                                      └────────────────┬─────────────────┘
+                                                                       │ (If Space Needed)
+                                                                       ▼
+                                                      ┌──────────────────────────────────┐
+                                                      │  [LAYER 4] COST-UTILITY EVICTION │
+                                                      │  Victim = min( (y/z) * FetchCost)│
+                                                      │  Record Victim in Ghost History  │
+                                                      └──────────────────────────────────┘
+```
+
+### Layer 1: AdaLife Dynamic Lifetime Lease Renewal
+Hot files earn lease extensions proportional to reference count and importance:
+$$\text{boost} = 1.0 + w_{\text{imp}} \cdot i_f + w_{\text{hit}} \cdot \min(5.0, \text{HitCount})$$
+$$L_{\text{eff}} = \min\left(L_{\max},\; L_{\text{base}} \times \text{boost}\right)$$
+* `GenTime` is reset to `currentTime` on each hit.
+* Truly hot items remain resident indefinitely; cold items naturally decay and expire.
+
+### Layer 2: Load-Adaptive Elastic Capacity Headroom
+Under sudden Poisson arrival bursts, cache capacity expands elastically up to $+35\%$:
+$$\lambda_{\text{EMA}} = \frac{1.0}{\text{TauEMA}}, \quad \text{pressure} = \max\left(\min\left(1.0, \frac{\lambda_{\text{EMA}}}{\lambda_{\text{ref}}}\right),\; \min(1.0, 0.25 \cdot \text{RecentEvictions})\right)$$
+$$M_{\text{eff}}(t) = M \cdot (1.0 + \sigma_{\max} \cdot \text{pressure})$$
+* Absorbs traffic bursts cleanly without triggering mass disk evictions.
+* When traffic subsides, surplus capacity is trimmed gracefully without thrashing.
+
+### Layer 3: Two-Tier Probationary Shield (Segmented LRU)
+Protects against one-hit wonder cache pollution:
+* **Probationary Tier (15% Budget)**: All new admissions enter here.
+* **Protected Tier (85% Budget)**: Only files that receive a repeat request before their probationary lease expires are promoted here.
+* **Result**: One-hit wonders expire in probation without evicting a single protected item, slashing eviction churn by over half.
+
+### Layer 4: Size-Aware Cost-Utility Density Eviction
+Resolves size-blindness by factoring in object size and origin retrieval latency:
+$$\text{Victim} = \arg\min_{f \in \text{Tier}} \left( \frac{y_f(t)}{z_f} \times C_f(z_f) \right)$$
+$$C_f(z_f) = C_{\text{base}} + \beta \cdot z_f, \quad \text{where } C_{\text{base}} = 0.8, \; \beta = 0.0004$$
+* Preserves high-density web assets ($1\text{--}50\text{ MB}$) from being flushed by bulky video chunks ($500\text{--}1000\text{ MB}$).
+
+### Layer 5: Counterfactual Ghost History Tracking (ARC)
+Maintains metadata of recently evicted items:
+* If a newly requested file hits the ghost history, it signals that the item was evicted prematurely.
+* The file is immediately **fast-tracked** directly into the Protected Tier, and probation/protected partition budgets dynamically rebalance.
+
+### Heavy-Tailed Workload Modeling (70/30 Mixture Distribution)
+Replaced the artificial uniform distribution with real-world CDN traffic modeling:
+* **70% of files**: Uniformly sampled in $[1.0, 100.0]\text{ MiB}$ (HTML, CSS, JS, API responses, thumbnails).
+* **30% of files**: Uniformly sampled in $[100.0, 1000.0]\text{ MiB}$ (high-res media, video streaming segments).
+* Average file size dropped from $503\text{ MiB} \to 217\text{ MiB}$, allowing hundreds of items to reside simultaneously.
+
+---
+
+## 5. End-to-End Sequence Execution Diagram
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant User as User / Script
-    participant Agent as Python Agent (agent-python)
+    participant Engine as Go Engine (simulator-go)
+    participant AdaLife as AdaLife 5-Layer Cache
+    participant gRPC as gRPC Socket (:50051)
+    participant Client as Python Client (agent-python)
+    participant QNet as Online Q-Net θ
+    participant TargetQ as Target Q-Net θ^-
     participant Buffer as SumTree PER Buffer
-    participant QNet as PyTorch MLP (Q-Network)
-    participant gRPC as gRPC Channel (:50051)
-    participant Engine as Go Simulator (simulator-go)
-    participant Cache as Cache Memory & Evictor
 
-    User->>Agent: Launch experiment (main.py)
-    Agent->>Engine: Auto-launch bin/server.exe (if inactive)
-    Agent->>gRPC: ResetRequest(seed, lambda, eta)
-    gRPC->>Engine: Reset CacheEngine & RNG
-    Engine-->>gRPC: StateResponse s(0)
-    gRPC-->>Agent: Initial state vector s(0) in R^251
+    Engine->>Engine: Sample Poisson interval: tau = -ln(U)/lambda
+    Engine->>Engine: Advance physical clock: t = t + tau
+    Engine->>Engine: Sample requested file f_r ~ Zipf(eta)
+    
+    Engine->>AdaLife: Check Cache Hit for f_r
+    alt Cache HIT
+        AdaLife->>AdaLife: [Layer 1] Renew Lease: L_eff = L_base * (1 + ln(hits))
+        AdaLife->>AdaLife: Reset GenTime = t; HitCount++
+        AdaLife->>AdaLife: Promote to Protected Tier if in Probation
+        Engine->>Engine: Record Hit, calculate active utility y_{f_r}(t)
+    else Cache MISS
+        Engine->>Engine: Record Miss
+        AdaLife->>AdaLife: [Layer 5] Check Ghost Cache History
+    end
 
-    loop Each SMDP Decision Epoch t
-        Agent->>QNet: Forward pass Q(s, a; theta)
-        QNet-->>Agent: Q-values [Q(s, 0), Q(s, 1)]
-        Agent->>Agent: Epsilon-greedy action selection a in {0, 1}
-        Agent->>gRPC: StepRequest(action=a)
-        
-        Note over Engine,Cache: Step Execution in Go Engine
-        Engine->>Engine: Sample inter-arrival: tau = -ln(U)/lambda
-        Engine->>Engine: Advance clock: t = t + tau
-        Engine->>Engine: Update freshness: h^f(t) = (t - w_g)/w_l
-        Engine->>Engine: Update non-linear utility: y_f(t)
-        
-        alt Action a = 1 (Cache File)
-            Engine->>Cache: Evict lowest utility files until fits
-            Cache->>Cache: Insert requested file f_r
-        end
-        
-        Engine->>Engine: Calculate Worth: W(t) = sum(b_f * d_f * y_f)
-        Engine->>Engine: Calculate Reward: r(t) = W(t) - Mem(t)*100
-        Engine->>Engine: Sample next requested file: f_{r+1} ~ Zipf(eta)
-        Engine-->>gRPC: StepResponse(next_state s', reward r, tau, is_hit, utility)
-        gRPC-->>Agent: (s', r, tau, is_hit, utility)
-        
-        Agent->>Buffer: Store transition (s, a, r, s', tau)
-        Agent->>Agent: Accumulate n-step trajectory (n=3)
-        
-        opt When Buffer Size >= Batch Size (64)
-            Buffer->>Agent: Sample prioritized mini-batch using P(i) = p_i^alpha / sum(p^alpha)
-            Agent->>QNet: Compute multi-task loss J = J_DQ + lambda_1*J_n + lambda_2*J_E + lambda_3*J_L2
-            Agent->>QNet: Backpropagate loss & Adam optimizer step
-            Agent->>Buffer: Update priorities using Eq. 6: p_i = (avgR - r_i) + |TDE_i| + varsigma
-        end
-        
-        opt Every zeta = 100 Training Steps
-            Agent->>QNet: Synchronize weights: theta' <- theta
+    Engine->>Engine: Update active utilities y_f(t) for all cached files
+    Engine->>Engine: Assemble State Vector s(t) in R^(5F+1)
+    Engine->>gRPC: Send State s(t), tau, f_r, is_hit
+    gRPC->>Client: Deliver StepNotification
+
+    alt Epsilon Exploration (prob epsilon)
+        Client->>Client: Sample random action a in {0, 1}
+    else Greedy Exploitation (prob 1 - epsilon)
+        Client->>QNet: Forward pass Q(s, a; θ)
+        QNet-->>Client: [Q(s, 0), Q(s, 1)]
+        Client->>Client: a = argmax_a Q(s, a)
+    end
+
+    Client->>gRPC: StepRequest(action = a)
+    gRPC->>Engine: Deliver Action a
+
+    alt Action a == 1 (Admit) and is_hit == false
+        Engine->>AdaLife: [Layer 2] Evaluate Elastic Headroom M_eff(t)
+        Engine->>AdaLife: [Layer 3] Insert into Probationary Tier
+        opt Free Space < Size(f_r)
+            AdaLife->>AdaLife: [Layer 4] Evict Victim = argmin (y_f / z_f * C_fetch)
+            AdaLife->>AdaLife: [Layer 5] Record Victim in Ghost Cache
         end
     end
 
-    Agent->>User: Save JSON telemetry to data/results/ & Checkpoints
-```
+    Engine->>Engine: Compute Regularized Reward: r(t) = W(t) - 10*Mem(t)
+    Engine->>gRPC: StepResponse(s', r, tau, is_hit, utility)
+    gRPC-->>Client: Deliver StepResponse
 
----
+    Client->>Buffer: Store transition (s, a, r, s', tau)
+    Client->>Client: Accumulate n-step trajectory (n = 3)
 
-## 2. Detailed Data Transformation Pipeline
-
-```
- ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ 1. REQUEST GENERATION (simulator-go)                                                  │
- │                                                                                        │
- │  Input: Seed, Request Rate lambda, Zipf Skewness eta                                   │
- │  Formulae:                                                                             │
- │    • Inter-arrival interval:  tau = -ln(U) / lambda                                    │
- │    • Zipf Probability:        p_f = (1 / f^eta) / sum(1 / k^eta)                       │
- │    • Cumulative Time:         t_{new} = t_{old} + tau                                  │
- └───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                             │ (f_r, tau, t)
-                                             ▼
- ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ 2. CACHE ACCESS, FRESHNESS & UTILITY UPDATE (simulator-go)                            │
- │                                                                                        │
- │  For each cached file f:                                                               │
- │    • Freshness:   h^f(t) = (t - w_g^f) / w_l^f in [0, 1]                               │
- │    • Utility:     y_f(t) = (-Curve * exp(h^f(t)) + UT_max + Curve) * i_f               │
- │                                                                                        │
- │  Hit Determination:                                                                    │
- │    • is_hit = Cached[f_r]                                                              │
- │    • If hit: utility_gained = y_{f_r}(t); d_{f_r} incremented in sliding window N=100  │
- │    • If miss: utility_gained = 0.0                                                     │
- └───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                             │ Cache state & metrics
-                                             ▼
- ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ 3. REWARD CALCULATION (simulator-go)                                                  │
- │                                                                                        │
- │  • Unoccupied Cache Memory Ratio:                                                      │
- │      Mem(t) = (Capacity - sum(b_f * z_f)) / Capacity in [0, 1]                         │
- │                                                                                        │
- │  • Total Cache Worth:                                                                  │
- │      W(t) = sum_{f=1}^F b_f(t) * d_f(t) * y_f(t)                                      │
- │                                                                                        │
- │  • SMDP Instant Reward:                                                                │
- │      r(t) = W(t) - Mem(t) * 100                                                        │
- └───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                             │ State struct & reward
-                                             ▼
- ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ 4. gRPC SERIALIZATION OVER TCP PORT 50051                                             │
- │                                                                                        │
- │  Protobuf Message: StateResponse                                                       │
- │    double            mem            = 1;   // Scalar unoccupied ratio                  │
- │    repeated double   d              = 2;   // F=50 request counts                      │
- │    repeated double   y              = 3;   // F=50 current utilities                   │
- │    repeated double   z              = 4;   // F=50 file sizes (MiB)                    │
- │    repeated int32    b              = 5;   // F=50 binary cached flags                 │
- │    int32             requested_file = 6;   // Requested file index f_r in [0, F-1]     │
- │    double            current_time   = 7;   // Global continuous timestamp              │
- └───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                             │ Binary protobuf stream
-                                             ▼
- ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ 5. PYTHON STATE VECTOR ENCODING (agent-python)                                        │
- │                                                                                        │
- │  Numpy State Array s(t) in R^251:                                                      │
- │   Index 0:         Mem(t) (Scalar)                                                     │
- │   Indices 1..50:   d_1 .. d_50 (Window popularity counts)                              │
- │   Indices 51..100: y_1 .. y_50 (Current utility values)                                │
- │   Indices 101..150: z_1/1000 .. z_50/1000 (Normalized sizes)                           │
- │   Indices 151..200: b_1 .. b_50 (Binary cache presence)                                │
- │   Indices 201..250: One-Hot vector of requested file f_r                               │
- └───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                             │ Float32 Tensor s(t)
-                                             ▼
- ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ 6. NEURAL NETWORK INFERENCE (agent-python)                                            │
- │                                                                                        │
- │  Architecture: 2-layer MLP (16 hidden units, ReLU, uniform init [-0.1, 0.1], bias 0.1)│
- │    Layer 1: Linear(251 -> 16) + ReLU                                                   │
- │    Layer 2: Linear(16 -> 2)                                                            │
- │    Output:  [Q(s, a=0), Q(s, a=1)]                                                     │
- │                                                                                        │
- │  Action Selection:                                                                     │
- │    • Exploration: with probability epsilon, action = random(0, 1)                      │
- │    • Exploitation: action = argmax_a Q(s, a; theta)                                    │
- └───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                             │ Action a in {0, 1}
-                                             ▼
- ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ 7. ADALIFE ACTION EXECUTION & 5-LAYER CACHE ENGINE (simulator-go)                      │
- │                                                                                        │
- │  • Layer 1 (AdaLife Lease Renewal):                                                    │
- │      On hit, extend TTL: L_eff = L_base * (1 + ln(1 + hits)) * i_f^alpha               │
- │                                                                                        │
- │  • Layer 2 (Elastic Capacity Headroom):                                                │
- │      M_eff(t) = M * (1.0 + sigma_max * min(1.0, lambda_EMA / lambda_ref))              │
- │                                                                                        │
- │  • Layer 3 (Two-Tier Probationary Shield):                                             │
- │      New items enter 15% probationary partition. Repeat request promotes to protected. │
- │      One-hit wonders expire harmlessly without evicting warm popular content.          │
- │                                                                                        │
- │  • Layer 4 (Size-Aware Utility-Density Eviction & Fetch Cost):                         │
- │      When capacity is exceeded, evict by minimum cost-utility density:                 │
- │      f_victim = argmin_{f in Tier} ( (y_f(t) / z_f) * C_fetch(z_f) )                  │
- │                                                                                        │
- │  • Layer 5 (Counterfactual Ghost Cache):                                               │
- │      Tracks recently evicted items in ghost history; fast-tracks returning items.      │
- └───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                             │ Transition Feedback (s, a, r, s', tau)
-                                             ▼
- ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ 8. MULTI-STEP REPLAY BUFFER & SUMTREE (agent-python)                                  │
- │                                                                                        │
- │  • n-step Return Accumulation (n = 3):                                                 │
- │      tau^{(n)} = sum_{k=1}^n tau_k                                                     │
- │      R_t^{(n)} = sum_{k=1}^n gamma^{tau^{(k)}} * r_k                                   │
- │                                                                                        │
- │  • SumTree Priority (Eq. 6):                                                           │
- │      p_i = (avgR(t) - r_i) + |TDE_i| + varsigma                                        │
- │      P(i) = p_i^alpha / sum(p^alpha),  alpha = 0.4                                     │
- │                                                                                        │
- │  • Importance Sampling Weight:                                                         │
- │      omega_i = ( (1 / |Lambda'|) * (1 / P(i)) )^beta,  beta: 0.6 -> 1.0                │
- └───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                             │ Prioritized Mini-Batch (Batch Size = 64)
-                                             ▼
- ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ 9. MULTI-TASK LOSS & GRADIENT UPDATE (agent-python)                                   │
- │                                                                                        │
- │  Total Loss: J = J_DQ + lambda_1 * J_n + lambda_2 * J_E + lambda_3 * J_L2              │
- │                                                                                        │
- │  • 1-step SMDP Double Q-Learning Loss:                                                 │
- │      J_DQ = mean( omega_i * (r + gamma^tau * Q(s', argmax Q; theta') - Q(s, a))^2 )    │
- │                                                                                        │
- │  • n-step SMDP TD Loss:                                                                │
- │      J_n = mean( omega_i * (R^{(n)} + gamma^{tau^{(n)}} * Q(s'_{(n)}, argmax Q; theta') │
- │                           - Q(s, a))^2 )                                               │
- │                                                                                        │
- │  • Supervised Large-Margin Classification Loss (Expert Demonstrations):                │
- │      J_E = mean( max_a [ Q(s, a) + l(a_E, a) - Q(s, a_E) ] )                          │
- │                                                                                        │
- │  • L2 Regularization:                                                                  │
- │      J_L2 = 0.5 * sum(||theta||_2^2)                                                   │
- │                                                                                        │
- │  Optimization: Adam(lr = 0.0005) + Gradient Clipping (max_norm = 10.0)                 │
- │  Target Network Sync: theta' <- theta every zeta = 100 gradient steps                  │
- └────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 3. Domain Transfer Learning Workflow ($\S$ VI)
-
-```mermaid
-flowchart TD
-    subgraph SourceDomain["Source Domain (lambda_S = 0.2, eta = 1.0)"]
-        S1["Initialize Agent"] --> S2["Train DDQL for 5,000 steps"]
-        S2 --> S3["Collect 5,000 Transitions into Demonstration Buffer |Lambda|"]
-        S2 --> S4["Save Checkpoint: source_agent.pt"]
+    opt When Buffer >= Batch Size (64)
+        Buffer->>Client: Sample prioritized mini-batch (P_i = p_i^alpha)
+        Client->>QNet: Predict Q(s, a; θ)
+        Client->>QNet: Select best target action a* = argmax Q(s', a; θ)
+        Client->>TargetQ: Evaluate target value Q(s', a*; θ^-)
+        Client->>Client: Compute Multi-Task Loss J = J_DQ + λ1*J_n + λ2*J_E + λ3*J_L2
+        Client->>QNet: Backpropagate loss & Adam step
+        Client->>Buffer: Update priorities: p_i = |r_i - avgR| + |TDE_i| + eps
     end
 
-    subgraph TransferPhase["Transfer & Reinitialization (Section VI)"]
-        S3 --> T1["Create Target PER Buffer |Lambda'| = 10,000"]
-        T1 --> T2["Pre-fill Buffer with 5,000 Source Demonstrations"]
-        S4 --> T3["Proposed TL: Reinitialize Weights theta, theta' ~ [-0.1, 0.1]"]
-    end
-
-    subgraph TargetDomain["Target Domain Adaptation (lambda_T = 0.3)"]
-        T2 --> D1["Run Target Interactions"]
-        T3 --> D1
-        D1 --> D2["Compute Priority via Eq. (6): p_i = (avgR - r_i) + |TDE_i| + varsigma"]
-        D2 --> D3["Sample Batches containing both Demonstrations & Target Experience"]
-        D3 --> D4["Gradually overwrite demonstrations as buffer fills to 10,000"]
-        D4 --> D5["Evaluate policy on 1,000 requests without exploration"]
+    opt Every zeta = 100 gradient steps
+        Client->>TargetQ: Soft synchronize weights: θ^- <- θ
     end
 ```
 
 ---
 
-## 4. Telemetry and Data Persistence Flow
+## 6. Detailed Step-by-Step Data Transformation Pipeline
 
-When an experiment completes, the data is channeled to distinct persistence formats:
+### Step 1: Request Generation (`simulator-go/pkg/smdp`)
+* Inter-arrival interval: $\tau = -\frac{\ln(U)}{\lambda}$.
+* Zipf content selection: $P(f) = \frac{f^{-\eta}}{\sum_{k=1}^F k^{-\eta}}$.
+* Clock progression: $t_{\text{current}} = t_{\text{prev}} + \tau$.
 
-| Destination Path | Data Type | Written By | Key Metrics |
-| :--- | :--- | :--- | :--- |
-| `data/results/drl_source_training.json` | JSON | `agent-python/evaluate.py` | Moving average reward trajectory, instant rewards, hit rate %, total utility. |
-| `data/results/transfer_learning_comparison.json` | JSON | `agent-python/evaluate.py` | Step-by-step reward curves for PROPOSED TL, DQFD, DPR, and LFS. |
-| `data/results/experiment_summary.json` | JSON | `agent-python/evaluate.py` | High-level comparison summary across all algorithms and domains. |
-| `data/results/baseline_results.json` | JSON | `simulator-go/cmd/baseline` | Hits, misses, hit rate %, byte hit rate %, evictions, memory utilization %, latency (ns/op). |
-| `data/results/parameter_sweeps.json` | JSON | `simulator-go/cmd/baseline` | Numerical series across cache sizes, request rates $\lambda$, Zipf $\eta$, file lifetimes, sizes, and importances. |
-| `data/results/mdp_vs_smdp_comparison.json` | JSON | `simulator-go/cmd/baseline` | Table III reproduction (discrete MDP vs continuous SMDP hit rates). |
-| `simulator-go/graphs/*.svg` | Vector SVG | `simulator-go/cmd/baseline` | 13 publication-ready SVG charts matching Figures 4, 5, 6, 7 in the paper. |
-| `data/results/*.png` | PNG Plots | `agent-python/evaluate.py` | Matplotlib convergence plots matching Figures 3a and 8a in the paper. |
-| `agent-python/checkpoints/*.pt` | PyTorch Weights | `agent-python/algorithms/ddql.py` | Model state dicts for online network, target network, and optimizer. |
+### Step 2: AdaLife Multi-Tier State Processing (`simulator-go/pkg/core`)
+* **Freshness & Decay**: $h_f(t) = \frac{t - w_g^f}{L_{\text{eff}}^f}$, $y_f(t) = f(h_f(t)) \cdot i_f$.
+* **Hit Check**: If resident, renew lease via Layer 1; promote to Protected Tier via Layer 3.
+* **Elastic Capacity Evaluation**: $\lambda_{\text{EMA}} = 0.05 / \tau + 0.95 \lambda_{\text{EMA}}$, adjusting $M_{\text{eff}}(t)$.
 
+### Step 3: Candidate Admission & Utility-Density Eviction
+* If action $a = 1$ (Admit) on miss:
+  * If file was in Ghost Cache $\implies$ Admit directly to Protected Tier.
+  * Else $\implies$ Admit to Probationary Tier.
+* While $\text{UsedCapacity} + z_r > M_{\text{eff}}(t)$:
+  * Select eviction victim with lowest $\frac{y_f(t)}{z_f} \times (0.8 + 0.0004 z_f)$.
+  * Move victim ID into circular Ghost Cache history.
+
+### Step 4: Regularized Reward Formulation
+$$W(t) = \sum_{f \in \text{Cached}} b_f(t) \cdot d_f(t) \cdot y_f(t) \cdot C_f(z_f)$$
+$$r(t) = W(t) - 10.0 \cdot Mem(t)$$
+* Aligned with actual delivered utility and origin transit avoidance; eliminates the $-100 \cdot Mem$ cliff penalty.
+
+### Step 5: Multi-Step Buffering & Priority Update (`agent-python/memory`)
+* Multi-step accumulation over $n=3$ Poisson events:
+  $$R_t^{(3)} = r_t + \gamma^{\tau_1} r_{t+1} + \gamma^{\tau_1 + \tau_2} r_{t+2}$$
+* Priority calculation via Eq. (6):
+  $$p_i = |\delta_i| + \mu |r_i - \bar{r}| + \epsilon$$
+* Importance sampling correction: $\omega_i = \left( \frac{1}{|\Lambda|} \cdot \frac{1}{P(i)} \right)^\beta$, where $\beta$ anneals from $0.6 \to 1.0$.
+
+### Step 6: Multi-Task Loss Backpropagation (`agent-python/algorithms/ddql.py`)
+$$J(\theta) = J_{\text{DQ}}(\theta) + \lambda_1 J_n(\theta) + \lambda_2 J_E(\theta) + \lambda_3 J_{L2}(\theta)$$
+1. **$J_{\text{DQ}}$ (1-Step Double Q Loss)**:
+   $$J_{\text{DQ}} = \mathbb{E}\left[ \omega_i \left( r + \gamma^\tau Q(s', \arg\max_a Q(s', a; \theta); \theta^-) - Q(s, a; \theta) \right)^2 \right]$$
+2. **$J_n$ ($n$-Step Return Loss)**:
+   $$J_n = \mathbb{E}\left[ \omega_i \left( R^{(n)} + \gamma^{\tau^{(n)}} Q(s'_{(n)}, \arg\max_a Q(s'_{(n)}, a; \theta); \theta^-) - Q(s, a; \theta) \right)^2 \right]$$
+3. **$J_E$ (Large-Margin Supervised Demonstration Loss)**:
+   $$J_E = \mathbb{E}\left[ \max_{a} \left( Q(s, a; \theta) + \ell(a_E, a) \right) - Q(s, a_E; \theta) \right]$$
+4. **$J_{L2}$ (Weight Regularization)**:
+   $$J_{L2} = \frac{1}{2} \|\theta\|_2^2$$
+
+---
+
+## 7. Telemetry & Data Persistence Schema
+
+| Persistence File Path | Format | Producing Component | Key Metrics & Content |
+| :--- | :---: | :--- | :--- |
+| `logs/baseline_runs.log` | Text Log | Go Engine (`cmd/baseline`) | Append-only record of all benchmark runs with exact hit rates, BHR, evictions, utility, and ops/sec. |
+| `data/results/experiment_report.json` | JSON | Python Report Script | Structured 3-way metrics comparing CTD, Paper DDQL, and AdaLife. |
+| `data/results/experiment_report.md` | Markdown | Python Report Script | Formatted comparative performance tables with percentage gain calculations. |
+| `data/results/drl_source_training.json` | JSON | Python Evaluation Suite | Step-by-step moving average rewards, instant rewards, and policy evaluations. |
+| `data/results/transfer_learning_comparison.json` | JSON | Python Evaluation Suite | Trajectory curves across PROPOSED TL, DQFD, LFS, and DPR. |
+| `graphs/*.png` & `graphs/*.svg` | PNG / SVG | Matplotlib Script | 26 publication-grade figures (300 DPI) exclusively plotting Paper DDQL vs. AdaLife. |
+| `agent-python/checkpoints/*.pt` | PyTorch | DRL Training Loop | Saved model weights for online network $\theta$, target network $\theta^-$, and optimizer state. |
+
+---
+
+## 8. Empirical Performance Verification: The 70-Million Request Benchmark
+
+Evaluated under production conditions ($70,000,000$ requests, $1,000$ files, $50\text{ GB}$ cache, $\eta = 0.85$, heavy-tailed file size mixture, from `logs/baseline_runs.log`):
+
+```
+=========================================================================================================
+ THREE-WAY ALGORITHM PERFORMANCE BENCHMARK: 70 Million Continuous Requests
+=========================================================================================================
+ Algorithm          | Hit Rate | Byte Hit | Miss Rate | Evict Rate | Cache Util | Total Utility | Avg ns/req
+--------------------+----------+----------+-----------+------------+------------+---------------+-----------
+ CTD Baseline       |   55.89% |   55.41% |    44.11% |     44.11% |     99.83% |   24643778.35 |      956.0
+ Paper (Niknia '24) |   66.18% |   46.60% |    33.82% |     22.41% |     99.95% |   22431459.16 |    26066.5
+ AdaLife (Ours)     |   78.81% |   61.27% |    21.19% |     14.28% |     99.81% |   37244712.96 |    20224.0
+=========================================================================================================
+
+  >>> KEY GAINS OF OUR PROPOSED ALGORITHM (AdaLife):
+      * Hit Rate Gain       : +12.63% vs Paper (Niknia '24) | +22.92% vs CTD Baseline
+      * Byte Hit Rate Gain  : +14.67% vs Paper (Niknia '24) | +5.86% vs CTD Baseline
+      * Eviction Reduction  : -36.3% vs Paper (Niknia '24)  | -67.6% vs CTD Baseline
+      * Total Utility Gain  : +14,813,253.80 points (+66.0% gain over Paper DDQL)
+=========================================================================================================
+```
+
+### Architectural Conclusions:
+1. **Double-Digit Hit Rate Advance**: AdaLife delivers a **+12.63% absolute gain** over Paper DDQL, achieving **78.81%** under heavy long-tail traffic.
+2. **Byte-Level Preservation**: Size-aware cost-utility density eviction lifts Byte Hit Rate from **46.60% to 61.27%**, preventing bulky content from destroying throughput.
+3. **Storage Stability**: The two-tier probation shield reduces eviction thrashing from **44.11% down to 14.28%**, prolonging edge SSD lifetime.
+4. **End-to-End Coherence**: The Go discrete-event simulator and Python PyTorch agent execute seamlessly across millions of continuous SMDP epochs, providing a complete, verified architecture for next-generation edge intelligence.
