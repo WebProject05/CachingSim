@@ -202,73 +202,73 @@ Replaced the artificial uniform distribution with real-world CDN traffic modelin
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Engine as Go Engine (simulator-go)
+    participant Engine as Go Engine
     participant AdaLife as AdaLife 5-Layer Cache
-    participant gRPC as gRPC Socket (:50051)
-    participant Client as Python Client (agent-python)
-    participant QNet as Online Q-Net θ
-    participant TargetQ as Target Q-Net θ^-
-    participant Buffer as SumTree PER Buffer
+    participant gRPC as gRPC Channel
+    participant Client as Python DRL Client
+    participant QNet as Online Q-Network
+    participant TargetQ as Target Q-Network
+    participant Buffer as Prioritized Replay Buffer
 
-    Engine->>Engine: Sample Poisson interval: tau = -ln(U)/lambda
-    Engine->>Engine: Advance physical clock: t = t + tau
-    Engine->>Engine: Sample requested file f_r ~ Zipf(eta)
+    Engine->>Engine: Sample Poisson interval tau = -ln(U) / lambda
+    Engine->>Engine: Advance physical clock t = t + tau
+    Engine->>Engine: Sample requested file f_r from Zipf distribution
     
-    Engine->>AdaLife: Check Cache Hit for f_r
+    Engine->>AdaLife: Check Cache Hit for requested file
     alt Cache HIT
-        AdaLife->>AdaLife: [Layer 1] Renew Lease: L_eff = L_base * (1 + ln(hits))
-        AdaLife->>AdaLife: Reset GenTime = t; HitCount++
-        AdaLife->>AdaLife: Promote to Protected Tier if in Probation
-        Engine->>Engine: Record Hit, calculate active utility y_{f_r}(t)
+        AdaLife->>AdaLife: Layer 1: Renew Lease L_eff = L_base * (1 + ln(hits))
+        AdaLife->>AdaLife: Reset GenTime = t, HitCount++
+        AdaLife->>AdaLife: Layer 3: Promote to Protected Tier if in Probation
+        Engine->>Engine: Record Hit, calculate active utility y(t)
     else Cache MISS
         Engine->>Engine: Record Miss
-        AdaLife->>AdaLife: [Layer 5] Check Ghost Cache History
+        AdaLife->>AdaLife: Layer 5: Check Ghost Cache History
     end
 
-    Engine->>Engine: Update active utilities y_f(t) for all cached files
-    Engine->>Engine: Assemble State Vector s(t) in R^(5F+1)
-    Engine->>gRPC: Send State s(t), tau, f_r, is_hit
+    Engine->>Engine: Update active utilities for all cached files
+    Engine->>Engine: Assemble State Vector s(t)
+    Engine->>gRPC: Send StepNotification (State s, tau, file ID, hit flag)
     gRPC->>Client: Deliver StepNotification
 
-    alt Epsilon Exploration (prob epsilon)
+    alt Epsilon Exploration
         Client->>Client: Sample random action a in {0, 1}
-    else Greedy Exploitation (prob 1 - epsilon)
-        Client->>QNet: Forward pass Q(s, a; θ)
-        QNet-->>Client: [Q(s, 0), Q(s, 1)]
-        Client->>Client: a = argmax_a Q(s, a)
+    else Greedy Exploitation
+        Client->>QNet: Forward pass Q(s, a)
+        QNet-->>Client: Action values [Q(s, 0), Q(s, 1)]
+        Client->>Client: Select action a = argmax Q(s, a)
     end
 
-    Client->>gRPC: StepRequest(action = a)
+    Client->>gRPC: Send StepRequest (Action a)
     gRPC->>Engine: Deliver Action a
 
-    alt Action a == 1 (Admit) and is_hit == false
-        Engine->>AdaLife: [Layer 2] Evaluate Elastic Headroom M_eff(t)
-        Engine->>AdaLife: [Layer 3] Insert into Probationary Tier
-        opt Free Space < Size(f_r)
-            AdaLife->>AdaLife: [Layer 4] Evict Victim = argmin (y_f / z_f * C_fetch)
-            AdaLife->>AdaLife: [Layer 5] Record Victim in Ghost Cache
+    alt Action a == 1 (Admit) and Cache Miss
+        Engine->>AdaLife: Layer 2: Evaluate Elastic Headroom M_eff(t)
+        Engine->>AdaLife: Layer 3: Insert into Probationary Tier
+        opt Free Space is Insufficient
+            AdaLife->>AdaLife: Layer 4: Evict victim with lowest cost-utility density
+            AdaLife->>AdaLife: Layer 5: Record victim in Ghost Cache
         end
     end
 
-    Engine->>Engine: Compute Regularized Reward: r(t) = W(t) - 10*Mem(t)
-    Engine->>gRPC: StepResponse(s', r, tau, is_hit, utility)
+    Engine->>Engine: Compute Regularized Reward r(t)
+    Engine->>gRPC: Send StepResponse (Next State s_next, Reward r, tau)
     gRPC-->>Client: Deliver StepResponse
 
-    Client->>Buffer: Store transition (s, a, r, s', tau)
-    Client->>Client: Accumulate n-step trajectory (n = 3)
+    Client->>Buffer: Store transition (s, a, r, s_next, tau)
+    Client->>Client: Accumulate 3-step return trajectory
 
-    opt When Buffer >= Batch Size (64)
-        Buffer->>Client: Sample prioritized mini-batch (P_i = p_i^alpha)
-        Client->>QNet: Predict Q(s, a; θ)
-        Client->>QNet: Select best target action a* = argmax Q(s', a; θ)
-        Client->>TargetQ: Evaluate target value Q(s', a*; θ^-)
-        Client->>Client: Compute Multi-Task Loss J = J_DQ + λ1*J_n + λ2*J_E + λ3*J_L2
-        Client->>QNet: Backpropagate loss & Adam step
-        Client->>Buffer: Update priorities: p_i = |r_i - avgR| + |TDE_i| + eps
+    opt When Buffer has sufficient samples
+        Buffer->>Client: Sample prioritized mini-batch
+        Client->>QNet: Predict current Q(s, a)
+        Client->>QNet: Select greedy target action a_star
+        Client->>TargetQ: Evaluate target Q(s_next, a_star)
+        Client->>Client: Compute Combined Multi-Task Loss
+        Client->>QNet: Backpropagate loss and Adam optimizer step
+        Client->>Buffer: Update TD-error priorities in SumTree
     end
 
-    opt Every zeta = 100 gradient steps
-        Client->>TargetQ: Soft synchronize weights: θ^- <- θ
+    opt Periodic Target Sync (every 100 steps)
+        Client->>TargetQ: Soft synchronize target weights
     end
 ```
 
