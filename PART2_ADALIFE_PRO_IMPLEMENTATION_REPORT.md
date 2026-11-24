@@ -23,6 +23,12 @@ This report documents the end-to-end engineering implementation, bug resolutions
 * **Excluded (Deferred to Part 3):** Scale-Invariant 24-dim $O(1)$ State Space, Decaying Count-Min Sketch popularity estimator, million-request external trace parsers, and multi-edge cooperative peering.
 
 ### Key Measured Impact (Verified Engine Runs)
+* **Large-Scale Continuous Run (`70,000,000 requests, F=1000, M=50,000 MiB, eta=0.85`):**
+  * Evaluated across 70 million continuous Poisson request arrivals (from `logs/baseline_runs.log`).
+  * **Hit Rate:** Reached **78.81% (`AdaLife`)** vs. **66.18% (`Paper DDQL`)** and **55.89% (`CTD`)** (**+12.63% absolute gain over Paper**, **+22.92% over CTD**).
+  * **Byte Hit Rate:** Reached **61.27% (`AdaLife`)** vs. **46.60% (`Paper DDQL`)** (**+14.67% gain**).
+  * **Eviction Churn:** Cut to **14.28% (`AdaLife`)** vs. **22.41% (`Paper DDQL`)** and **44.11% (`CTD`)** (**-36.3% churn reduction vs Paper**, **-67.6% vs CTD**).
+  * **Total Utility:** Surged to **37,244,712.96 (`AdaLife`)** vs. **22,431,459.16 (`Paper DDQL`)** (**+66.0% utility expansion**).
 * **Strict Contention (`F=100, M=5,000 MiB, lambda=5.0 req/s, eta=0.85, 10k reqs`):**
   * Go Native Engine: Hit rate rose from **21.65% (`CTD`)** and **32.08% (`Part 1 Only`)** to **40.20% (`AdaLife`)** (and **41.25%** without `FetchCost` size bias), cutting final window miss rate from **78.10%** (`CTD`) / **67.30%** (`Part 1`) down to **57.40%** and doubling total utility (`3,114.75` vs `1,552.64` `CTD`).
   * Python Live gRPC Dueling-DDQN (`lambda=1.00 req/s`): Hit rate jumped from **27.40%** (`Part 1 Only`) to **40.40%** (`AdaLife`), and at `lambda=5.00 req/s` from **25.70%** to **33.50%**.

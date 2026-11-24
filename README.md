@@ -58,6 +58,27 @@ The simulator runs an ongoing loop that mimics real-world internet traffic:
 
 ---
 
+## Key Breakthroughs: What We Worked On & What Worked Out
+
+Through extensive profiling of the original research paper (*Niknia et al., 2024*), we resolved 4 fundamental research gaps by engineering the **AdaLife** architecture:
+1. **AdaLife Dynamic Leases**: Replaced rigid static TTL expirations with logarithmic extensions based on hit frequency and importance ($L_{\text{eff}} \propto \ln(\text{hits}) \cdot i_f^\alpha$).
+2. **Two-Tier Probationary Shield (SLRU)**: Quarantines incoming files into a 15% probationary queue, neutralizing "one-hit wonder" scan pollution.
+3. **Utility-Density Eviction with Asymmetric Fetch Cost**: Evicts by $\frac{y_f(t)}{z_f} \times C_f(z_f)$, protecting small high-frequency web assets from large video chunks.
+4. **Elastic Capacity Headroom**: Provides $+35\%$ dynamic virtual capacity to absorb Poisson arrival bursts without thrashing disk.
+5. **Heavy-Tailed Workload Modeling**: Replaced artificial uniform file sizes with real-world 70/30 mixture distributions (70% 1–100 MiB, 30% 100–1000 MiB).
+
+### Empirical Validation: 70-Million Request Benchmark
+*(From `logs/baseline_runs.log` evaluated across 70,000,000 requests, 1,000 files, 50 GB cache, $\eta = 0.85$):*
+
+| Algorithm | Hit Rate (%) | Byte Hit Rate (%) | Miss Rate (%) | Eviction Rate (%) | Total Utility |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **CTD Baseline** | 55.89% | 55.41% | 44.11% | 44.11% | 24,643,778.35 |
+| **Paper (Niknia '24 DDQL)** | 66.18% | 46.60% | 33.82% | 22.41% | 22,431,459.16 |
+| **AdaLife (Ours)** | **78.81%** | **61.27%** | **21.19%** | **14.28%** | **37,244,712.96** |
+| **Advantage vs. Paper** | **+12.63%** | **+14.67%** | **-12.63%** | **-36.3% churn reduction** | **+66.0% gain** |
+
+---
+
 ## Repository Structure
 
 ```

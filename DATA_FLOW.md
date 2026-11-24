@@ -151,13 +151,24 @@ sequenceDiagram
                                              │ Action a in {0, 1}
                                              ▼
  ┌────────────────────────────────────────────────────────────────────────────────────────┐
- │ 7. ACTION EXECUTION & LOWEST-UTILITY EVICTION (simulator-go)                           │
+ │ 7. ADALIFE ACTION EXECUTION & 5-LAYER CACHE ENGINE (simulator-go)                      │
  │                                                                                        │
- │  If action == 1 (Admit file f_r):                                                      │
- │    While (UsedCapacity + Size(f_r) > CacheCapacity):                                   │
- │      f_victim = argmin_{f in Cached} y_f(t)   (Lowest Utility Eviction)                │
- │      Remove f_victim from cache; UsedCapacity -= Size(f_victim)                        │
- │    Insert f_r; UsedCapacity += Size(f_r)                                               │
+ │  • Layer 1 (AdaLife Lease Renewal):                                                    │
+ │      On hit, extend TTL: L_eff = L_base * (1 + ln(1 + hits)) * i_f^alpha               │
+ │                                                                                        │
+ │  • Layer 2 (Elastic Capacity Headroom):                                                │
+ │      M_eff(t) = M * (1.0 + sigma_max * min(1.0, lambda_EMA / lambda_ref))              │
+ │                                                                                        │
+ │  • Layer 3 (Two-Tier Probationary Shield):                                             │
+ │      New items enter 15% probationary partition. Repeat request promotes to protected. │
+ │      One-hit wonders expire harmlessly without evicting warm popular content.          │
+ │                                                                                        │
+ │  • Layer 4 (Size-Aware Utility-Density Eviction & Fetch Cost):                         │
+ │      When capacity is exceeded, evict by minimum cost-utility density:                 │
+ │      f_victim = argmin_{f in Tier} ( (y_f(t) / z_f) * C_fetch(z_f) )                  │
+ │                                                                                        │
+ │  • Layer 5 (Counterfactual Ghost Cache):                                               │
+ │      Tracks recently evicted items in ghost history; fast-tracks returning items.      │
  └───────────────────────────────────────────┬────────────────────────────────────────────┘
                                              │ Transition Feedback (s, a, r, s', tau)
                                              ▼

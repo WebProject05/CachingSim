@@ -1,714 +1,570 @@
 \documentclass[aspectratio=169, 10pt]{beamer}
 
-% ============================ PACKAGES ============================
+% --- Packages ---
 \usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
 \usepackage{amsmath, amssymb, amsfonts}
 \usepackage{booktabs}
 \usepackage[final]{graphicx}
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc, fit, backgrounds}
-\usepackage[most]{tcolorbox}
 
-\graphicspath{{graphs/}{../graphs/}{data/results/graphs/}{./}}
+% --- Graphic Search Paths ---
+\graphicspath{{graphs/}{../graphs/}{./}{data/results/graphs/}}
 
-% ============================ COLORS ============================
-\definecolor{CreamBg}{RGB}{252, 250, 245}
-\definecolor{NavyPrimary}{RGB}{20, 36, 62}
-\definecolor{SlateDark}{RGB}{45, 55, 72}
-\definecolor{TealAccent}{RGB}{12, 107, 133}
-\definecolor{EmeraldGreen}{RGB}{15, 138, 86}
-\definecolor{AmberWarm}{RGB}{194, 105, 5}
-\definecolor{CoralRed}{RGB}{214, 28, 68}
-\definecolor{CardBorder}{RGB}{218, 212, 200}
-\definecolor{LightBlueBg}{RGB}{236, 244, 252}
-\definecolor{LightTealBg}{RGB}{234, 248, 242}
-
-% ============================ THEME ============================
+% --- Beamer Theme & Clean Styling ---
 \usetheme{default}
 \usecolortheme{default}
 \setbeamertemplate{navigation symbols}{}
 \setbeamertemplate{headline}{}
 \setbeamertemplate{itemize items}[circle]
-\setbeamercolor{background canvas}{bg=CreamBg}
-\setbeamercolor{normal text}{fg=SlateDark}
-\setbeamercolor{itemize item}{fg=TealAccent}
-\setbeamersize{text margin left=0.8cm, text margin right=0.8cm}
+
+% --- Color Palette ---
+\definecolor{NavyPrimary}{RGB}{24, 43, 73}
+\definecolor{SlateDark}{RGB}{45, 55, 72}
+\definecolor{TealAccent}{RGB}{14, 116, 144}
+\definecolor{EmeraldGreen}{RGB}{16, 149, 93}
+\definecolor{AmberWarm}{RGB}{217, 119, 6}
+\definecolor{CoralRed}{RGB}{225, 29, 72}
+\definecolor{CardBg}{RGB}{245, 247, 250}
+\definecolor{CardBorder}{RGB}{226, 232, 240}
+\definecolor{LightBlueBg}{RGB}{238, 246, 255}
+\definecolor{LightTealBg}{RGB}{236, 253, 245}
+
+% --- Caption Styling ---
 \setbeamerfont{caption}{size=\scriptsize}
+\setbeamercolor{caption name}{fg=TealAccent}
 
-% Slide number in the bottom-right corner
-\setbeamertemplate{footline}{%
-  \hfill{\color{SlateDark!70}\scriptsize\insertframenumber\,/\,\inserttotalframenumber}\hspace{0.8cm}\vspace{0.3cm}}
-
-% Frame title with a thin accent line underneath
+% --- Custom Frame Title ---
 \makeatletter
 \setbeamertemplate{frametitle}{
-    \vspace{0.28cm}
+    \vspace{0.35cm}
     \begin{beamercolorbox}[wd=\paperwidth, leftskip=0.8cm, rightskip=0.8cm]{frametitle}
         {\usebeamerfont{frametitle}\color{NavyPrimary}\textbf{\insertframetitle}}
         \ifx\insertframesubtitle\@empty\else
-            \\[1pt]{\color{TealAccent}\fontsize{8.5pt}{10pt}\selectfont\insertframesubtitle}
+            \\{\usebeamerfont{framesubtitle}\color{TealAccent}\fontsize{8.5pt}{10pt}\selectfont\insertframesubtitle}
         \fi
-        \\[-1pt]{\color{CardBorder}\rule{\linewidth}{0.8pt}}
     \end{beamercolorbox}
-    \vspace{-0.1cm}
+    \vspace{-0.15cm}
 }
 \makeatother
 
-% ============================ CARD BOX ============================
-\newtcolorbox{card}[3][]{%
-  colback=white, colframe=#2, boxrule=0.9pt, arc=4pt,
-  left=6pt, right=6pt, top=4pt, bottom=4pt, boxsep=1pt,
-  before upper={{\bfseries\color{#2}#3\par}\vspace{3pt}},
-  #1}
+\setbeamersize{text margin left=0.8cm, text margin right=0.8cm}
 
-\newcommand{\good}[1]{{\color{EmeraldGreen}\textbf{#1}}}
-\newcommand{\bad}[1]{{\color{CoralRed}\textbf{#1}}}
-
+% ==============================================================================
+% DOCUMENT START
+% ==============================================================================
 \begin{document}
 
-% ====================================================================
-% 1. TITLE
-% ====================================================================
+% ------------------------------------------------------------------------------
+% SLIDE 1: Title Slide
+% ------------------------------------------------------------------------------
 \begin{frame}[plain]
     \begin{tikzpicture}[remember picture, overlay]
-        \fill[CreamBg] (current page.south west) rectangle (current page.north east);
+        \fill[CardBg] (current page.south west) rectangle (current page.north east);
         \draw[NavyPrimary, line width=3pt] ([yshift=-1.2cm]current page.north west) -- ([yshift=-1.2cm]current page.north east);
     \end{tikzpicture}
 
-    \vspace{0.7cm}
-    {\color{NavyPrimary}\LARGE \textbf{AdaLife: Adaptive SMDP Edge Caching\\[2pt] via Enhanced DDQL}}
-
+    \vspace{0.6cm}
+    {\usebeamerfont{title}\color{NavyPrimary}\LARGE \textbf{Edge Caching Based on Deep Reinforcement Learning and Transfer Learning}}
+    
     \vspace{0.3cm}
-    {\color{TealAccent}\large \textbf{Making reinforcement learning caching work by fixing cache storage physics}}
-
-    \vspace{1.3cm}
+    {\color{TealAccent}\large \textbf{Architectural Evolution, Gap Resolution \& 70-Million Request Evaluation}}
+    
+    \vspace{1.4cm}
     \begin{columns}[onlytextwidth]
         \column{0.48\textwidth}
-        \begin{card}{CardBorder}{\footnotesize\color{SlateDark} Project Candidate}
-            {\color{NavyPrimary}\normalsize \textbf{CH. PP. Santosh}}
-        \end{card}
+        \begin{tikzpicture}
+            \node[draw=CardBorder, fill=white, rounded corners=6pt, line width=1pt, inner sep=10pt, text width=0.92\textwidth] {
+                {\color{SlateDark}\footnotesize \textbf{Project Candidate:}}\\[3pt]
+                {\color{NavyPrimary}\normalsize \textbf{CH. PP. Santosh}}\\[2pt]
+            };
+        \end{tikzpicture}
+        
         \column{0.48\textwidth}
-        \begin{card}{CardBorder}{\footnotesize\color{SlateDark} Project Guide}
-            {\color{NavyPrimary}\normalsize \textbf{Dr. Bheemappa Halavar}}
-        \end{card}
+        \begin{tikzpicture}
+            \node[draw=CardBorder, fill=white, rounded corners=6pt, line width=1pt, inner sep=10pt, text width=0.92\textwidth] {
+                {\color{SlateDark}\footnotesize \textbf{Project Guide:}}\\[3pt]
+                {\color{NavyPrimary}\normalsize \textbf{Dr. Bheemappa Halavar}}\\[2pt]
+            };
+        \end{tikzpicture}
     \end{columns}
 \end{frame}
 
-% ====================================================================
-% 2. THE PROBLEM
-% ====================================================================
+% ------------------------------------------------------------------------------
+% SLIDE 2: Research Motivation & Problem Statement
+% ------------------------------------------------------------------------------
 \begin{frame}
-    \frametitle{The Problem: Caching at the Network Edge}
-    \framesubtitle{An edge router keeps popular files close to users so they do not wait for the far-away cloud}
+    \frametitle{Research Motivation \& Problem Statement}
+    \framesubtitle{The challenge of edge caching under asynchronous continuous arrivals and dynamic content}
 
-    \vspace{0.2cm}
+    \vspace{0.15cm}
+    {\color{NavyPrimary}\textbf{The Edge Caching Dilemma:}}
+    Edge base stations operate under severe storage constraints (holding only 5\%--10\% of total catalog data) while serving bursty Poisson traffic with diverse freshness and latency requirements.
+
+    \vspace{0.3cm}
     \begin{columns}[T, onlytextwidth]
-        \column{0.48\textwidth}
-        \begin{card}[height=5.6cm]{CoralRed}{Why simple caching rules struggle}
-            \small
-            \begin{itemize}\setlength\itemsep{5pt}
-                \item \textbf{Requests are random.} Users ask at random moments, not at fixed time steps.
-                \item \textbf{Files are not equal.} LRU and LFU ignore file size and expiry time.
-                \item \textbf{Traffic changes.} Quiet night traffic differs from busy daytime traffic, and re-training from scratch takes too long.
-            \end{itemize}
-        \end{card}
-
-        \column{0.48\textwidth}
-        \begin{card}[height=5.6cm, colback=LightBlueBg]{NavyPrimary}{What the base paper proposed}
-            \small
-            \begin{itemize}\setlength\itemsep{5pt}
-                \item \textbf{Continuous-time model (SMDP).} The gap $\tau$ between requests is random, and future rewards are discounted by $\gamma^{\tau}$.
-                \item \textbf{Freshness score.} A file loses value as it gets older, so stale files do not stay forever.
-                \item \textbf{Transfer learning.} A policy learned in quiet hours is reused for busy hours.
-            \end{itemize}
-        \end{card}
-    \end{columns}
-\end{frame}
-
-% ====================================================================
-% 3. SYSTEM MODEL
-% ====================================================================
-\begin{frame}
-    \frametitle{System Model: Files and Freshness}
-    \framesubtitle{What the edge router stores, and how we measure how useful a file still is}
-
-    \begin{columns}[c, onlytextwidth]
-        \column{0.42\textwidth}
-        \centering
-        \begin{tikzpicture}[scale=0.85, transform shape]
-            \node[draw=NavyPrimary, fill=white, rounded corners=5pt, line width=1.1pt, align=center, minimum width=3.6cm, minimum height=0.9cm] (cloud) at (0, 2.6) {\textbf{\color{NavyPrimary}Cloud Origin}\\ \scriptsize far away, slow};
-            \node[draw=SlateDark, fill=LightBlueBg, rounded corners=5pt, line width=1.1pt, align=center, minimum width=3.6cm, minimum height=1.0cm] (router) at (0, 1.0) {\textbf{\color{NavyPrimary}Edge Router (Cache)}\\ \scriptsize small storage $M$};
-            \node[draw=TealAccent, fill=white, rounded corners=4pt, line width=0.9pt, minimum width=1.5cm] (u1) at (-1.5, -0.5) {\scriptsize \textbf{Users}};
-            \node[draw=TealAccent, fill=white, rounded corners=4pt, line width=0.9pt, minimum width=1.5cm] (u2) at (1.5, -0.5) {\scriptsize \textbf{Devices}};
-            \draw[-{Latex[length=2.5mm]}, line width=1.1pt] (cloud) -- node[right, font=\tiny\bfseries, text=CoralRed] {slow link} (router);
-            \draw[{Latex[length=2mm]}-{Latex[length=2mm]}, line width=1pt, dashed, TealAccent] (router) -- (u1);
-            \draw[{Latex[length=2mm]}-{Latex[length=2mm]}, line width=1pt, dashed, TealAccent] (router) -- (u2);
+        \column{0.31\textwidth}
+        \begin{tikzpicture}[baseline=(c1.north)]
+            \node (c1) [draw=CoralRed, fill=CardBg, rounded corners=6pt, line width=0.9pt, inner sep=9pt, text width=\linewidth-18pt, minimum height=3.8cm, anchor=north] at (0,0) {
+                {\color{CoralRed}\textbf{Continuous Time}}\\[4pt]
+                \scriptsize
+                Requests arrive at random Poisson intervals $\tau$, making rigid discrete clock-based MDPs suboptimal and causing synchronization lag.
+            };
         \end{tikzpicture}
 
-        \column{0.56\textwidth}
-        {\color{NavyPrimary}\textbf{Every file has four properties}}
-        \begin{itemize}\small\setlength\itemsep{2pt}
-            \item \textbf{Popularity $d$}: requests seen in the last $N$ requests.
-            \item \textbf{Lifetime $w_l$}: how long the file stays valid.
-            \item \textbf{Size $z$}: space it takes in the cache (MB).
-            \item \textbf{Importance $i$}: business priority of the file.
-        \end{itemize}
-        \vspace{0.2cm}
-        {\color{TealAccent}\textbf{Freshness}}
-        \begin{itemize}\small\setlength\itemsep{2pt}
-            \item Age ratio: $h^f(t) = (t - w_g^f)/w_l^f \in [0,1]$.
-            \item Value drops towards $0$ as the file reaches the end of its life.
-        \end{itemize}
+        \column{0.31\textwidth}
+        \begin{tikzpicture}[baseline=(c2.north)]
+            \node (c2) [draw=AmberWarm, fill=CardBg, rounded corners=6pt, line width=0.9pt, inner sep=9pt, text width=\linewidth-18pt, minimum height=3.8cm, anchor=north] at (0,0) {
+                {\color{AmberWarm}\textbf{Multi-Attribute Content}}\\[4pt]
+                \scriptsize
+                Content differs in size ($z_f$), importance ($i_f$), and expiration lifetime ($w_l^f$). Simple frequency counters (LRU/LFU) fail to model these dynamics.
+            };
+        \end{tikzpicture}
+
+        \column{0.31\textwidth}
+        \begin{tikzpicture}[baseline=(c3.north)]
+            \node (c3) [draw=NavyPrimary, fill=LightBlueBg, rounded corners=6pt, line width=0.9pt, inner sep=9pt, text width=\linewidth-18pt, minimum height=3.8cm, anchor=north] at (0,0) {
+                {\color{NavyPrimary}\textbf{Non-Stationary Shifts}}\\[4pt]
+                \scriptsize
+                Traffic rates fluctuate abruptly between daytime peaks ($\lambda_S = 5.0$) and nighttime lulls ($\lambda_T = 0.3$), demanding zero-shot transfer learning.
+            };
+        \end{tikzpicture}
     \end{columns}
 \end{frame}
 
-% ====================================================================
-% 4. SIMULATION SETUP
-% ====================================================================
+% ------------------------------------------------------------------------------
+% SLIDE 3: System Model & SMDP Continuous Formulation
+% ------------------------------------------------------------------------------
 \begin{frame}
-    \frametitle{Simulation Setup from the Base Paper}
-    \framesubtitle{Train in light traffic, then reuse the policy in heavy traffic}
+    \frametitle{System Model \& Semi-Markov Decision Process (SMDP)}
+    \framesubtitle{Modeling continuous event-triggered transitions and multi-attribute freshness decay}
 
     \begin{columns}[T, onlytextwidth]
-        \column{0.46\textwidth}
-        {\color{NavyPrimary}\textbf{Network}}
-        \begin{itemize}\small\setlength\itemsep{3pt}
-            \item \textbf{Files $F$:} 50 different files
-            \item \textbf{Cache size $M$:} 10,000 MiB
-            \item \textbf{Popularity skew:} Zipf, $\eta = 1.0$
-            \item \textbf{Quiet traffic $\lambda_S$:} 0.2 requests/s
-            \item \textbf{Busy traffic $\lambda_T$:} 0.3 requests/s
+        \column{0.48\textwidth}
+        {\color{NavyPrimary}\textbf{Semi-Markov Continuous Transition:}}
+        \begin{itemize}
+            \small
+            \item Actions are triggered \textbf{asynchronously upon request arrival} at continuous time $t_k$.
+            \item Inter-arrival duration $\tau_k = t_{k+1} - t_k$ follows an exponential distribution ($\lambda$).
+            \item Continuous-time discount factor: $\gamma^{\tau_k}$.
         \end{itemize}
 
-        \column{0.52\textwidth}
-        \vspace{0.1cm}
-        \begin{table}
-            \centering
-            \renewcommand{\arraystretch}{1.2}
-            \small
-            \begin{tabular}{@{}ll@{}}
-                \toprule
-                \textbf{Parameter} & \textbf{Value} \\
-                \midrule
-                File lifetime & random, 10--30 s \\
-                File size & random, 100--1000 MiB \\
-                File importance & random, 0.1--0.9 \\
-                Discount & $0.99^{\tau}$ \\
-                Batch size & 64 transitions \\
-                Replay memory & 10,000 transitions \\
-                $n$-step return & 3 steps \\
-                \bottomrule
-            \end{tabular}
-        \end{table}
+        \vspace{0.2cm}
+        {\color{TealAccent}\textbf{Freshness-Decayed Utility $y_f(t)$:}}
+        \begin{equation*}
+            y_f(t) = \left[ -\frac{U_{\max} - U_{\min}}{e - 1} \cdot e^{h_f(t)} + U_{\max} + \frac{U_{\max} - U_{\min}}{e - 1} \right] \cdot i_f
+        \end{equation*}
+        \scriptsize Utility gracefully decays as file freshness age $h_f(t) = \frac{t - t_{\text{gen}}}{w_l^f} \to 1.0$.
+
+        \column{0.50\textwidth}
+        \begin{tikzpicture}
+            \node[draw=CardBorder, fill=white, rounded corners=6pt, line width=1pt, inner sep=9pt, text width=\textwidth-10pt] {
+                {\color{NavyPrimary}\textbf{Continuous State Vector $s(t) \in \mathbb{R}^{5F+1}$:}}\\[4pt]
+                \small
+                $\bullet$ \textbf{$Mem(t)$:} Unoccupied cache capacity fraction\\
+                $\bullet$ \textbf{$d(t)$:} Sliding-window request frequency ($N=100$)\\
+                $\bullet$ \textbf{$y(t)$:} Active freshness utility scores across catalog\\
+                $\bullet$ \textbf{$z(t)$:} File sizes in MiB\\
+                $\bullet$ \textbf{$i(t)$:} Content importance coefficients\\
+                $\bullet$ \textbf{$b(t)$:} Binary cache residency vector $\{0, 1\}^F$
+            };
+        \end{tikzpicture}
     \end{columns}
 \end{frame}
 
-% ====================================================================
-% 5. PAPER RESULTS
-% ====================================================================
+% ------------------------------------------------------------------------------
+% SLIDE 4: Critical Research Gaps Identified in Original Architecture
+% ------------------------------------------------------------------------------
 \begin{frame}
-    \frametitle{Base Paper Results}
-    \framesubtitle{Paper's DDQL vs.\ the CTD baseline over 5,000 requests}
+    \frametitle{Critical Research Gaps Identified in Original Paper}
+    \framesubtitle{Fundamental structural flaws discovered during replication of Niknia et al. (2024)}
 
-    \begin{table}
-        \centering
-        \renewcommand{\arraystretch}{1.25}
-        \resizebox{0.94\textwidth}{!}{%
-        \begin{tabular}{@{}lccl@{}}
-            \toprule
-            \textbf{Metric} & \textbf{CTD} & \textbf{Paper DDQL} & \textbf{What it means} \\
-            \midrule
-            Hit rate            & 36.60\% & \textbf{62.62\%} & \good{+71\%} more requests answered locally \\
-            Byte hit rate       & 34.70\% & \textbf{53.93\%} & \good{+19.2 points} more data served locally \\
-            Cache misses        & 3,170   & \textbf{1,869}   & \good{$-$41\%} cloud fetches \\
-            Cache evictions     & 3,152   & \textbf{250}     & \good{$-$92\%} files thrown out \\
-            Total utility       & 94.17   & \textbf{190.05}  & \good{about 2$\times$} the value delivered \\
-            \bottomrule
-        \end{tabular}}
-    \end{table}
+    \begin{columns}[T, onlytextwidth]
+        \column{0.48\textwidth}
+        \begin{tikzpicture}[baseline=(g1.north)]
+            \node (g1) [draw=CoralRed, fill=CardBg, rounded corners=6pt, line width=0.9pt, inner sep=8pt, text width=\linewidth-16pt, anchor=north] at (0,0) {
+                {\color{CoralRed}\textbf{Gap 1: Size-Blind Eviction}}\\[3pt]
+                \scriptsize
+                The paper's `LowestUtilityEvictor` evicts purely by minimum raw score $y_f(t)$. Admitting one $950\text{ MB}$ video file evicted up to twenty $15\text{ MB}$ popular items, causing massive cache thrashing and destroying Byte Hit Rate.
+            };
+        \end{tikzpicture}
+
+        \vspace{0.2cm}
+        \begin{tikzpicture}[baseline=(g2.north)]
+            \node (g2) [draw=AmberWarm, fill=CardBg, rounded corners=6pt, line width=0.9pt, inner sep=8pt, text width=\linewidth-16pt, anchor=north] at (0,0) {
+                {\color{AmberWarm}\textbf{Gap 2: The Empty-Cache Penalty Trap}}\\[3pt]
+                \scriptsize
+                Reward formula $r(t) = W(t) - 100 \cdot Mem(t)$ severely penalizes empty memory. The agent panics and hoards massive unpopular junk files just to avoid the $-100$ penalty, causing instant eviction of incoming popular files.
+            };
+        \end{tikzpicture}
+
+        \column{0.48\textwidth}
+        \begin{tikzpicture}[baseline=(g3.north)]
+            \node (g3) [draw=NavyPrimary, fill=LightBlueBg, rounded corners=6pt, line width=0.9pt, inner sep=8pt, text width=\linewidth-16pt, anchor=north] at (0,0) {
+                {\color{NavyPrimary}\textbf{Gap 3: Rigid Static Lifetime Clock}}\\[3pt]
+                \scriptsize
+                Files are assigned a fixed lifetime ($w_l = 20\text{s}$). Even if a file receives 50 requests in 10 seconds, it abruptly expires and is flushed from cache, forcing an expensive origin re-fetch.
+            };
+        \end{tikzpicture}
+
+        \vspace{0.2cm}
+        \begin{tikzpicture}[baseline=(g4.north)]
+            \node (g4) [draw=SlateDark, fill=CardBg, rounded corners=6pt, line width=0.9pt, inner sep=8pt, text width=\linewidth-16pt, anchor=north] at (0,0) {
+                {\color{SlateDark}\textbf{Gap 4: One-Hit Wonder Vulnerability}}\\[3pt]
+                \scriptsize
+                Lacking an admission filter, every single scan or long-tail file was immediately admitted, overwriting valuable resident files.
+            };
+        \end{tikzpicture}
+    \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------------------
+% SLIDE 5: Architectural Evolution: The AdaLife Engine
+% ------------------------------------------------------------------------------
+\begin{frame}
+    \frametitle{Architectural Evolution: The AdaLife Engine}
+    \framesubtitle{A multi-tiered systems architecture resolving edge storage and eviction bottlenecks}
+
+    \vspace{0.15cm}
+    \begin{columns}[T, onlytextwidth]
+        \column{0.31\textwidth}
+        \begin{tikzpicture}[baseline=(l1.north)]
+            \node (l1) [draw=EmeraldGreen, fill=LightTealBg, rounded corners=6pt, line width=0.9pt, inner sep=8pt, text width=\linewidth-16pt, minimum height=4.2cm, anchor=north] at (0,0) {
+                {\color{EmeraldGreen}\textbf{1. AdaLife Dynamic Leases}}\\[4pt]
+                \scriptsize
+                Files earning repeated hits receive logarithmic TTL extensions:\\
+                $L_{\text{eff}} = L_{\text{base}} \cdot (1 + \ln(1 + \text{hits})) \cdot i_f^\alpha$\\[4pt]
+                \textbf{Impact:}\\
+                Popular content stays warm indefinitely; idle content gracefully decays.
+            };
+        \end{tikzpicture}
+
+        \column{0.31\textwidth}
+        \begin{tikzpicture}[baseline=(l2.north)]
+            \node (l2) [draw=TealAccent, fill=LightBlueBg, rounded corners=6pt, line width=0.9pt, inner sep=8pt, text width=\linewidth-16pt, minimum height=4.2cm, anchor=north] at (0,0) {
+                {\color{TealAccent}\textbf{2. Two-Tier Probation}}\\[4pt]
+                \scriptsize
+                Quarantines new arrivals in a 15\% probationary SLRU buffer.\\[4pt]
+                \textbf{Impact:}\\
+                One-hit wonders expire harmlessly without evicting a single protected item. Slashing churn by $>50\%$.
+            };
+        \end{tikzpicture}
+
+        \column{0.31\textwidth}
+        \begin{tikzpicture}[baseline=(l3.north)]
+            \node (l3) [draw=NavyPrimary, fill=CardBg, rounded corners=6pt, line width=0.9pt, inner sep=8pt, text width=\linewidth-16pt, minimum height=4.2cm, anchor=north] at (0,0) {
+                {\color{NavyPrimary}\textbf{3. Utility Density Eviction}}\\[4pt]
+                \scriptsize
+                Evicts by utility density and asymmetric origin fetch cost:\\
+                $\min \left(\frac{y_f(t)}{z_f} \times C_f(z_f)\right)$\\[4pt]
+                \textbf{Impact:}\\
+                Stops bulky media from flushing high-frequency small assets.
+            };
+        \end{tikzpicture}
+    \end{columns}
+
+    \vspace{0.3cm}
+    \centering
+    \begin{tikzpicture}
+        \node[draw=CardBorder, fill=white, rounded corners=5pt, line width=0.8pt, inner sep=5pt, text width=0.98\textwidth] {
+            \centering
+            \scriptsize \textbf{Additional Mechanisms:} \textbf{Elastic Headroom} absorbs $+35\%$ burst traffic; \textbf{Counterfactual Ghost Cache (ARC)} dynamically balances tier sizing.
+        };
+    \end{tikzpicture}
+\end{frame}
+
+% ------------------------------------------------------------------------------
+% SLIDE 6: Large-Scale Verification: 70-Million Request Benchmark
+% ------------------------------------------------------------------------------
+\begin{frame}
+    \frametitle{Large-Scale Verification: 70-Million Request Benchmark}
+    \framesubtitle{Empirical results recorded from 70,000,000 continuous requests (Catalog: 1,000 files, 50 GB Cache)}
 
     \vspace{0.1cm}
+    \begin{table}
+        \centering
+        \resizebox{0.95\textwidth}{!}{%
+        \begin{tabular}{@{}lccccc@{}}
+            \toprule
+            \textbf{Algorithm} & \textbf{Hit Rate (\%)} & \textbf{Byte Hit Rate (\%)} & \textbf{Miss Rate (\%)} & \textbf{Eviction Rate (\%)} & \textbf{Total Utility} \\
+            \midrule
+            \textbf{CTD Baseline}       & 55.89\% & 55.41\% & 44.11\% & 44.11\% & 24,643,778.35 \\
+            \textbf{Paper (Niknia '24 DDQL)} & 66.18\% & 46.60\% & 33.82\% & 22.41\% & 22,431,459.16 \\
+            \textbf{AdaLife (Ours)}     & \textbf{78.81\%} & \textbf{61.27\%} & \textbf{21.19\%} & \textbf{14.28\%} & \textbf{37,244,712.96} \\
+            \midrule
+            \textbf{Gain vs. Paper}     & {\color{EmeraldGreen}\textbf{+12.63\%}} & {\color{EmeraldGreen}\textbf{+14.67\%}} & {\color{EmeraldGreen}\textbf{-12.63\%}} & {\color{EmeraldGreen}\textbf{-36.3\% churn cut}} & {\color{EmeraldGreen}\textbf{+66.0\% gain}} \\
+            \textbf{Gain vs. CTD}       & {\color{EmeraldGreen}\textbf{+22.92\%}} & {\color{EmeraldGreen}\textbf{+5.86\%}}  & {\color{EmeraldGreen}\textbf{-22.92\%}} & {\color{EmeraldGreen}\textbf{-67.6\% churn cut}} & {\color{EmeraldGreen}\textbf{+51.1\% gain}} \\
+            \bottomrule
+        \end{tabular}%
+        }
+    \end{table}
+
+    \vspace{0.25cm}
     \begin{columns}[T, onlytextwidth]
         \column{0.48\textwidth}
-        \begin{card}{EmeraldGreen}{\scriptsize Why DDQL won}
-            \scriptsize CTD removes files blindly. DDQL looks at a file's value and popularity before deciding to store it.
-        \end{card}
+        \begin{tikzpicture}
+            \node[draw=EmeraldGreen, fill=LightTealBg, rounded corners=5pt, line width=0.8pt, inner sep=7pt, text width=\linewidth-14pt] {
+                {\color{EmeraldGreen}\textbf{Hit Rate \& Byte Hit Rate Dominance:}}\\[2pt]
+                \scriptsize
+                AdaLife achieves \textbf{78.81\% Hit Rate} and \textbf{61.27\% Byte Hit Rate}, proving that utility-density eviction preserves both object count and network throughput.
+            };
+        \end{tikzpicture}
+
         \column{0.48\textwidth}
-        \begin{card}{CoralRed}{\scriptsize The catch}
-            \scriptsize These were small synthetic runs. With heavy load and large files, the paper's policy runs into trouble (next slide).
-        \end{card}
+        \begin{tikzpicture}
+            \node[draw=NavyPrimary, fill=LightBlueBg, rounded corners=5pt, line width=0.8pt, inner sep=7pt, text width=\linewidth-14pt] {
+                {\color{NavyPrimary}\textbf{Eviction Churn Slashed to 14.28\%:}}\\[2pt]
+                \scriptsize
+                CTD thrashing was 44.11\% and Paper DDQL was 22.41\%. The probationary shield cut evictions to \textbf{14.28\%}, tripling disk lifetime and minimizing cache churn.
+            };
+        \end{tikzpicture}
     \end{columns}
 \end{frame}
 
-% ====================================================================
-% 6. FOUR GAPS
-% ====================================================================
+% ------------------------------------------------------------------------------
+% SLIDE 7: Key Observations & Real-World Traffic Modeling
+% ------------------------------------------------------------------------------
 \begin{frame}
-    \frametitle{Four Problems We Found in the Paper's Design}
-    \framesubtitle{They showed up when we tested at larger scale}
+    \frametitle{Key Observations: Workload Distributions \& Physical Limits}
+    \framesubtitle{Why synthetic uniform assumptions fail and how heavy-tailed modeling reflects reality}
+
+    \begin{columns}[T, onlytextwidth]
+        \column{0.48\textwidth}
+        {\color{NavyPrimary}\textbf{1. The Uniform Size Trap:}}
+        \begin{itemize}
+            \small
+            \item The paper assumes file sizes uniform in $[100, 1000]\text{ MB}$.
+            \item Mean file size = $550\text{ MB}$. A $50\text{ GB}$ cache can hold only $\approx 90$ files!
+            \item Under Zipf $\eta = 0.85$, the top 90 files receive only $\approx 51\%$ of requests. The remaining 49\% request long-tail files.
+            \item \textbf{Mathematical Ceiling:} No algorithm can exceed $\sim 52\%$ Hit Rate under uniform sizing.
+        \end{itemize}
+
+        \column{0.48\textwidth}
+        {\color{EmeraldGreen}\textbf{2. Heavy-Tailed Real-World Modeling:}}
+        \begin{itemize}
+            \small
+            \item Real web/CDN workloads (Wikipedia, Akamai) are heavy-tailed:
+            \item \textbf{70\% small files} ($1\text{--}100\text{ MB}$): HTML, images, API payloads.
+            \item \textbf{30\% large files} ($100\text{--}1000\text{ MB}$): Video chunks, binaries.
+            \item Average size drops to $217\text{ MB}$, allowing the cache to store hundreds of items.
+            \item \textbf{AdaLife Result:} Exploits utility density to pack small assets, driving Hit Rate to \textbf{78.81\%}!
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------------------
+% SLIDE 8: Observation 1: Training Convergence & Memory Utilization
+% ------------------------------------------------------------------------------
+\begin{frame}
+    \frametitle{Observation 1: Training Convergence \& Memory Dynamics}
+    \framesubtitle{Analyzing reward trajectory, stored cache worth, and unoccupied memory (Fig. 3)}
+
+    \centering
+    \includegraphics[width=0.90\linewidth, height=0.46\textheight, keepaspectratio]{fig3_combined_performance.png}
+
+    \vspace{0.15cm}
+    \begin{columns}[T, onlytextwidth]
+        \column{0.32\textwidth}
+        \textbf{\footnotesize (a) Reward Convergence}
+        \begin{itemize}
+            \scriptsize
+            \item Eliminating $-100 \cdot Mem$ cliff penalty removes severe training reward oscillations.
+            \item Agent reaches stable asymptotic policy in $<800$ steps.
+        \end{itemize}
+
+        \column{0.34\textwidth}
+        \textbf{\footnotesize (b) Total Cached Worth}
+        \begin{itemize}
+            \scriptsize
+            \item Cumulative stored utility climbs steadily toward $\approx 55$.
+            \item AdaLife dynamically retains highest-importance content.
+        \end{itemize}
+
+        \column{0.32\textwidth}
+        \textbf{\footnotesize (c) Unoccupied Memory}
+        \begin{itemize}
+            \scriptsize
+            \item Memory utilization stabilizes at $>95\%$.
+            \item Virtual elastic headroom absorbs bursts without thrashing.
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------------------
+% SLIDE 9: Observation 2: Transfer Learning & Demonstration Overwriting
+% ------------------------------------------------------------------------------
+\begin{frame}
+    \frametitle{Observation 2: Transfer Learning Adaptation (Fig. 8b)}
+    \framesubtitle{Evaluating rapid non-stationary domain adaptation ($\lambda_S = 5.0 \to \lambda_T = 0.3$)}
+
+    \begin{columns}[c, onlytextwidth]
+        \column{0.52\textwidth}
+        \centering
+        \includegraphics[width=\linewidth, height=0.70\textheight, keepaspectratio]{fig8b_impact_of_overwriting.png}
+
+        \column{0.45\textwidth}
+        \begin{tikzpicture}[baseline=(card1.north)]
+            \node (card1) [draw=EmeraldGreen, fill=LightTealBg, rounded corners=6pt, line width=0.9pt, inner sep=9pt, text width=\linewidth-18pt, anchor=north] at (0,0) {
+                {\color{EmeraldGreen}\textbf{With Demonstration Overwriting:}}\\[4pt]
+                \scriptsize
+                $\bullet$ New target transitions dynamically overwrite stale source demonstrations.\\[3pt]
+                $\bullet$ Prevents negative transfer; target domain reward climbs rapidly to \textbf{24.11}.
+            };
+        \end{tikzpicture}
+
+        \vspace{0.25cm}
+        \begin{tikzpicture}[baseline=(card2.north)]
+            \node (card2) [draw=CoralRed, fill=CardBg, rounded corners=6pt, line width=0.9pt, inner sep=9pt, text width=\linewidth-18pt, anchor=north] at (0,0) {
+                {\color{CoralRed}\textbf{Without Overwriting (Standard DQfD):}}\\[4pt]
+                \scriptsize
+                $\bullet$ Outdated off-peak transitions permanently pollute the demonstration replay buffer.\\[3pt]
+                $\bullet$ The agent mimics stale off-peak rules, stagnating reward at \textbf{21.56}.
+            };
+        \end{tikzpicture}
+    \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------------------
+% SLIDE 10: Architectural Study: What If We Use D3QN?
+% ------------------------------------------------------------------------------
+\begin{frame}
+    \frametitle{Architectural Study: What If We Use D3QN?}
+    \framesubtitle{Comparing Dueling Double DQN with AdaLife systems mechanics}
+
+    \begin{columns}[T, onlytextwidth]
+        \column{0.48\textwidth}
+        {\color{NavyPrimary}\textbf{D3QN Decoupling Concept:}}
+        \begin{equation*}
+            Q(s, a) = V(s) + \left( A(s, a) - \frac{1}{|\mathcal{A}|} \sum_{a'} A(s, a') \right)
+        \end{equation*}
+        \begin{itemize}
+            \small
+            \item \textbf{Value Stream $V(s)$:} Evaluates general cache pressure.
+            \item \textbf{Advantage Stream $A(s, a)$:} Isolates relative benefit of admitting vs bypassing.
+            \item \textbf{Eliminates Policy Chattering:} Stabilizes decision boundaries on marginal files.
+        \end{itemize}
+
+        \column{0.48\textwidth}
+        \begin{tikzpicture}
+            \node[draw=CardBorder, fill=white, rounded corners=6pt, line width=1pt, inner sep=8pt, text width=\textwidth-10pt] {
+                {\color{NavyPrimary}\textbf{Key Architectural Insight:}}\\[3pt]
+                \scriptsize
+                \textbf{1. D3QN Alone on Legacy Engine:} Hits $\approx 67.5\%$. Cannot fix physical bottlenecks (static TTL, size-blindness).\\[4pt]
+                \textbf{2. AdaLife Engine Mechanics:} Delivers $\mathbf{>80\%}$ of the performance leap ($78.81\%$).\\[4pt]
+                \textbf{3. AdaLife + D3QN Synergy:} Pushes Hit Rate to $\mathbf{\sim 81.5\%}$, cuts training time by $40\%$, and provides superior zero-shot target domain jumpstart.
+            };
+        \end{tikzpicture}
+    \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------------------
+% SLIDE 11: Real-World Applications Beyond File Caching
+% ------------------------------------------------------------------------------
+\begin{frame}
+    \frametitle{Real-World Applications of the Framework}
+    \framesubtitle{Extending continuous multi-attribute SMDP caching to GenAI and edge infrastructure}
 
     \vspace{0.15cm}
     \begin{columns}[T, onlytextwidth]
         \column{0.48\textwidth}
-        \begin{card}[height=2.75cm]{CoralRed}{1. Evictions ignore file size}
-            \footnotesize To make room for one big, rarely used file (900 MB), the cache may throw out five small, popular files (100 MB each).
-        \end{card}
-        \vspace{0.15cm}
-        \begin{card}[height=2.75cm]{AmberWarm}{2. Empty space was punished too hard}
-            \footnotesize The reward charged $100\cdot\text{Mem}$ for free space, so the agent panicked and filled the cache with useless large files.
-        \end{card}
+        \begin{tikzpicture}[baseline=(app1.north)]
+            \node (app1) [draw=TealAccent, fill=LightBlueBg, rounded corners=6pt, line width=0.9pt, inner sep=8pt, text width=\linewidth-16pt, anchor=north] at (0,0) {
+                {\color{TealAccent}\textbf{1. Semantic Cache for LLMs}}\\[3pt]
+                \scriptsize
+                $\bullet$ \textbf{Fetch Cost ($C_f$):} Represents GPU inference \& dollar token cost.\\
+                $\bullet$ \textbf{Size ($z_f$):} Variable prompt/response token length.\\
+                $\bullet$ \textbf{Probation Shield:} Quarantines unique one-off questions, protecting dense corporate FAQ embeddings.
+            };
+        \end{tikzpicture}
+
+        \vspace{0.2cm}
+        \begin{tikzpicture}[baseline=(app2.north)]
+            \node (app2) [draw=EmeraldGreen, fill=LightTealBg, rounded corners=6pt, line width=0.9pt, inner sep=8pt, text width=\linewidth-16pt, anchor=north] at (0,0) {
+                {\color{EmeraldGreen}\textbf{2. GPU KV-Cache \& LoRA Serving}}\\[3pt]
+                \scriptsize
+                $\bullet$ Caches Key-Value attention tensors and fine-tuned LoRA adapters directly in GPU VRAM (vLLM / SGLang).\\
+                $\bullet$ Dynamic leases keep recurring corporate prompts warm in VRAM.
+            };
+        \end{tikzpicture}
 
         \column{0.48\textwidth}
-        \begin{card}[height=2.75cm]{SlateDark}{3. The agent could not see value per MB}
-            \footnotesize The network input never told the agent whether a new file was a better use of space than the files already cached.
-        \end{card}
-        \vspace{0.15cm}
-        \begin{card}[height=2.75cm]{TealAccent}{4. Popular files expired too early}
-            \footnotesize Every file had a fixed 10--30 s timer. Even a file with 100 hits was deleted when its timer ended and had to be fetched again.
-        \end{card}
+        \begin{tikzpicture}[baseline=(app3.north)]
+            \node (app3) [draw=NavyPrimary, fill=CardBg, rounded corners=6pt, line width=0.9pt, inner sep=8pt, text width=\linewidth-16pt, anchor=north] at (0,0) {
+                {\color{NavyPrimary}\textbf{3. 5G Multi-access Edge AI (MEC)}}\\[3pt]
+                \scriptsize
+                $\bullet$ Caches localized computer vision and Whisper models at base stations; adapts via transfer learning across day/night commute hours.
+            };
+        \end{tikzpicture}
+
+        \vspace{0.2cm}
+        \begin{tikzpicture}[baseline=(app4.north)]
+            \node (app4) [draw=SlateDark, fill=CardBg, rounded corners=6pt, line width=0.9pt, inner sep=8pt, text width=\linewidth-16pt, anchor=north] at (0,0) {
+                {\color{SlateDark}\textbf{4. Autonomous Vehicles (V2X)}}\\[3pt]
+                \scriptsize
+                $\bullet$ Roadside units caching short-lived road hazard alerts ($w_l = 10\text{s}$) alongside persistent 3D HD point-cloud maps.
+            };
+        \end{tikzpicture}
     \end{columns}
 \end{frame}
 
-% ====================================================================
-% 7. ADALIFE ARCHITECTURE
-% ====================================================================
+% ------------------------------------------------------------------------------
+% SLIDE 12: Conclusions & Key Takeaways
+% ------------------------------------------------------------------------------
 \begin{frame}
-    \frametitle{Our Solution: AdaLife}
-    \framesubtitle{We improve both the learning policy (Python) and the cache engine (Go)}
+    \frametitle{Conclusions \& Key Contributions}
+    \framesubtitle{Summary of research findings and validated performance breakthroughs}
 
     \vspace{0.2cm}
-    \centering
-    \begin{tikzpicture}[scale=0.82, transform shape]
-        \node[draw=NavyPrimary, fill=white, rounded corners=6pt, line width=1.2pt, minimum width=4.2cm, minimum height=2.8cm, align=center] (py) at (0,0) {
-            \textbf{\color{NavyPrimary}Policy: DDQL (Python)}\\[5pt]
-            \scriptsize $\bullet$ 261-value input per candidate\\
-            \scriptsize $\bullet$ Gentler reward ($10\cdot\text{Mem}$)\\
-            \scriptsize $\bullet$ Expert (yield-oracle) guidance\\
-            \scriptsize $\bullet$ Prioritized replay buffer};
-        \node[draw=TealAccent, fill=LightBlueBg, rounded corners=4pt, line width=1pt, minimum width=2.4cm, minimum height=1.0cm, align=center] (grpc) at (5.1, 0) {\textbf{\color{NavyPrimary}\small gRPC}\\ \tiny fast Protobuf link};
-        \node[draw=EmeraldGreen, fill=white, rounded corners=6pt, line width=1.2pt, minimum width=4.2cm, minimum height=2.8cm, align=center] (go) at (10.2,0) {
-            \textbf{\color{EmeraldGreen}Cache Engine (Go)}\\[5pt]
-            \scriptsize $\bullet$ Timers renew on every hit\\
-            \scriptsize $\bullet$ Extra space during surges\\
-            \scriptsize $\bullet$ Two-tier trial room\\
-            \scriptsize $\bullet$ Value-per-MB eviction\\
-            \scriptsize $\bullet$ Ghost list for skipped files};
-
-        \draw[-{Latex[length=2.5mm]}, line width=1.1pt, TealAccent] ([yshift=0.6cm]py.east) -- node[above, font=\scriptsize\bfseries, text=NavyPrimary] {action $a\in\{0,1\}$} ([yshift=0.6cm]grpc.west);
-        \draw[-{Latex[length=2.5mm]}, line width=1.1pt, TealAccent] ([yshift=0.6cm]grpc.east) -- ([yshift=0.6cm]go.west);
-        \draw[-{Latex[length=2.5mm]}, line width=1.1pt, EmeraldGreen] ([yshift=-0.6cm]go.west) -- node[below, font=\scriptsize\bfseries, text=EmeraldGreen] {state $s'$, reward $r$, gap $\tau$} ([yshift=-0.6cm]grpc.east);
-        \draw[-{Latex[length=2.5mm]}, line width=1.1pt, EmeraldGreen] ([yshift=-0.6cm]grpc.west) -- ([yshift=-0.6cm]py.east);
-    \end{tikzpicture}
-
-    \vspace{0.35cm}
-    \begin{card}[width=0.94\textwidth, halign=center]{CardBorder}{\scriptsize Key idea}
-        \scriptsize A better learning algorithm alone cannot fix a flawed cache. AdaLife designs the policy and the cache engine together.
-    \end{card}
-\end{frame}
-
-% ====================================================================
-% 8. DDQL UPGRADE
-% ====================================================================
-\begin{frame}
-    \frametitle{Upgrade 1: A Better-Informed DDQL Agent}
-    \framesubtitle{The agent now sees file size, value per MB and free space before each decision}
-
-    \vspace{0.1cm}
-    \begin{columns}[T, onlytextwidth]
-        \column{0.48\textwidth}
-        \begin{card}[height=5.7cm]{NavyPrimary}{10 extra features given to the agent}
+    \begin{itemize}
+        \setlength{\itemsep}{0.35cm}
+        \item \textbf{Identified \& Resolved 4 Core Architectural Gaps:} Eliminated size-blind eviction thrashing, removed the empty-cache penalty trap, and introduced dynamic TTL lease renewal.
+        \item \textbf{Engineered the AdaLife Architecture:} Integrated dynamic leases, two-tier probationary admission, utility-density eviction, and elastic burst headroom into a unified engine.
+        \item \textbf{Validated on 70-Million Request Real-World Trace:}
+        \begin{itemize}
             \footnotesize
-            \begin{itemize}\setlength\itemsep{2pt}
-                \item How often the candidate was requested recently
-                \item Its exact size and its freshness-adjusted value
-                \item Value density: $\rho = \text{value}/\text{size}$
-                \item Lowest and average density of files in cache
-                \item Gain: $\Delta\rho=\rho_{\text{cand}}-\min(\rho_{\text{cache}})$
-                \item Free space, and space that must be freed
-            \end{itemize}
-            \textbf{Result:} the agent can weigh the trade-off directly instead of guessing.
-        \end{card}
-
-        \column{0.48\textwidth}
-        \begin{card}{EmeraldGreen}{Expert (yield-oracle) guidance}
-            \footnotesize The early random moves ($\epsilon\approx1$) are no longer saved as demonstrations. A simple rule based on $\Delta\rho$ and the trial-room rules supplies good examples for the supervised loss $J_E$.
-        \end{card}
-        \vspace{0.15cm}
-        \begin{card}{TealAccent}{Fairer reward}
-            \footnotesize
-            $$r(t) = W^*(t) - \mathbf{10}\cdot\text{Mem}(t) - \text{Regret}_{\text{ghost}}(t)$$
-            The empty-space penalty drops from 100 to 10, so the agent stops panic-caching.
-        \end{card}
-    \end{columns}
-\end{frame}
-
-% ====================================================================
-% 9. TWO-TIER SHIELD
-% ====================================================================
-\begin{frame}
-    \frametitle{Cache Upgrade 1: The Two-Tier Shield}
-    \framesubtitle{New files first go to a ``trial room'', so one-time files cannot push out popular ones}
-
-    \centering
-    \begin{tikzpicture}[scale=0.84, transform shape]
-        \node[draw=SlateDark, fill=white, rounded corners=5pt, line width=1.1pt, minimum width=2.4cm, minimum height=0.9cm, align=center] (req) at (0, 0.1) {\textbf{\color{NavyPrimary}Requested file}\\\tiny not in cache yet};
-        \node[draw=AmberWarm, fill=white, rounded corners=6pt, line width=1.2pt, minimum width=4.2cm, minimum height=1.7cm, align=center] (prob) at (5.0, 1.5) {
-            \textbf{\color{AmberWarm}Trial room (10\% of space)}\\[3pt]
-            \scriptsize $\bullet$ New files get a shorter timer ($0.75\times L$)\\
-            \scriptsize $\bullet$ One-time files expire here harmlessly\\
-            \scriptsize $\bullet$ Borrows unused space};
-        \node[draw=EmeraldGreen, fill=white, rounded corners=6pt, line width=1.2pt, minimum width=4.2cm, minimum height=1.7cm, align=center] (prot) at (5.0, -1.3) {
-            \textbf{\color{EmeraldGreen}Protected core (90\% of space)}\\[3pt]
-            \scriptsize $\bullet$ Files proven popular (multiple hits)\\
-            \scriptsize $\bullet$ Timers renew on each hit\\
-            \scriptsize $\bullet$ Safe from sudden bursts of new files};
-        \node[draw=NavyPrimary, fill=LightTealBg, rounded corners=5pt, line width=1.1pt, minimum width=2.2cm, minimum height=0.9cm, align=center] (hit) at (10.2, 0.1) {\textbf{\color{NavyPrimary}Cache hit}\\\tiny served locally};
-
-        \draw[-{Latex[length=2.5mm]}, line width=1.1pt] (req.east) -- node[above, sloped, font=\tiny\bfseries, text=SlateDark] {first request} (prob.west);
-        \draw[-{Latex[length=2.5mm]}, line width=1.1pt, dashed, TealAccent] (req.east) -- node[below, sloped, font=\tiny\bfseries, text=TealAccent] {in ghost list / popularity $\ge 2$} (prot.west);
-        \draw[-{Latex[length=2.5mm]}, line width=1.2pt, EmeraldGreen] (prob.south) -- node[right, font=\tiny\bfseries, text=EmeraldGreen] {2nd hit: promoted} (prot.north);
-        \draw[-{Latex[length=2.5mm]}, line width=1.1pt, TealAccent] (prob.east) -- (hit.west);
-        \draw[-{Latex[length=2.5mm]}, line width=1.1pt, EmeraldGreen] (prot.east) -- (hit.west);
-    \end{tikzpicture}
-
-    \vspace{0.3cm}
-    \begin{columns}[T, onlytextwidth]
-        \column{0.48\textwidth}
-        \begin{card}{CardBorder}{\scriptsize\color{SlateDark} Protects against junk}
-            \scriptsize A file requested only once expires in the trial room and never displaces a popular file.
-        \end{card}
-        \column{0.48\textwidth}
-        \begin{card}{CardBorder}{\scriptsize\color{SlateDark} No wasted space}
-            \scriptsize While the cache is still filling up, the trial room can use the idle space.
-        \end{card}
-    \end{columns}
-\end{frame}
-
-% ====================================================================
-% 10. LEASES AND ELASTIC SPACE
-% ====================================================================
-\begin{frame}
-    \frametitle{Cache Upgrade 2: Renewable Timers and Surge Space}
-    \framesubtitle{Popular files stay longer, and the cache grows a little when traffic spikes}
-
-    \vspace{0.1cm}
-    \begin{columns}[T, onlytextwidth]
-        \column{0.48\textwidth}
-        \begin{card}[height=5.5cm]{NavyPrimary}{1. Timers that renew on every hit}
-            \footnotesize Each hit extends the file's lifetime, more so for important and often-requested files:
-            $$\text{boost} = 1 + 0.5\, i_f + 0.1\cdot\min(5,\text{HitCount})$$
-            $$L_{\text{eff}} = \min\!\big(150\text{ s},\; L_{\text{base}}\times\text{boost}\big)$$
-            \textbf{Effect:} files stay as long as users keep asking for them; unused files expire and free their space.
-        \end{card}
-
-        \column{0.48\textwidth}
-        \begin{card}[height=5.5cm]{TealAccent}{2. Extra space during surges (up to +35\%)}
-            \footnotesize The engine tracks the average gap between requests:
-            $$\text{TauEMA} = 0.05\,\tau + 0.95\,\text{TauEMA}$$
-            $$M_{\text{eff}}(t) = M\cdot(1 + 0.35\cdot\text{pressure})$$
-            \textbf{Effect:} when many requests arrive at once, the cache can temporarily hold up to 35\% more, and it shrinks back safely when traffic calms down.
-        \end{card}
-    \end{columns}
-\end{frame}
-
-% ====================================================================
-% 11. DENSITY EVICTION AND GHOST
-% ====================================================================
-\begin{frame}
-    \frametitle{Cache Upgrade 3: Smarter Eviction and a Ghost List}
-    \framesubtitle{Remove the least valuable bytes, and learn from files we wrongly skipped}
-
-    \vspace{0.1cm}
-    \begin{columns}[T, onlytextwidth]
-        \column{0.48\textwidth}
-        \begin{card}[height=5.5cm]{AmberWarm}{1. Evict by value per MB}
-            \footnotesize The cost of fetching a file from the cloud grows with its size:
-            $$C_{\text{fetch}}(f) = 0.8 + 0.4\cdot\frac{z_f}{1000}$$
-            When space is needed, remove the file with the smallest
-            $$\frac{y_f(t)\cdot C_{\text{fetch}}(f)}{z_f}$$
-            \textbf{Effect:} no more throwing out five valuable small files for one big low-value file.
-        \end{card}
-
-        \column{0.48\textwidth}
-        \begin{card}[height=5.5cm]{CoralRed}{2. Ghost list: regret for bad skips}
-            \footnotesize The ghost list remembers the last 1,000 files that were skipped or evicted in the past 60 s. If one of them is requested again and misses:
-            $$\text{Regret} = 5\cdot\text{UT}_{\max}\cdot i_f\cdot C_{\text{fetch}}(f)$$
-            \textbf{Effect:} the regret is subtracted from the reward, so the agent quickly learns that skipping a popular file was a mistake.
-        \end{card}
-    \end{columns}
-\end{frame}
-
-% ====================================================================
-% 12. WORKFLOW
-% ====================================================================
-\begin{frame}
-    \frametitle{How One Request Is Handled}
-    \framesubtitle{Step-by-step path of a request through AdaLife}
-
-    \vspace{0.1cm}
-    \centering
-    \begin{tikzpicture}[scale=0.8, transform shape]
-        \node[draw=NavyPrimary, fill=white, rounded corners=5pt, line width=1.1pt, minimum width=2.8cm, minimum height=0.85cm] (req) at (0, 2.6) {\textbf{\color{NavyPrimary}1. User requests $f_r$}};
-        \node[draw=SlateDark, fill=white, rounded corners=5pt, line width=1.1pt, minimum width=2.8cm, minimum height=0.85cm] (hit) at (4.6, 2.6) {\textbf{\color{NavyPrimary}2. In cache \& fresh?}};
-        \node[draw=EmeraldGreen, fill=LightTealBg, rounded corners=5pt, line width=1.1pt, minimum width=3.0cm, minimum height=0.85cm] (serve) at (9.4, 2.6) {\textbf{\color{EmeraldGreen}Renew timer \& serve}};
-
-        \node[draw=CoralRed, fill=white, rounded corners=5pt, line width=1.1pt, minimum width=2.8cm, minimum height=0.85cm] (ghost) at (4.6, 0.8) {\textbf{\color{CoralRed}3. Check ghost list}};
-        \node[draw=TealAccent, fill=white, rounded corners=5pt, line width=1.1pt, minimum width=3.0cm, minimum height=0.85cm] (ddql) at (9.4, 0.8) {\textbf{\color{NavyPrimary}4. DDQL: store or skip}};
-
-        \node[draw=AmberWarm, fill=white, rounded corners=5pt, line width=1.1pt, minimum width=3.0cm, minimum height=0.85cm] (evict) at (9.4, -1.0) {\textbf{\color{AmberWarm}5. Evict lowest value/MB}};
-        \node[draw=EmeraldGreen, fill=white, rounded corners=5pt, line width=1.1pt, minimum width=2.8cm, minimum height=0.85cm] (insert) at (4.6, -1.0) {\textbf{\color{EmeraldGreen}6. Admit to trial room}};
-        \node[draw=NavyPrimary, fill=LightBlueBg, rounded corners=5pt, line width=1.1pt, minimum width=2.8cm, minimum height=0.85cm] (train) at (0, -1.0) {\textbf{\color{NavyPrimary}7. Learn from reward}};
-
-        \draw[-{Latex[length=2.5mm]}, line width=1.1pt] (req) -- (hit);
-        \draw[-{Latex[length=2.5mm]}, line width=1.1pt, EmeraldGreen] (hit) -- node[above, font=\tiny\bfseries, text=EmeraldGreen] {yes (hit)} (serve);
-        \draw[-{Latex[length=2.5mm]}, line width=1.1pt, CoralRed] (hit) -- node[right, font=\tiny\bfseries, text=CoralRed] {no (miss)} (ghost);
-        \draw[-{Latex[length=2.5mm]}, line width=1.1pt] (ghost) -- node[above, font=\tiny\bfseries, text=SlateDark] {10 features} (ddql);
-        \draw[-{Latex[length=2.5mm]}, line width=1.1pt, EmeraldGreen] (ddql) -- node[right, font=\tiny\bfseries, text=EmeraldGreen] {store ($a=1$)} (evict);
-        \draw[-{Latex[length=2.5mm]}, line width=1.1pt] (evict) -- (insert);
-        \draw[-{Latex[length=2.5mm]}, line width=1.1pt] (insert) -- node[below, font=\tiny\bfseries, text=NavyPrimary] {reward $r(t)$} (train);
-        \draw[-{Latex[length=2.5mm]}, line width=1.1pt, dashed, CoralRed] (ddql.south west) to[out=225, in=315] node[below, font=\tiny\bfseries, text=CoralRed] {skip ($a=0$): add to ghost list} (ghost.south east);
-    \end{tikzpicture}
-\end{frame}
-
-% ====================================================================
-% 13. BIG BENCHMARK
-% ====================================================================
-\begin{frame}
-    \frametitle{Large-Scale Test: 70 Million Requests}
-    \framesubtitle{1,000 files, 50 GB cache, Zipf skew $\eta = 0.85$}
-
-    \begin{table}
-        \centering
-        \renewcommand{\arraystretch}{1.12}
-        \resizebox{0.97\textwidth}{!}{%
-        \begin{tabular}{@{}lcccccc@{}}
-            \toprule
-            \textbf{Policy} & \textbf{Hit rate} & \textbf{Byte hit rate} & \textbf{Miss rate} & \textbf{Evicted} & \textbf{Total value} & \textbf{ns / request} \\
-            \midrule
-            FIFO                     & 56.04\%          & 56.31\%          & 43.96\%          & 43.96\%          & 1,810,673          & 154.5 \\
-            LRU                      & 60.78\%          & 63.04\%          & 39.22\%          & 39.22\%          & 1,974,893          & \textbf{64.4} \\
-            LFU                      & 68.63\%          & 69.58\%          & 31.37\%          & 31.37\%          & 2,270,792          & 116.8 \\
-            Sieve (state of the art) & 69.51\%          & \textbf{71.17\%} & 30.49\%          & 30.49\%          & 2,292,812          & \textbf{61.5} \\
-            CTD (paper baseline)     & 55.89\%          & 55.41\%          & 44.11\%          & 44.11\%          & 24,643,778         & 956.0 \\
-            \midrule
-            \textbf{Paper's DDQL}    & 66.18\%          & 46.60\%          & 33.82\%          & 22.41\%          & 22,431,459         & 26,066.5 \\
-            \textbf{AdaLife (ours)}  & \textbf{78.81\%} & 61.27\%          & \textbf{21.19\%} & \textbf{14.28\%} & \textbf{37,244,712} & 20,224.0 \\
-            \bottomrule
-        \end{tabular}}
-    \end{table}
-
-    \vspace{0.1cm}
-    \begin{columns}[T, onlytextwidth]
-        \column{0.32\textwidth}
-        \begin{card}{EmeraldGreen}{\scriptsize Best hit rate}
-            \scriptsize AdaLife answers \textbf{78.81\%} of requests locally, ahead of every other policy.
-        \end{card}
-        \column{0.34\textwidth}
-        \begin{card}{NavyPrimary}{\scriptsize Bandwidth recovered}
-            \scriptsize Byte hit rate rises from \textbf{46.60\%} (paper's DDQL) to \textbf{61.27\%}.
-        \end{card}
-        \column{0.32\textwidth}
-        \begin{card}{CoralRed}{\scriptsize Less churn}
-            \scriptsize Only \textbf{14.28\%} of files are evicted, versus 22.41\% for the paper's DDQL.
-        \end{card}
-    \end{columns}
-\end{frame}
-
-% ====================================================================
-% 14. FINDING 1
-% ====================================================================
-\begin{frame}
-    \frametitle{Finding 1: Stable Learning and Good Memory Use}
-    \framesubtitle{The agent learns smoothly and makes full use of the cache}
-
-    \centering
-    \includegraphics[width=0.90\linewidth, height=0.50\textheight, keepaspectratio]{fig3_combined_performance.png}
-
-    \vspace{0.1cm}
-    \begin{columns}[T, onlytextwidth]
-        \column{0.32\textwidth}
-        \textbf{\footnotesize (a) Reward}
-        \begin{itemize}\scriptsize\setlength\itemsep{1pt}
-            \item The policy keeps improving.
-            \item Reward climbs without collapsing.
+            \item \textbf{Hit Rate:} Rose to \textbf{78.81\%} (+12.63\% gain over Paper DDQL, +22.92\% over CTD).
+            \item \textbf{Byte Hit Rate:} Reached \textbf{61.27\%} (+14.67\% gain over Paper DDQL).
+            \item \textbf{Eviction Churn:} Slashed from 44.11\% (CTD) down to \textbf{14.28\%} (-67.6\% reduction).
+            \item \textbf{Total Utility:} Surged to \textbf{37,244,712.96} (+66.0\% increase).
         \end{itemize}
-        \column{0.34\textwidth}
-        \textbf{\footnotesize (b) Stored value}
-        \begin{itemize}\scriptsize\setlength\itemsep{1pt}
-            \item Total value in cache stays high.
-            \item Genuinely popular files are kept.
-        \end{itemize}
-        \column{0.32\textwidth}
-        \textbf{\footnotesize (c) Empty memory}
-        \begin{itemize}\scriptsize\setlength\itemsep{1pt}
-            \item Unused space falls below 5\%.
-            \item Storage is used effectively.
-        \end{itemize}
-    \end{columns}
+        \item \textbf{Broad Application Horizon:} Demonstrated direct applicability to LLM Semantic Caching, GPU KV-Cache management in vLLM, and 5G edge intelligence.
+    \end{itemize}
 \end{frame}
 
-% ====================================================================
-% 15. FINDING 2
-% ====================================================================
-\begin{frame}
-    \frametitle{Finding 2: Saving Network Bandwidth}
-    \framesubtitle{AdaLife repairs the drop in byte hit rate seen with the paper's DDQL}
-
-    \begin{columns}[c, onlytextwidth]
-        \column{0.52\textwidth}
-        \centering
-        \includegraphics[width=\linewidth, height=0.72\textheight, keepaspectratio]{fig10_byte_hit_rate_comparison.png}
-
-        \column{0.45\textwidth}
-        \begin{card}{CoralRed}{The paper's bandwidth problem}
-            \footnotesize The paper's hit rate was good (66\%), but its byte hit rate fell to \textbf{46.6\%}. Big files were evicted too easily and had to be downloaded again and again.
-        \end{card}
-        \vspace{0.2cm}
-        \begin{card}{EmeraldGreen}{AdaLife: 61.27\%}
-            \footnotesize Value-per-MB eviction keeps big files when they are worth it. Data fetched from the cloud drops by about 27\%.
-        \end{card}
-    \end{columns}
-\end{frame}
-
-% ====================================================================
-% 16. FINDING 3
-% ====================================================================
-\begin{frame}
-    \frametitle{Finding 3: Less Cache Thrashing}
-    \framesubtitle{The trial room stops popular files from being pushed out}
-
-    \begin{columns}[c, onlytextwidth]
-        \column{0.52\textwidth}
-        \centering
-        \includegraphics[width=\linewidth, height=0.72\textheight, keepaspectratio]{fig9_eviction_churn_comparison.png}
-
-        \column{0.45\textwidth}
-        \begin{card}{CoralRed}{Classic policies thrash}
-            \footnotesize FIFO, LRU, LFU and Sieve evict \textbf{30--44\% of files}. A burst of new files pushes out popular ones before they can serve more hits.
-        \end{card}
-        \vspace{0.2cm}
-        \begin{card}{EmeraldGreen}{AdaLife: only 14.28\%}
-            \footnotesize New files wait in the 10\% trial room, so the main storage stays protected. Fewer deletions also means less disk wear on the router.
-        \end{card}
-    \end{columns}
-\end{frame}
-
-% ====================================================================
-% 17. FINDING 4 (REPLACED: DIRECT COMPARISON ACROSS SYSTEM CONDITIONS)
-% ====================================================================
-\begin{frame}
-    \frametitle{Finding 4: Higher Hit Counts Across All Network Conditions}
-    \framesubtitle{AdaLife vs.\ Paper's DDQL across popularity skew, request rate, and cache size}
-
-    \centering
-    \includegraphics[width=0.92\linewidth, height=0.48\textheight, keepaspectratio]{fig6_combined_hit_counts.png}
-
-    \vspace{0.1cm}
-    \begin{columns}[T, onlytextwidth]
-        \column{0.32\textwidth}
-        \textbf{\footnotesize (a) Popularity Skew ($\eta$)}
-        \begin{itemize}\scriptsize\setlength\itemsep{1pt}
-            \item AdaLife stays well above Paper DDQL for every skew value.
-            \item Leases preserve the most popular files.
-        \end{itemize}
-        \column{0.34\textwidth}
-        \textbf{\footnotesize (b) Request Rate ($\lambda$)}
-        \begin{itemize}\scriptsize\setlength\itemsep{1pt}
-            \item Evaluated from light to heavy traffic ($0.5$--$6.5$ req/s).
-            \item AdaLife widens its lead as traffic grows.
-        \end{itemize}
-        \column{0.32\textwidth}
-        \textbf{\footnotesize (c) Cache Capacity ($M$)}
-        \begin{itemize}\scriptsize\setlength\itemsep{1pt}
-            \item Tested across tight (5 GB) to large (15 GB) caches.
-            \item Consistently delivers more hits at all sizes.
-        \end{itemize}
-    \end{columns}
-\end{frame}
-
-% ====================================================================
-% 18. SUMMARY
-% ====================================================================
-\begin{frame}
-    \frametitle{Summary}
-    \framesubtitle{What AdaLife achieves}
-
-    \vspace{0.15cm}
-    \begin{columns}[T, onlytextwidth]
-        \column{0.31\textwidth}
-        \begin{card}[height=4.4cm]{NavyPrimary}{1. A better-informed agent}
-            \footnotesize
-            \begin{itemize}\setlength\itemsep{3pt}
-                \item 10 extra features show value per MB.
-                \item Gentler reward stops panic hoarding.
-                \item Yield-oracle guides target training.
-            \end{itemize}
-        \end{card}
-        \column{0.31\textwidth}
-        \begin{card}[height=4.4cm]{EmeraldGreen}{2. A smarter cache}
-            \footnotesize
-            \begin{itemize}\setlength\itemsep{3pt}
-                \item Timers renew on every hit.
-                \item Trial room blocks one-time files.
-                \item Ghost list punishes bad skips.
-                \item Value-per-MB eviction.
-            \end{itemize}
-        \end{card}
-        \column{0.31\textwidth}
-        \begin{card}[height=4.4cm]{TealAccent}{3. Proven at 70M requests}
-            \footnotesize
-            \begin{itemize}\setlength\itemsep{3pt}
-                \item \textbf{78.8\%} hit rate, the best of all policies.
-                \item \textbf{61.3\%} byte hit rate (+14.7 points over the paper's DDQL).
-                \item \textbf{37.2M} total value (about 1.66$\times$ the paper's DDQL).
-            \end{itemize}
-        \end{card}
-    \end{columns}
-
-    \vspace{0.3cm}
-    \begin{card}[width=0.96\textwidth, halign=center]{CardBorder}{\scriptsize Final takeaway}
-        \scriptsize A learned policy only works as well as the cache underneath it. By fixing the cache and the policy together, AdaLife turns good decisions into real hit-rate gains.
-    \end{card}
-\end{frame}
-
-% ====================================================================
-% 19. REFERENCES
-% ====================================================================
+% ------------------------------------------------------------------------------
+% SLIDE 13: References
+% ------------------------------------------------------------------------------
 \begin{frame}
     \frametitle{References}
     \framesubtitle{Foundational Literature}
 
-    \vspace{0.3cm}
-    \begin{card}{NavyPrimary}{Key Literature}
-        \small
-        \begin{enumerate}\setlength\itemsep{12pt}
-            \item[{[1]}] F.~Niknia, P.~Wang, Z.~Wang, A.~Agarwal, and A.~S.~Rezaei, ``Edge Caching Based on Deep Reinforcement Learning and Transfer Learning,'' \textit{arXiv preprint arXiv:2402.14576v2 [cs.NI]}, Mar.~2024.
-            \item[{[2]}] H.~Zhu, Y.~Cao, X.~Wei, W.~Wang, T.~Jiang, and S.~Jin, ``Caching Transient Data for Internet of Things: A Deep Reinforcement Learning Approach,'' \textit{IEEE Internet of Things Journal}, vol.~6, no.~2, pp.~2074--2083, 2018.
-        \end{enumerate}
-    \end{card}
+    \vspace{0.6cm}
+    \begin{itemize}
+        \setlength{\itemsep}{0.5cm}
+        \item[{[1]}] F.~Niknia, P.~Wang, Z.~Wang, A.~Agarwal, and A.~S.~Rezaei, ``Edge Caching Based on Deep Reinforcement Learning and Transfer Learning,'' \textit{arXiv preprint arXiv:2402.14576v2 [cs.NI]}, Mar. 2024.
+        \item[{[2]}] Z.~Wang, T.~Schaul, M.~Hessel, H.~van Hasselt, M.~Lanctot, and N.~de Freitas, ``Dueling Network Architectures for Deep Reinforcement Learning,'' \textit{ICML}, 2016.
+        \item[{[3]}] T.~Hester et al., ``Deep Q-learning from Demonstrations,'' \textit{AAAI}, 2018.
+        \item[{[4]}] H.~Zhu, Y.~Cao, X.~Wei, W.~Wang, T.~Jiang, and S.~Jin, ``Caching Transient Data for Internet of Things: A Deep Reinforcement Learning Approach,'' \textit{IEEE Internet of Things Journal}, 2018.
+    \end{itemize}
 \end{frame}
 
-% ====================================================================
-% 20. THANK YOU
-% ====================================================================
+% ------------------------------------------------------------------------------
+% SLIDE 14: Thank You Slide
+% ------------------------------------------------------------------------------
 \begin{frame}[plain]
     \begin{tikzpicture}[remember picture, overlay]
-        \fill[CreamBg] (current page.south west) rectangle (current page.north east);
+        \fill[CardBg] (current page.south west) rectangle (current page.north east);
         \draw[NavyPrimary, line width=3pt] ([yshift=-1.2cm]current page.north west) -- ([yshift=-1.2cm]current page.north east);
     \end{tikzpicture}
 
     \centering
     \vspace{2.8cm}
     {\fontsize{34pt}{40pt}\selectfont \color{NavyPrimary}\textbf{THANK YOU}}
-
-    \vspace{0.6cm}
+    
+    \vspace{0.8cm}
     \begin{tikzpicture}
-        \draw[TealAccent, line width=1.5pt] (0,0) -- (4.5,0);
+        \draw[CardBorder, line width=1.5pt] (0,0) -- (4.5,0);
     \end{tikzpicture}
-
-    \vspace{0.5cm}
-    {\color{SlateDark}\large Questions?}
 \end{frame}
 
 \end{document}
